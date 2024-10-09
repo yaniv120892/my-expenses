@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "rimraf dist && tsc && prisma generate",
+    "build": "rimraf dist && prisma generate && tsc",
     "start": "prisma migrate deploy && node dist/index.js",
     "dev": "prisma migrate deploy && ts-node src/index.ts",
     "import-csv": "ts-node src/scripts/importCsv.ts",
