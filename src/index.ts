@@ -12,10 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(requestLogger);
 
-app.use('/api', router);
-router.get('/ping', (req, res) => {
-  res.send('ok');
-});
+app.use('/', router);
 
 app.use(errorHandler);
 
