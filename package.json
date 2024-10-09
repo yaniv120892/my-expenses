@@ -12,7 +12,8 @@
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
     "add-build": "git add dist",
-    "ts.check": "tsc --project tsconfig.json"
+    "ts.check": "tsc --project tsconfig.json",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "pre-commit": [
