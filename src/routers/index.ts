@@ -5,7 +5,7 @@ import categoryRouter from '@src/routers/categoryRouter';
 const router = express.Router();
 router.use('/api/transactions', transactionRouter);
 router.use('/api/categories', categoryRouter);
-router.get('/ping', (req, res) => {
+router.get('/', (req, res) => {
   res.send('ok');
 });
 export default router;
