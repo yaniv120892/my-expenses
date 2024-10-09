@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "rimraf dist && prisma generate && tsc",
-    "start": "prisma migrate deploy && node dist/index.js",
-    "dev": "prisma migrate deploy && ts-node src/index.ts",
+    "build": "rimraf dist && npx prisma generate && tsc",
+    "start": "npx prisma migrate deploy && node dist/index.js",
+    "dev": "npx prisma migrate deploy && ts-node src/index.ts",
     "import-csv": "ts-node src/scripts/importCsv.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
