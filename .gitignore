@@ -1,4 +1,6 @@
 node_modules
 .env
 /src/scripts/data
-/dist
+
+# include for vercel
+#/dist
