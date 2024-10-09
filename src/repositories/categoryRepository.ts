@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { Category } from '@app/types/category';
+import { Category } from '..//types/category';
 
 const prisma = new PrismaClient();
 

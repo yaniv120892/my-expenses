@@ -1,6 +1,6 @@
-import categoryRepository from '@app/repositories/categoryRepository';
-import { CreateTransaction } from '@app/types/transaction';
-import { CustomValidationError } from '@app/errors/validationError';
+import categoryRepository from '..//repositories/categoryRepository';
+import { CreateTransaction } from '..//types/transaction';
+import { CustomValidationError } from '..//errors/validationError';
 
 class CreateTransactionValidator {
   public async validate(data: CreateTransaction): Promise<void> {

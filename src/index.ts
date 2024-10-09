@@ -1,9 +1,8 @@
 import 'reflect-metadata';
-import 'tsconfig-paths/register';
 import express from 'express';
-import router from '@app/routers/index';
-import logger, { requestLogger } from '@app/utils/logger';
-import { errorHandler } from '@app/middlewares/errorHandler';
+import router from './routers/index';
+import logger, { requestLogger } from './utils/logger';
+import { errorHandler } from './middlewares/errorHandler';
 import * as dotenv from 'dotenv';
 
 dotenv.config();

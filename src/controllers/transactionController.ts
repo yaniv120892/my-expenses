@@ -1,10 +1,10 @@
-import logger from '@app/utils/logger';
+import logger from '../utils/logger';
 import {
   CreateTransactionRequest,
   GetTransactionsRequest,
   GetTransactionsSummaryRequest,
-} from '@app/controllers/requests';
-import transactionService from '@app/services/transactionService';
+} from '../controllers/requests';
+import transactionService from '../services/transactionService';
 
 class TransactionController {
   async createTransaction(createTransactionRequest: CreateTransactionRequest) {

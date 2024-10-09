@@ -1,4 +1,4 @@
-import { GetTransactionsRequest } from '@app/controllers/requests';
+import { GetTransactionsRequest } from '..//controllers/requests';
 import { RequestHandler, Request } from 'express';
 import { ParsedQs } from 'qs';
 

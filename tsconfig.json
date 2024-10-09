@@ -13,10 +13,7 @@
     "moduleResolution": "Node",
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "baseUrl": "src",
-    "paths": {
-      "@app/*": ["./*"]
-    }
+    "baseUrl": "src"
   },
   "include": ["./src/*.js", "./src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc && prisma generate",
-    "start": "node -r tsconfig-paths/register dist/index.js",
-    "dev": "ts-node -r tsconfig-paths/register src/index.ts",
-    "import-csv": "ts-node -r tsconfig-paths/register src/scripts/importCsv.ts",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "import-csv": "ts-node src/scripts/importCsv.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix"
@@ -29,7 +29,6 @@
     "lint-staged": "^15.2.10",
     "prettier": "^3.3.3",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.7.0"
   },
