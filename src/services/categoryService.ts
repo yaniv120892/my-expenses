@@ -1,5 +1,5 @@
-import categoryRepository from '@src/repositories/categoryRepository';
-import { Category } from '@src/types/category';
+import categoryRepository from '@app/repositories/categoryRepository';
+import { Category } from '@app/types/category';
 
 export class CategoryService {
   public async getAllCategories(): Promise<Category[]> {

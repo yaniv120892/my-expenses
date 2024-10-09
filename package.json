@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc && prisma generate",
-    "start": "node dist/index.js",
+    "start": "node -r tsconfig-paths/register dist/index.js",
     "dev": "ts-node -r tsconfig-paths/register src/index.ts",
     "import-csv": "ts-node -r tsconfig-paths/register src/scripts/importCsv.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --fix",

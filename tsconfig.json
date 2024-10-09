@@ -7,17 +7,17 @@
     "strictPropertyInitialization": false,
     "strictBindCallApply": true,
     "esModuleInterop": true,
+    "strict": true,
     "target": "ES6",
     "module": "commonjs",
     "moduleResolution": "Node",
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": "./src",
+    "baseUrl": "src",
     "paths": {
-      "@src/*": ["*"]
+      "@app/*": ["./*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["./src/*.js", "./src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }

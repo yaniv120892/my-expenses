@@ -1,13 +1,13 @@
 import express, { Request } from 'express';
-import transactionController from '@src/controllers/transactionController';
-import { validateRequest } from '@src/middlewares/validation';
+import transactionController from '@app/controllers/transactionController';
+import { validateRequest } from '@app/middlewares/validation';
 import {
   CreateTransactionRequest,
   GetTransactionsRequest,
   GetTransactionsSummaryRequest,
-} from '@src/controllers/requests';
-import { handleRequest } from '@src/utils/handleRequest';
-import { TransactionType } from '@src/types/transaction';
+} from '@app/controllers/requests';
+import { handleRequest } from '@app/utils/handleRequest';
+import { TransactionType } from '@app/types/transaction';
 
 const router = express.Router();
 
