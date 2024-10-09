@@ -1,6 +1,6 @@
 import express from 'express';
-import transactionRouter from '@src/routers/transactionRouter';
-import categoryRouter from '@src/routers/categoryRouter';
+import transactionRouter from '@app/routers/transactionRouter';
+import categoryRouter from '@app/routers/categoryRouter';
 
 const router = express.Router();
 router.use('/api/transactions', transactionRouter);

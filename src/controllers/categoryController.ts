@@ -1,6 +1,6 @@
-import categoryService from '@src/services/categoryService';
-import { Category } from '@src/types/category';
-import logger from '@src/utils/logger';
+import categoryService from '@app/services/categoryService';
+import { Category } from '@app/types/category';
+import logger from '@app/utils/logger';
 
 export class CategoryController {
   async getAllCategories(): Promise<Category[]> {

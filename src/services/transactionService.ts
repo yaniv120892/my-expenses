@@ -1,4 +1,4 @@
-import TransactionRepository from '@src/repositories/transactionRepository';
+import TransactionRepository from '@app/repositories/transactionRepository';
 import {
   CreateTransaction,
   TransactionFilters,
@@ -6,8 +6,8 @@ import {
   TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
-} from '@src/types/transaction';
-import createTransactionValidator from '@src/validators/createTransactionValidator';
+} from '@app/types/transaction';
+import createTransactionValidator from '@app/validators/createTransactionValidator';
 
 class TransactionService {
   public async createTransaction(data: CreateTransaction): Promise<string> {

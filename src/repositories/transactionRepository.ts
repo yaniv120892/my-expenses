@@ -1,5 +1,5 @@
 import { TransactionType } from '@prisma/client';
-import prisma from '@src/prisma/client';
+import prisma from '@app/prisma/client';
 import {
   CreateTransaction,
   TransactionFilters,
@@ -7,7 +7,7 @@ import {
   TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
-} from '@src/types/transaction';
+} from '@app/types/transaction';
 
 class TransactionRepository {
   public async getTransactionsSummary(

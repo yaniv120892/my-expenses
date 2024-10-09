@@ -1,4 +1,4 @@
-import { TransactionType } from '@src/types/transaction';
+import { TransactionType } from '@app/types/transaction';
 import {
   IsString,
   IsNumber,
