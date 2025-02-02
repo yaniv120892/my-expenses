@@ -35,6 +35,14 @@ class TransactionService {
     async deleteTransaction(transactionId) {
         return transactionRepository_1.default.deleteTransaction(transactionId);
     }
+    updateTransaction(transactionId, updateData) {
+        return transactionRepository_1.default.updateTransaction(transactionId, {
+            description: updateData.description,
+            value: updateData.value,
+            date: updateData.date || undefined,
+            categoryId: updateData.categoryId || undefined,
+        });
+    }
     async updateCategory(transaction) {
         if (transaction.categoryId) {
             return transaction;

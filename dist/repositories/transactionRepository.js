@@ -66,6 +66,17 @@ class TransactionRepository {
         });
         return transaction ? this.mapToDomain(transaction) : null;
     }
+    async updateTransaction(transactionId, updateData) {
+        await client_2.default.transaction.update({
+            where: { id: transactionId },
+            data: {
+                description: updateData.description,
+                value: updateData.value,
+                date: updateData.date,
+                categoryId: updateData.categoryId,
+            },
+        });
+    }
     mapToDomain(transaction) {
         return {
             id: transaction.id,
