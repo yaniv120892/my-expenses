@@ -45,7 +45,8 @@ class WebhookController {
         case '/insights':
           return await this.handleInsights();
         default:
-          return await this.handleUserState(chatId, text);
+          const sanitizedText = text.replace('/', '');
+          return await this.handleUserState(chatId, sanitizedText);
       }
     } catch (error) {
       logger.error('Failed to handle webhook:', error);
