@@ -5,7 +5,7 @@ import { Category } from '../../types/category';
 
 export class GeminiService implements AIProvider {
   private gemini: GoogleGenerativeAI;
-  private modelName: string = 'gemini-pro'; // Use 'gemini-1.5-pro' if needed
+  private modelName: string = 'gemini-pro';
 
   constructor() {
     this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
@@ -22,7 +22,7 @@ export class GeminiService implements AIProvider {
             role: 'user',
             parts: [
               {
-                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew`,
+                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence`,
               },
             ],
           },

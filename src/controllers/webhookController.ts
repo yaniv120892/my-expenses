@@ -4,59 +4,88 @@ import logger from '../utils/logger';
 import transactionService from '../services/transactionService';
 import categoryService from '../services/categoryService';
 import aiServiceFactory from '../services/ai/aiServiceFactory';
+import TelegramBot from 'node-telegram-bot-api';
 
 const defaultListDays = 5;
 const defaultSummaryDays = 30;
 
 class WebhookController {
-  private aiService = aiServiceFactory.getAIService();
+  private aiService;
+  private bot: TelegramBot;
+
+  constructor() {
+    const token = process.env.TELEGRAM_BOT_TOKEN || 'MY_TOKEN';
+    this.bot = new TelegramBot(token);
+    this.aiService = aiServiceFactory.getAIService();
+  }
 
   async handleWebhook(req: WebhookRequest) {
     const chatId = req.message.chat.id;
     const text = req.message.text?.toLowerCase().trim();
 
-    if (!text) return this.createResponse('Please enter a valid command.');
+    if (!text) {
+      const message = this.createResponse('Please enter a valid command.');
+      await this.bot.sendMessage(chatId, message.message);
+    }
 
     const [command, ...args] = text.split(' ');
-
+    let responseMessage;
     try {
       switch (command) {
         case '/start':
-          return this.handleStart(chatId);
+          responseMessage = this.handleStart(chatId);
+          break;
+
+        case '/search':
+          responseMessage = await this.handleSearch(chatId, args);
+          break;
 
         case '/help':
-          return this.handleHelp(chatId);
+          responseMessage = this.handleHelp(chatId);
+          break;
 
         case '/create':
-          return await this.handleCreate(chatId);
+          responseMessage = await this.handleCreate(chatId);
+          break;
 
         case '/list':
-          return await this.handleList(chatId, args);
+          responseMessage = await this.handleList(chatId, args);
+          break;
 
         case '/summary':
-          return await this.handleSummary(chatId, args);
+          responseMessage = await this.handleSummary(chatId, args);
+          break;
 
         case '/categories':
-          return await this.handleCategories(chatId);
+          responseMessage = await this.handleCategories(chatId);
+          break;
 
         case '/delete':
-          return await this.handleDelete(chatId, args);
+          responseMessage = await this.handleDelete(chatId, args);
+          break;
 
         case '/update':
-          return await this.handleUpdate(chatId, args);
+          responseMessage = await this.handleUpdate(chatId, args);
+          break;
 
         case '/insights':
-          return await this.handleInsights();
+          responseMessage = await this.handleInsights(chatId);
+          break;
 
         case '/reset':
-          return this.handleReset(chatId);
+          responseMessage = this.handleReset(chatId);
+          break;
 
         default:
-          return await this.handleUserState(chatId, text);
+          responseMessage = await this.handleUserState(chatId, text);
+          break;
       }
+
+      await this.bot.sendMessage(chatId, responseMessage.message);
     } catch (error) {
       logger.error('Failed to handle webhook:', error);
-      return this.createResponse(`Failed to handle command: ${command}`);
+      const message = this.createResponse('Failed to handle the request.');
+      await this.bot.sendMessage(chatId, message.message);
     }
   }
 
@@ -77,9 +106,8 @@ class WebhookController {
 3. /summary <days> - Get a summary of your transactions from the last <days> days (default: ${defaultSummaryDays}).
 4. /categories - List available transaction categories.
 5. /delete <transaction_id> - Delete a specific transaction.
-6. /reset - Reset user state.
 7. /insights - Get AI-generated expense insights.
-8. /help - Show available commands.`;
+8. /search <keyword> - Search transactions by keyword.`;
   }
 
   /** Handles /start command */
@@ -215,7 +243,8 @@ class WebhookController {
   }
 
   /** Handles /insights command */
-  private async handleInsights() {
+  private async handleInsights(chatId: number) {
+    this.bot.sendMessage(chatId, 'Sending insights...');
     const transactions = await transactionService.getTransactions({
       startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
       transactionType: 'EXPENSE',
@@ -292,6 +321,50 @@ class WebhookController {
         `/update ${transactionId} description <new_description>\n` +
         `/update ${transactionId} value <new_value>\n` +
         `/update ${transactionId} categoryId <new_category_id>\n`,
+    );
+  }
+
+  /** Handle search command */
+  private async handleSearch(chatId: number, args: string[]) {
+    transactionManager.resetUserState(chatId);
+
+    if (args.length === 0) {
+      return this.createResponse(
+        'Please provide a keyword to search for transactions.',
+      );
+    }
+
+    const searchQuery = args.join(' '); // Join arguments into a search term
+
+    const transactions = await transactionService.getTransactions({
+      searchTerm: searchQuery,
+      page: 1,
+      perPage: 10,
+    });
+
+    if (transactions.length === 0) {
+      return this.createResponse(
+        `No transactions found matching "${searchQuery}".`,
+      );
+    }
+
+    // Format transactions for display
+    const transactionList = transactions
+      .sort((a, b) => b.date.getTime() - a.date.getTime()) // Sort by latest date
+      .map((t) => {
+        const formattedDate = new Date(t.date).toISOString().split('T')[0];
+
+        return `\u200F${this.getTransactionTypeIcon(t.type)} ${t.description} ${t.value}
+    \u200Fקטגוריה: ${t.category.name}
+    \u200F${formattedDate}
+    
+    🗑 /delete ${t.id}
+    ✏️ /update ${t.id}`;
+      })
+      .join('\n\n');
+
+    return this.createResponse(
+      `🔍 *Search results for:* "${searchQuery}"\n\n${transactionList}`,
     );
   }
 
