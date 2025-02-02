@@ -45,8 +45,7 @@ class WebhookController {
         case '/insights':
           return await this.handleInsights();
         default:
-          const sanitizedText = text.replace('/', '');
-          return await this.handleUserState(chatId, sanitizedText);
+          return await this.handleUserState(chatId, text);
       }
     } catch (error) {
       logger.error('Failed to handle webhook:', error);
@@ -211,23 +210,31 @@ class WebhookController {
 
   /** Handles user state progression (handles transaction creation flow) */
   private async handleUserState(chatId: number, text: string) {
+    logger.debug(`Handling user state for chatId: ${chatId}, text: ${text}`);
+    const sanitizedText = text.replace('/', '').trim();
+
     const { message, nextStep } = await transactionManager.handleUserState(
       chatId,
-      text,
+      sanitizedText,
     );
 
-    if (nextStep === UserStatus.TRANSACTION_COMPLETE) {
-      return this.createResponse(`${message}`, true);
+    let response = { message: 'Failed to handle user state.' };
+    switch (nextStep) {
+      case UserStatus.AWAITING_AMOUNT:
+      case UserStatus.AWAITING_DESCRIPTION:
+      case UserStatus.AWAITING_DATE:
+        response = this.createResponse(message, false);
+      case UserStatus.TRANSACTION_COMPLETE:
+        response = this.createResponse(message, true);
+      case UserStatus.FAILURE:
+        response = this.createResponse(
+          '❌ Transaction failed. Please try again.',
+          true,
+        );
     }
 
-    if (nextStep === UserStatus.FAILURE) {
-      return this.createResponse(
-        `❌ Transaction failed. Please try again.`,
-        true,
-      );
-    }
-
-    return this.createResponse(message, false);
+    logger.debug(`User state response: ${response.message}`);
+    return response;
   }
 }
 
