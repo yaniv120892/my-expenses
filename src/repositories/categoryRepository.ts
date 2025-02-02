@@ -13,7 +13,11 @@ export class CategoryRepository {
     });
   }
 
-  public async getCategoryById(id: string): Promise<Category | null> {
+  public async getCategoryById(id: string | null): Promise<Category | null> {
+    if (!id) {
+      return null;
+    }
+
     return await prisma.category.findUnique({
       where: { id },
     });

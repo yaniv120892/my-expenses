@@ -1,5 +1,6 @@
 import { CreateTransaction, TransactionType } from 'types/transaction';
 import TransactionService from './transactionService';
+import aiServiceFactory from 'services/ai/aiServiceFactory';
 
 export enum UserStatus {
   AWAITING_TYPE = 'AWAITING_TYPE',
@@ -149,7 +150,7 @@ class TransactionManager {
       type: inProcessTransaction.type as TransactionType,
       value: inProcessTransaction.value as number,
       description: inProcessTransaction.description as string,
-      categoryId: '1b5c146b-1d40-45ef-b6e3-0c6d98913456', // Placeholder for category id
+      categoryId: null,
       date,
     });
 

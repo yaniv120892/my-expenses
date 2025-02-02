@@ -3,12 +3,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const aiServiceFactory_1 = __importDefault(require("services/ai/aiServiceFactory"));
 const transactionRepository_1 = __importDefault(require("..//repositories/transactionRepository"));
 const createTransactionValidator_1 = __importDefault(require("..//validators/createTransactionValidator"));
+const categoryRepository_1 = __importDefault(require("repositories/categoryRepository"));
 class TransactionService {
+    constructor() {
+        this.aiService = aiServiceFactory_1.default.getAIService();
+    }
     async createTransaction(data) {
-        await createTransactionValidator_1.default.validate(data);
-        return transactionRepository_1.default.createTransaction(data);
+        const createTransaction = await this.updateCategory(data);
+        await createTransactionValidator_1.default.validate(createTransaction);
+        const CreateTransactionDbModel = {
+            description: createTransaction.description,
+            value: createTransaction.value,
+            date: createTransaction.date || new Date(),
+            categoryId: createTransaction.categoryId,
+            type: createTransaction.type,
+        };
+        return transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
     }
     async getTransactions(filters) {
         return transactionRepository_1.default.getTransactions(filters);
@@ -21,6 +34,14 @@ class TransactionService {
     }
     async deleteTransaction(transactionId) {
         return transactionRepository_1.default.deleteTransaction(transactionId);
+    }
+    async updateCategory(transaction) {
+        if (transaction.categoryId) {
+            return transaction;
+        }
+        const categories = await categoryRepository_1.default.getAllCategories();
+        const suggestedCategoryId = await this.aiService.suggestCategory(transaction.description, categories);
+        return Object.assign(Object.assign({}, transaction), { categoryId: suggestedCategoryId });
     }
 }
 exports.default = new TransactionService();

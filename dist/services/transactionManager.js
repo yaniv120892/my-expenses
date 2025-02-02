@@ -115,7 +115,7 @@ class TransactionManager {
             type: inProcessTransaction.type,
             value: inProcessTransaction.value,
             description: inProcessTransaction.description,
-            categoryId: '1b5c146b-1d40-45ef-b6e3-0c6d98913456', // Placeholder for category id
+            categoryId: null,
             date,
         });
         this.chatIdToUserStateMapping.delete(chatId);
