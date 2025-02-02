@@ -9,6 +9,8 @@ const logger_1 = __importDefault(require("../utils/logger"));
 const transactionService_1 = __importDefault(require("../services/transactionService"));
 const categoryService_1 = __importDefault(require("../services/categoryService"));
 const aiServiceFactory_1 = __importDefault(require("../services/ai/aiServiceFactory"));
+const defaultListDays = 5;
+const defaultSummaryDays = 30;
 class WebhookController {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
@@ -31,15 +33,17 @@ class WebhookController {
                 case '/list':
                     return await this.handleList(chatId, args);
                 case '/summary':
-                    return await this.handleSummary(chatId);
+                    return await this.handleSummary(chatId, args);
                 case '/categories':
                     return await this.handleCategories(chatId);
                 case '/delete':
                     return await this.handleDelete(chatId, args);
-                case '/reset':
-                    return this.handleReset(chatId);
+                case '/update':
+                    return await this.handleUpdate(chatId, args);
                 case '/insights':
                     return await this.handleInsights();
+                case '/reset':
+                    return this.handleReset(chatId);
                 default:
                     return await this.handleUserState(chatId, text);
             }
@@ -61,8 +65,8 @@ class WebhookController {
     getOptionsMessage() {
         return `Available commands:
 1. /create - Create a new transaction.
-2. /list <days> - List transactions from the last <days> days (default: 10).
-3. /summary - Get a summary of your transactions.
+2. /list <days> - List transactions from the last <days> days (default: ${defaultListDays}).
+3. /summary <days> - Get a summary of your transactions from the last <days> days (default: ${defaultSummaryDays}).
 4. /categories - List available transaction categories.
 5. /delete <transaction_id> - Delete a specific transaction.
 6. /reset - Reset user state.
@@ -87,7 +91,9 @@ class WebhookController {
     /** Handles /list <days> command */
     async handleList(chatId, args) {
         transactionManager_1.transactionManager.resetUserState(chatId);
-        const days = args.length ? parseInt(args[0]) || 10 : 10;
+        const days = args.length
+            ? parseInt(args[0]) || defaultListDays
+            : defaultListDays;
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         const transactions = await transactionService_1.default.getTransactions({
@@ -100,19 +106,35 @@ class WebhookController {
             return this.createResponse('No transactions found.');
         }
         const transactionList = transactions
-            .map((t) => `*Description*: ${t.description}
-*Value*: ${t.value} 
-*Date*: ${new Date(t.date).toISOString().split('T')[0]}
-*Type*: ${t.type}
-*Category*: ${t.category.name}`)
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .map((t) => {
+            const formattedDate = new Date(t.date).toISOString().split('T')[0];
+            return `\u200F${this.getTransactionTypeIcon(t.type)} ${t.description} ${t.value}
+\u200Fקטגוריה: ${t.category.name}
+\u200F${formattedDate}
+
+🗑 /delete ${t.id}
+✏️ /update ${t.id}`;
+        })
             .join('\n\n');
         return this.createResponse(transactionList);
     }
     /** Handles /summary command */
-    async handleSummary(chatId) {
+    async handleSummary(chatId, args) {
         transactionManager_1.transactionManager.resetUserState(chatId);
-        const summary = await transactionService_1.default.getTransactionsSummary({});
-        return this.createResponse(`Transaction Summary:\n*Total Income*: ${summary.totalIncome}\n*Total Expense*: ${summary.totalExpense}`);
+        const startDate = new Date();
+        const days = args.length ? parseInt(args[0]) : defaultSummaryDays;
+        startDate.setDate(startDate.getDate() - days);
+        const summary = await transactionService_1.default.getTransactionsSummary({
+            startDate,
+        });
+        // Format numbers with commas (thousands separators)
+        const formatter = new Intl.NumberFormat('en-US', {
+            maximumFractionDigits: 2,
+        });
+        return this.createResponse(`📊 Transaction Summary:\n` +
+            `${this.getTransactionTypeIcon('INCOME')} Total Income: ${formatter.format(summary.totalIncome)}\n` +
+            `${this.getTransactionTypeIcon('EXPENSE')} Total Expense: ${formatter.format(summary.totalExpense)}`);
     }
     /** Handles /categories command */
     async handleCategories(chatId) {
@@ -121,25 +143,27 @@ class WebhookController {
         if (categories.length === 0) {
             return this.createResponse('No categories found.');
         }
-        const categoryList = categories
-            .map((c) => `*${c.id}*: ${c.name}`)
-            .join('\n');
+        const categoryList = categories.map((c) => `${c.id}: ${c.name}`).join('\n');
         return this.createResponse(`Available Categories:\n${categoryList}`);
     }
     /** Handles /delete <transaction_id> command */
     async handleDelete(chatId, args) {
         transactionManager_1.transactionManager.resetUserState(chatId);
-        if (!args.length) {
+        let transactionId = args[0];
+        // If command comes as "/delete_<transactionId>", extract the ID
+        if (!transactionId && chatId.toString().includes('_')) {
+            transactionId = chatId.toString().split('_')[1];
+        }
+        if (!transactionId) {
             return this.createResponse('Please provide a transaction ID to delete.');
         }
-        const transactionId = args[0];
         try {
             await transactionService_1.default.deleteTransaction(transactionId);
-            return this.createResponse(`Transaction ${transactionId} deleted successfully.`);
+            return this.createResponse(`✅ Transaction ${transactionId} deleted successfully.`);
         }
         catch (error) {
             logger_1.default.error(`Failed to delete transaction ${transactionId}`, error);
-            return this.createResponse(`Failed to delete transaction ${transactionId}.`);
+            return this.createResponse(`❌ Failed to delete transaction ${transactionId}.`);
         }
     }
     /** Handles /reset command */
@@ -171,17 +195,40 @@ class WebhookController {
         const { message, nextStep } = await transactionManager_1.transactionManager.handleUserState(chatId, sanitizedText);
         let response = { message: 'Failed to handle user state.' };
         switch (nextStep) {
+            case transactionManager_1.UserStatus.AWAITING_TYPE:
             case transactionManager_1.UserStatus.AWAITING_AMOUNT:
             case transactionManager_1.UserStatus.AWAITING_DESCRIPTION:
             case transactionManager_1.UserStatus.AWAITING_DATE:
                 response = this.createResponse(message, false);
+                break;
             case transactionManager_1.UserStatus.TRANSACTION_COMPLETE:
                 response = this.createResponse(message, true);
+                break;
             case transactionManager_1.UserStatus.FAILURE:
                 response = this.createResponse('❌ Transaction failed. Please try again.', true);
+                break;
         }
         logger_1.default.debug(`User state response: ${response.message}`);
         return response;
+    }
+    /** Handles /update <transaction_id> command */
+    async handleUpdate(chatId, args) {
+        transactionManager_1.transactionManager.resetUserState(chatId);
+        let transactionId = args[0];
+        // Extract transactionId from "/update_<transactionId>"
+        if (!transactionId && chatId.toString().includes('_')) {
+            transactionId = chatId.toString().split('_')[1];
+        }
+        if (!transactionId) {
+            return this.createResponse('Please provide a transaction ID to update.');
+        }
+        return this.createResponse(`You selected to update transaction ${transactionId}.\nUse the following commands to update:\n\n` +
+            `/update ${transactionId} description <new_description>\n` +
+            `/update ${transactionId} value <new_value>\n` +
+            `/update ${transactionId} categoryId <new_category_id>\n`);
+    }
+    getTransactionTypeIcon(type) {
+        return type === 'EXPENSE' ? '📉' : '📈';
     }
 }
 exports.webhookController = new WebhookController();

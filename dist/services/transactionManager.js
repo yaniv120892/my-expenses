@@ -39,19 +39,24 @@ class TransactionManager {
         let response;
         switch (status) {
             case UserStatus.AWAITING_TYPE: {
-                response = this.awaitingType(chatId, sanitizedText, inProcessTransaction);
+                response = await this.awaitingType(chatId, sanitizedText, inProcessTransaction);
+                break;
             }
             case UserStatus.AWAITING_AMOUNT: {
-                response = this.awaitingAmount(chatId, sanitizedText, inProcessTransaction);
+                response = await this.awaitingAmount(chatId, sanitizedText, inProcessTransaction);
+                break;
             }
             case UserStatus.AWAITING_DESCRIPTION: {
-                response = this.awaitingDescription(chatId, sanitizedText, inProcessTransaction);
+                response = await this.awaitingDescription(chatId, sanitizedText, inProcessTransaction);
+                break;
             }
             case UserStatus.AWAITING_DATE: {
-                response = this.awaitingDate(chatId, sanitizedText, inProcessTransaction);
+                response = await this.awaitingDate(chatId, sanitizedText, inProcessTransaction);
+                break;
             }
             default: {
                 response = { message: 'Invalid state', nextStep: UserStatus.FAILURE };
+                break;
             }
         }
         logger_1.default.debug(`User state handled for chatId: ${chatId}`);

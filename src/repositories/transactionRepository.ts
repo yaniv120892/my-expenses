@@ -89,6 +89,21 @@ class TransactionRepository {
     return transaction ? this.mapToDomain(transaction) : null;
   }
 
+  public async updateTransaction(
+    transactionId: string,
+    updateData: Partial<CreateTransactionDbModel>,
+  ): Promise<void> {
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        description: updateData.description,
+        value: updateData.value,
+        date: updateData.date,
+        categoryId: updateData.categoryId,
+      },
+    });
+  }
+
   private mapToDomain(transaction: any): Transaction {
     return {
       id: transaction.id,
