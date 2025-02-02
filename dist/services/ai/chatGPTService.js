@@ -37,7 +37,7 @@ class ChatGPTService {
         }
     }
     /** Suggests a category for a given expense description */
-    async suggestCategory(expenseDescription) {
+    async suggestCategory(expenseDescription, categoryOptions) {
         var _a;
         try {
             const response = await this.openai.chat.completions.create({
@@ -45,17 +45,18 @@ class ChatGPTService {
                 messages: [
                     {
                         role: 'system',
-                        content: 'You classify expenses into categories like Food, Travel, Rent, Entertainment, Shopping, Healthcare, Utilities, Transportation, Miscellaneous.',
+                        content: 'You are a financial assistant helping users categorize their expenses.',
                     },
                     {
                         role: 'user',
-                        content: `Which category does this expense belong to?\n\n"${expenseDescription}"`,
+                        content: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map((category) => `- ${category.name}\n, return only the category name`)}`,
                     },
                 ],
                 max_tokens: 50,
             });
-            return (((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) ||
-                'No category suggestion available.');
+            const aiSuggestedCategory = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content;
+            const suggestedCategory = categoryOptions.find((category) => category.name === aiSuggestedCategory);
+            return (suggestedCategory === null || suggestedCategory === void 0 ? void 0 : suggestedCategory.id) || 'No category found.';
         }
         catch (error) {
             console.error('ChatGPT API Error:', error);

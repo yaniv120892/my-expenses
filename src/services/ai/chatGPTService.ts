@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { AIProvider } from 'services/ai/aiProvider';
+import { Category } from 'types/category';
 
 export class ChatGPTService implements AIProvider {
   private openai: OpenAI;
@@ -37,7 +38,10 @@ export class ChatGPTService implements AIProvider {
   }
 
   /** Suggests a category for a given expense description */
-  async suggestCategory(expenseDescription: string): Promise<string> {
+  async suggestCategory(
+    expenseDescription: string,
+    categoryOptions: Category[],
+  ): Promise<string> {
     try {
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4-turbo',
@@ -45,20 +49,26 @@ export class ChatGPTService implements AIProvider {
           {
             role: 'system',
             content:
-              'You classify expenses into categories like Food, Travel, Rent, Entertainment, Shopping, Healthcare, Utilities, Transportation, Miscellaneous.',
+              'You are a financial assistant helping users categorize their expenses.',
           },
           {
             role: 'user',
-            content: `Which category does this expense belong to?\n\n"${expenseDescription}"`,
+            content: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map(
+              (category) =>
+                `- ${category.name}\n, return only the category name`,
+            )}`,
           },
         ],
         max_tokens: 50,
       });
 
-      return (
-        response.choices[0].message?.content ||
-        'No category suggestion available.'
+      const aiSuggestedCategory = response.choices[0].message?.content;
+
+      const suggestedCategory = categoryOptions.find(
+        (category) => category.name === aiSuggestedCategory,
       );
+
+      return suggestedCategory?.id || 'No category found.';
     } catch (error) {
       console.error('ChatGPT API Error:', error);
       return 'I encountered an issue suggesting a category.';
