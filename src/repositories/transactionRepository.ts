@@ -1,13 +1,13 @@
 import { TransactionType } from '@prisma/client';
 import prisma from '..//prisma/client';
 import {
-  CreateTransaction,
   TransactionFilters,
   Transaction,
   TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
 } from '..//types/transaction';
+import { CreateTransactionDbModel } from 'repositories/types';
 
 class TransactionRepository {
   public async deleteTransaction(transactionId: string): Promise<void> {
@@ -41,12 +41,14 @@ class TransactionRepository {
     return { totalIncome, totalExpense };
   }
 
-  public async createTransaction(data: CreateTransaction): Promise<string> {
+  public async createTransaction(
+    data: CreateTransactionDbModel,
+  ): Promise<string> {
     const transaction = await prisma.transaction.create({
       data: {
         description: data.description,
         value: data.value,
-        date: data.date || new Date(),
+        date: data.date,
         categoryId: data.categoryId,
         type: data.type,
       },

@@ -35,7 +35,7 @@ class TransactionRepository {
             data: {
                 description: data.description,
                 value: data.value,
-                date: data.date || new Date(),
+                date: data.date,
                 categoryId: data.categoryId,
                 type: data.type,
             },

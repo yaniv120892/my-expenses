@@ -13,6 +13,9 @@ class CategoryRepository {
         });
     }
     async getCategoryById(id) {
+        if (!id) {
+            return null;
+        }
         return await prisma.category.findUnique({
             where: { id },
         });
