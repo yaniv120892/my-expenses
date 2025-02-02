@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transactionManager = exports.UserStatus = void 0;
 const transactionService_1 = __importDefault(require("./transactionService"));
+const logger_1 = __importDefault(require("../utils/logger"));
 var UserStatus;
 (function (UserStatus) {
     UserStatus["AWAITING_TYPE"] = "AWAITING_TYPE";
@@ -19,6 +20,7 @@ class TransactionManager {
         this.chatIdToUserStateMapping = new Map();
     }
     async handleUserState(chatId, sanitizedText) {
+        logger_1.default.debug(`Handling user state for chatId: ${chatId}`);
         const currentState = this.chatIdToUserStateMapping.get(chatId);
         // Initialize user state if not already set or handle reset/start
         if (!currentState) {
@@ -34,23 +36,26 @@ class TransactionManager {
             };
         }
         const { inProcessTransaction, status } = currentState;
+        let response;
         switch (status) {
             case UserStatus.AWAITING_TYPE: {
-                return this.awaitingType(chatId, sanitizedText, inProcessTransaction);
+                response = this.awaitingType(chatId, sanitizedText, inProcessTransaction);
             }
             case UserStatus.AWAITING_AMOUNT: {
-                return this.awaitingAmount(chatId, sanitizedText, inProcessTransaction);
+                response = this.awaitingAmount(chatId, sanitizedText, inProcessTransaction);
             }
             case UserStatus.AWAITING_DESCRIPTION: {
-                return this.awaitingDescription(chatId, sanitizedText, inProcessTransaction);
+                response = this.awaitingDescription(chatId, sanitizedText, inProcessTransaction);
             }
             case UserStatus.AWAITING_DATE: {
-                return this.awaitingDate(chatId, sanitizedText, inProcessTransaction);
+                response = this.awaitingDate(chatId, sanitizedText, inProcessTransaction);
             }
             default: {
-                return { message: 'Invalid state', nextStep: UserStatus.FAILURE };
+                response = { message: 'Invalid state', nextStep: UserStatus.FAILURE };
             }
         }
+        logger_1.default.debug(`User state handled for chatId: ${chatId}`);
+        return response;
     }
     resetUserState(chatId) {
         this.chatIdToUserStateMapping.delete(chatId);

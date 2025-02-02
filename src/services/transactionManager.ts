@@ -1,6 +1,6 @@
 import { CreateTransaction, TransactionType } from 'types/transaction';
 import TransactionService from './transactionService';
-import aiServiceFactory from 'services/ai/aiServiceFactory';
+import logger from '../utils/logger';
 
 export enum UserStatus {
   AWAITING_TYPE = 'AWAITING_TYPE',
@@ -23,6 +23,7 @@ class TransactionManager {
     chatId: number,
     sanitizedText: string,
   ): Promise<{ message: string; nextStep: UserStatus }> {
+    logger.debug(`Handling user state for chatId: ${chatId}`);
     const currentState = this.chatIdToUserStateMapping.get(chatId);
 
     // Initialize user state if not already set or handle reset/start
@@ -40,28 +41,44 @@ class TransactionManager {
     }
 
     const { inProcessTransaction, status } = currentState;
+    let response;
 
     switch (status) {
       case UserStatus.AWAITING_TYPE: {
-        return this.awaitingType(chatId, sanitizedText, inProcessTransaction);
+        response = this.awaitingType(
+          chatId,
+          sanitizedText,
+          inProcessTransaction,
+        );
       }
       case UserStatus.AWAITING_AMOUNT: {
-        return this.awaitingAmount(chatId, sanitizedText, inProcessTransaction);
+        response = this.awaitingAmount(
+          chatId,
+          sanitizedText,
+          inProcessTransaction,
+        );
       }
       case UserStatus.AWAITING_DESCRIPTION: {
-        return this.awaitingDescription(
+        response = this.awaitingDescription(
           chatId,
           sanitizedText,
           inProcessTransaction,
         );
       }
       case UserStatus.AWAITING_DATE: {
-        return this.awaitingDate(chatId, sanitizedText, inProcessTransaction);
+        response = this.awaitingDate(
+          chatId,
+          sanitizedText,
+          inProcessTransaction,
+        );
       }
       default: {
-        return { message: 'Invalid state', nextStep: UserStatus.FAILURE };
+        response = { message: 'Invalid state', nextStep: UserStatus.FAILURE };
       }
     }
+
+    logger.debug(`User state handled for chatId: ${chatId}`);
+    return response;
   }
 
   public resetUserState(chatId: number) {

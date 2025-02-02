@@ -23,7 +23,7 @@ class GeminiService {
                         role: 'user',
                         parts: [
                             {
-                                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS.`,
+                                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew`,
                             },
                         ],
                     },
@@ -42,6 +42,7 @@ class GeminiService {
     async suggestCategory(expenseDescription, categoryOptions) {
         var _a, _b, _c, _d, _e, _f, _g;
         try {
+            logger_1.default.debug(`Start suggesting category for expense: ${expenseDescription}`);
             const model = this.gemini.getGenerativeModel({ model: this.modelName });
             const response = await model.generateContent({
                 contents: [
@@ -57,6 +58,7 @@ class GeminiService {
             });
             const aiSuggestedCategory = (_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text;
             const categoryId = (_g = categoryOptions.find((category) => category.name === aiSuggestedCategory)) === null || _g === void 0 ? void 0 : _g.id;
+            logger_1.default.debug(`Done suggesting category for expense: ${expenseDescription} - ${aiSuggestedCategory}`);
             return categoryId || 'No category found.';
         }
         catch (error) {

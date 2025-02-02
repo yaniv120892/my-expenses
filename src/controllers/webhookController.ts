@@ -217,10 +217,7 @@ class WebhookController {
     );
 
     if (nextStep === UserStatus.TRANSACTION_COMPLETE) {
-      return this.createResponse(
-        `${message}\n\n🎉 Transaction successfully recorded!`,
-        true,
-      );
+      return this.createResponse(`${message}`, true);
     }
 
     if (nextStep === UserStatus.FAILURE) {
