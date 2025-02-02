@@ -31,16 +31,21 @@ const csv_parser_1 = __importDefault(require("csv-parser"));
 const client_1 = __importDefault(require("..//prisma/client"));
 const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
-const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
 dotenv.config();
+const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
+const categoryCache = new Map(); // Stores category name → ID mapping
 async function importData() {
+    console.log('Start importing data');
     const rows = [];
-    console.log('Importing data...');
     await readCSVFile(rows);
-    await processRowsSequentially(rows);
-    console.log('Import completed!');
+    // Step 1: Find all unique categories and insert missing ones into DB
+    await upsertCategories(rows);
+    // Step 2: Process transactions using the in-memory category cache
+    await processRowsInBatches(rows);
+    console.log('Data imported successfully');
     await client_1.default.$disconnect();
 }
+/** Step 1: Read CSV file into memory */
 async function readCSVFile(rows) {
     return new Promise((resolve, reject) => {
         fs_1.default.createReadStream(csvFilePath)
@@ -50,29 +55,53 @@ async function readCSVFile(rows) {
             .on('error', reject);
     });
 }
-async function processRowsSequentially(rows) {
+/** Step 2: Collect unique categories and batch insert missing ones */
+async function upsertCategories(rows) {
+    console.log('Extracting unique categories...');
+    const uniqueCategories = new Set();
     for (const row of rows) {
-        console.log('Processing row:', row);
-        await processRow(row);
-        console.log('Row processed:', row);
+        if (row.categoryName) {
+            uniqueCategories.add(row.categoryName.trim());
+        }
+    }
+    console.log(`Found ${uniqueCategories.size} unique categories.`);
+    // Check which categories already exist in DB
+    const existingCategories = await client_1.default.category.findMany({
+        where: { name: { in: Array.from(uniqueCategories) } },
+    });
+    // Store existing categories in cache
+    for (const category of existingCategories) {
+        categoryCache.set(category.name, category.id);
+    }
+    // Identify missing categories
+    const existingCategoryNames = new Set(existingCategories.map((c) => c.name));
+    const missingCategories = Array.from(uniqueCategories).filter((name) => !existingCategoryNames.has(name));
+    if (missingCategories.length > 0) {
+        console.log(`Inserting ${missingCategories.length} new categories...`);
+        const insertedCategories = await client_1.default.$transaction(missingCategories.map((name) => client_1.default.category.create({ data: { name } })));
+        for (const category of insertedCategories) {
+            categoryCache.set(category.name, category.id);
+        }
+    }
+    console.log('Category upsert complete.');
+}
+/** Step 3: Process transactions using in-memory category cache */
+async function processRowsInBatches(rows, batchSize = 10) {
+    for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        console.log(`Processing batch ${i / batchSize + 1} (Rows ${i + 1} - ${i + batch.length})`);
+        await Promise.all(batch.map(async (row) => await processRow(row)));
+        console.log(`Batch ${i / batchSize + 1} processed successfully`);
     }
 }
 async function processRow(row) {
     const { categoryName, transactionDate } = row;
-    const category = await findOrCreateCategory(categoryName);
-    const parsedDate = parseTransactionDate(transactionDate);
-    await createTransaction(row, parsedDate, category.id);
-}
-async function findOrCreateCategory(categoryName) {
-    let category = await client_1.default.category.findFirst({
-        where: { name: categoryName },
-    });
-    if (!category) {
-        category = await client_1.default.category.create({
-            data: { name: categoryName },
-        });
+    if (!categoryCache.has(categoryName)) {
+        throw new Error(`Category '${categoryName}' not found in cache. This should not happen.`);
     }
-    return category;
+    const categoryId = categoryCache.get(categoryName);
+    const parsedDate = parseTransactionDate(transactionDate);
+    await createTransaction(row, parsedDate, categoryId);
 }
 function parseTransactionDate(transactionDate) {
     return (0, date_fns_1.parse)(transactionDate, 'MM/dd/yy', new Date());
