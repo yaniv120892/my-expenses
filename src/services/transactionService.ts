@@ -45,22 +45,6 @@ class TransactionService {
     return TransactionRepository.getTransactionsSummary(filters);
   }
 
-  public async deleteTransaction(transactionId: string): Promise<void> {
-    return TransactionRepository.deleteTransaction(transactionId);
-  }
-
-  public updateTransaction(
-    transactionId: string,
-    updateData: Partial<CreateTransaction>,
-  ): Promise<void> {
-    return TransactionRepository.updateTransaction(transactionId, {
-      description: updateData.description,
-      value: updateData.value,
-      date: updateData.date || undefined,
-      categoryId: updateData.categoryId || undefined,
-    });
-  }
-
   private async updateCategory(
     transaction: CreateTransaction,
   ): Promise<CreateTransaction> {

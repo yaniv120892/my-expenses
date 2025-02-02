@@ -10,12 +10,6 @@ import {
 import { CreateTransactionDbModel } from 'repositories/types';
 
 class TransactionRepository {
-  public async deleteTransaction(transactionId: string): Promise<void> {
-    await prisma.transaction.delete({
-      where: { id: transactionId },
-    });
-  }
-
   public async getTransactionsSummary(
     filters: TransactionSummaryFilters,
   ): Promise<TransactionSummary> {
@@ -90,21 +84,6 @@ class TransactionRepository {
     });
 
     return transaction ? this.mapToDomain(transaction) : null;
-  }
-
-  public async updateTransaction(
-    transactionId: string,
-    updateData: Partial<CreateTransactionDbModel>,
-  ): Promise<void> {
-    await prisma.transaction.update({
-      where: { id: transactionId },
-      data: {
-        description: updateData.description,
-        value: updateData.value,
-        date: updateData.date,
-        categoryId: updateData.categoryId,
-      },
-    });
   }
 
   private mapToDomain(transaction: any): Transaction {

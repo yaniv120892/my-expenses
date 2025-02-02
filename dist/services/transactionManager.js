@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.transactionManager = exports.UserStatus = void 0;
 const transactionService_1 = __importDefault(require("./transactionService"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const transactionUtils_1 = require("../utils/transactionUtils");
 var UserStatus;
 (function (UserStatus) {
     UserStatus["AWAITING_TYPE"] = "AWAITING_TYPE";
@@ -19,8 +20,11 @@ class TransactionManager {
     constructor() {
         this.chatIdToUserStateMapping = new Map();
     }
-    async handleUserState(chatId, sanitizedText) {
-        logger_1.default.debug(`Handling user state for chatId: ${chatId}`);
+    async handleUserState(chatId, text) {
+        logger_1.default.debug(`Handling user state for chatId: ${chatId}`, {
+            text,
+        });
+        const sanitizedText = text.replace('/', '').trim().toLowerCase();
         const currentState = this.chatIdToUserStateMapping.get(chatId);
         // Initialize user state if not already set or handle reset/start
         if (!currentState) {
@@ -120,17 +124,29 @@ class TransactionManager {
         const date = ['now', 'today'].includes(sanitizedText)
             ? new Date()
             : new Date(sanitizedText);
-        // Create the transaction and clear the state
-        await transactionService_1.default.createTransaction({
+        // Create the transaction
+        const createdTransaction = await transactionService_1.default.createTransaction({
             type: inProcessTransaction.type,
             value: inProcessTransaction.value,
             description: inProcessTransaction.description,
             categoryId: null,
             date,
         });
+        // Fetch transaction details (including category)
+        const transaction = await transactionService_1.default.getTransactionItem({
+            id: createdTransaction,
+        });
+        if (!transaction) {
+            return {
+                message: 'Transaction created, but failed to retrieve details.',
+                nextStep: UserStatus.TRANSACTION_COMPLETE,
+            };
+        }
+        const transactionMessage = `✅ *Transaction Created Successfully!* ✅
+    📉 ${(0, transactionUtils_1.formatTransaction)(transaction)}`;
         this.chatIdToUserStateMapping.delete(chatId);
         return {
-            message: 'Transaction created successfully.',
+            message: transactionMessage,
             nextStep: UserStatus.TRANSACTION_COMPLETE,
         };
     }

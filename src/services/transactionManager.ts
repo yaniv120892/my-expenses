@@ -1,6 +1,7 @@
-import { CreateTransaction, TransactionType } from 'types/transaction';
+import { CreateTransaction, TransactionType } from '../types/transaction';
 import TransactionService from './transactionService';
 import logger from '../utils/logger';
+import { formatTransaction } from '../utils/transactionUtils';
 
 export enum UserStatus {
   AWAITING_TYPE = 'AWAITING_TYPE',
@@ -21,9 +22,12 @@ class TransactionManager {
 
   public async handleUserState(
     chatId: number,
-    sanitizedText: string,
+    text: string,
   ): Promise<{ message: string; nextStep: UserStatus }> {
-    logger.debug(`Handling user state for chatId: ${chatId}`);
+    logger.debug(`Handling user state for chatId: ${chatId}`, {
+      text,
+    });
+    const sanitizedText = text.replace('/', '').trim().toLowerCase();
     const currentState = this.chatIdToUserStateMapping.get(chatId);
 
     // Initialize user state if not already set or handle reset/start
@@ -167,8 +171,8 @@ class TransactionManager {
       ? new Date()
       : new Date(sanitizedText);
 
-    // Create the transaction and clear the state
-    await TransactionService.createTransaction({
+    // Create the transaction
+    const createdTransaction = await TransactionService.createTransaction({
       type: inProcessTransaction.type as TransactionType,
       value: inProcessTransaction.value as number,
       description: inProcessTransaction.description as string,
@@ -176,9 +180,24 @@ class TransactionManager {
       date,
     });
 
+    // Fetch transaction details (including category)
+    const transaction = await TransactionService.getTransactionItem({
+      id: createdTransaction,
+    });
+
+    if (!transaction) {
+      return {
+        message: 'Transaction created, but failed to retrieve details.',
+        nextStep: UserStatus.TRANSACTION_COMPLETE,
+      };
+    }
+
+    const transactionMessage = `✅ *Transaction Created Successfully!* ✅
+    📉 ${formatTransaction(transaction)}`;
+
     this.chatIdToUserStateMapping.delete(chatId);
     return {
-      message: 'Transaction created successfully.',
+      message: transactionMessage,
       nextStep: UserStatus.TRANSACTION_COMPLETE,
     };
   }
