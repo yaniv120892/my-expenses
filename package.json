@@ -46,6 +46,7 @@
     "typescript-eslint": "^8.7.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^5.20.0",
     "axios": "^1.7.9",
     "class-transformer": "^0.5.1",

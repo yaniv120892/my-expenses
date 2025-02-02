@@ -3,9 +3,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.aiService = void 0;
+exports.ChatGPTService = void 0;
 const openai_1 = __importDefault(require("openai"));
-class AIService {
+class ChatGPTService {
     constructor() {
         this.openai = new openai_1.default({
             apiKey: process.env.OPENAI_API_KEY,
@@ -16,7 +16,7 @@ class AIService {
         var _a;
         try {
             const response = await this.openai.chat.completions.create({
-                model: 'gpt-4',
+                model: 'gpt-4-turbo', // Ensure you use a model you have access to
                 messages: [
                     {
                         role: 'system',
@@ -32,7 +32,7 @@ class AIService {
             return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || 'No insights available.';
         }
         catch (error) {
-            console.error('AI API Error:', error);
+            console.error('ChatGPT API Error:', error);
             return 'I encountered an issue analyzing your expenses.';
         }
     }
@@ -41,11 +41,11 @@ class AIService {
         var _a;
         try {
             const response = await this.openai.chat.completions.create({
-                model: 'gpt-4',
+                model: 'gpt-4-turbo',
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an AI that classifies expenses into predefined categories like Food, Travel, Rent, Entertainment, Shopping, Healthcare, Utilities, Transportation, or Miscellaneous.',
+                        content: 'You classify expenses into categories like Food, Travel, Rent, Entertainment, Shopping, Healthcare, Utilities, Transportation, Miscellaneous.',
                     },
                     {
                         role: 'user',
@@ -58,9 +58,9 @@ class AIService {
                 'No category suggestion available.');
         }
         catch (error) {
-            console.error('AI API Error:', error);
+            console.error('ChatGPT API Error:', error);
             return 'I encountered an issue suggesting a category.';
         }
     }
 }
-exports.aiService = new AIService();
+exports.ChatGPTService = ChatGPTService;

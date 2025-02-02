@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
+import { AIProvider } from 'services/ai/aiProvider';
 
-class AIService {
+export class ChatGPTService implements AIProvider {
   private openai: OpenAI;
 
   constructor() {
@@ -13,7 +14,7 @@ class AIService {
   async analyzeExpenses(expenseSummary: string): Promise<string> {
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4-turbo', // Ensure you use a model you have access to
         messages: [
           {
             role: 'system',
@@ -30,7 +31,7 @@ class AIService {
 
       return response.choices[0].message?.content || 'No insights available.';
     } catch (error) {
-      console.error('AI API Error:', error);
+      console.error('ChatGPT API Error:', error);
       return 'I encountered an issue analyzing your expenses.';
     }
   }
@@ -39,12 +40,12 @@ class AIService {
   async suggestCategory(expenseDescription: string): Promise<string> {
     try {
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4-turbo',
         messages: [
           {
             role: 'system',
             content:
-              'You are an AI that classifies expenses into predefined categories like Food, Travel, Rent, Entertainment, Shopping, Healthcare, Utilities, Transportation, or Miscellaneous.',
+              'You classify expenses into categories like Food, Travel, Rent, Entertainment, Shopping, Healthcare, Utilities, Transportation, Miscellaneous.',
           },
           {
             role: 'user',
@@ -59,10 +60,8 @@ class AIService {
         'No category suggestion available.'
       );
     } catch (error) {
-      console.error('AI API Error:', error);
+      console.error('ChatGPT API Error:', error);
       return 'I encountered an issue suggesting a category.';
     }
   }
 }
-
-export const aiService = new AIService();

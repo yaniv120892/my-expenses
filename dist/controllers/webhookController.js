@@ -8,8 +8,11 @@ const transactionManager_1 = require("../services/transactionManager");
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionService_1 = __importDefault(require("../services/transactionService"));
 const categoryService_1 = __importDefault(require("../services/categoryService"));
-const aiService_1 = require("../services/aiService");
+const aiServiceFactory_1 = __importDefault(require("../services/ai/aiServiceFactory"));
 class WebhookController {
+    constructor() {
+        this.aiService = aiServiceFactory_1.default.getAIService();
+    }
     async handleWebhook(req) {
         var _a;
         const chatId = req.message.chat.id;
@@ -150,7 +153,7 @@ class WebhookController {
             startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
             transactionType: 'EXPENSE',
             page: 1,
-            perPage: 20,
+            perPage: 100,
         });
         if (transactions.length === 0) {
             return this.createResponse('No transactions found.');
@@ -158,7 +161,7 @@ class WebhookController {
         const expenseSummary = transactions
             .map((t) => `${t.date.toISOString().split('T')[0]} - ${t.description}: $${t.value}`)
             .join('\n');
-        const insights = await aiService_1.aiService.analyzeExpenses(expenseSummary);
+        const insights = await this.aiService.analyzeExpenses(expenseSummary);
         return this.createResponse(`💡 Expense Insights:\n${insights}`);
     }
     /** Handles user state progression (handles transaction creation flow) */
