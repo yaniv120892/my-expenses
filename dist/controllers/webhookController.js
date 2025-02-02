@@ -8,6 +8,7 @@ const transactionManager_1 = require("../services/transactionManager");
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionService_1 = __importDefault(require("../services/transactionService"));
 const categoryService_1 = __importDefault(require("../services/categoryService"));
+const aiService_1 = require("../services/aiService");
 class WebhookController {
     async handleWebhook(req) {
         var _a;
@@ -34,6 +35,8 @@ class WebhookController {
                     return await this.handleDelete(chatId, args);
                 case '/reset':
                     return this.handleReset(chatId);
+                case '/insights':
+                    return await this.handleInsights();
                 default:
                     return await this.handleUserState(chatId, text);
             }
@@ -60,7 +63,8 @@ class WebhookController {
 4. /categories - List available transaction categories.
 5. /delete <transaction_id> - Delete a specific transaction.
 6. /reset - Reset user state.
-7. /help - Show available commands.`;
+7. /insights - Get AI-generated expense insights.
+8. /help - Show available commands.`;
     }
     /** Handles /start command */
     handleStart(chatId) {
@@ -105,9 +109,7 @@ class WebhookController {
     async handleSummary(chatId) {
         transactionManager_1.transactionManager.resetUserState(chatId);
         const summary = await transactionService_1.default.getTransactionsSummary({});
-        return this.createResponse(`Transaction Summary:
-*Total Income*: ${summary.totalIncome}
-*Total Expense*: ${summary.totalExpense}`);
+        return this.createResponse(`Transaction Summary:\n*Total Income*: ${summary.totalIncome}\n*Total Expense*: ${summary.totalExpense}`);
     }
     /** Handles /categories command */
     async handleCategories(chatId) {
@@ -141,6 +143,23 @@ class WebhookController {
     handleReset(chatId) {
         transactionManager_1.transactionManager.resetUserState(chatId);
         return this.createResponse('State has been reset.');
+    }
+    /** Handles /insights command */
+    async handleInsights() {
+        const transactions = await transactionService_1.default.getTransactions({
+            startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
+            transactionType: 'EXPENSE',
+            page: 1,
+            perPage: 20,
+        });
+        if (transactions.length === 0) {
+            return this.createResponse('No transactions found.');
+        }
+        const expenseSummary = transactions
+            .map((t) => `${t.date.toISOString().split('T')[0]} - ${t.description}: $${t.value}`)
+            .join('\n');
+        const insights = await aiService_1.aiService.analyzeExpenses(expenseSummary);
+        return this.createResponse(`💡 Expense Insights:\n${insights}`);
     }
     /** Handles user state progression (handles transaction creation flow) */
     async handleUserState(chatId, text) {
