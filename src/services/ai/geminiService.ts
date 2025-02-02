@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIProvider } from 'services/ai/aiProvider';
 import logger from 'utils/logger';
+import { Category } from '../../types/category';
 
 export class GeminiService implements AIProvider {
   private gemini: GoogleGenerativeAI;
@@ -40,7 +41,10 @@ export class GeminiService implements AIProvider {
   }
 
   /** Suggests a category for a given expense description */
-  async suggestCategory(expenseDescription: string): Promise<string> {
+  async suggestCategory(
+    expenseDescription: string,
+    categoryOptions: Category[],
+  ): Promise<string> {
     try {
       const model = this.gemini.getGenerativeModel({ model: this.modelName });
       const response = await model.generateContent({
@@ -49,17 +53,23 @@ export class GeminiService implements AIProvider {
             role: 'user',
             parts: [
               {
-                text: `Which category does this expense belong to?\n\n"${expenseDescription}"`,
+                text: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map(
+                  (category) => `- ${category.name}\n, return only the category name`,
+                )}`,
               },
             ],
           },
         ],
       });
 
-      return (
-        response.response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        'No category suggestion available.'
-      );
+      const aiSuggestedCategory =
+        response.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      const categoryId = categoryOptions.find(
+        (category) => category.name === aiSuggestedCategory,
+      )?.id;
+
+      return categoryId || 'No category found.';
     } catch (error) {
       console.error('Gemini API Error:', error);
       return 'I encountered an issue suggesting a category.';

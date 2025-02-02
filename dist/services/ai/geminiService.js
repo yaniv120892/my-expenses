@@ -39,8 +39,8 @@ class GeminiService {
         }
     }
     /** Suggests a category for a given expense description */
-    async suggestCategory(expenseDescription) {
-        var _a, _b, _c, _d, _e, _f;
+    async suggestCategory(expenseDescription, categoryOptions) {
+        var _a, _b, _c, _d, _e, _f, _g;
         try {
             const model = this.gemini.getGenerativeModel({ model: this.modelName });
             const response = await model.generateContent({
@@ -49,14 +49,15 @@ class GeminiService {
                         role: 'user',
                         parts: [
                             {
-                                text: `Which category does this expense belong to?\n\n"${expenseDescription}"`,
+                                text: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map((category) => `- ${category.name}\n, return only the category name`)}`,
                             },
                         ],
                     },
                 ],
             });
-            return (((_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text) ||
-                'No category suggestion available.');
+            const aiSuggestedCategory = (_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text;
+            const categoryId = (_g = categoryOptions.find((category) => category.name === aiSuggestedCategory)) === null || _g === void 0 ? void 0 : _g.id;
+            return categoryId || 'No category found.';
         }
         catch (error) {
             console.error('Gemini API Error:', error);

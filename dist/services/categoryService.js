@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryService = void 0;
-const categoryRepository_1 = __importDefault(require("..//repositories/categoryRepository"));
+const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
 class CategoryService {
     async list() {
         return await categoryRepository_1.default.getAllCategories();
