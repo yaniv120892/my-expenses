@@ -1,5 +1,5 @@
-import aiServiceFactory from 'services/ai/aiServiceFactory';
-import TransactionRepository from '..//repositories/transactionRepository';
+import aiServiceFactory from './ai/aiServiceFactory';
+import TransactionRepository from '../repositories/transactionRepository';
 import {
   CreateTransaction,
   TransactionFilters,
@@ -7,9 +7,9 @@ import {
   TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
-} from '..//types/transaction';
-import createTransactionValidator from '..//validators/createTransactionValidator';
-import categoryRepository from 'repositories/categoryRepository';
+} from '../types/transaction';
+import createTransactionValidator from '../validators/createTransactionValidator';
+import categoryRepository from '../repositories/categoryRepository';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();

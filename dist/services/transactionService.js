@@ -3,10 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const aiServiceFactory_1 = __importDefault(require("services/ai/aiServiceFactory"));
-const transactionRepository_1 = __importDefault(require("..//repositories/transactionRepository"));
-const createTransactionValidator_1 = __importDefault(require("..//validators/createTransactionValidator"));
-const categoryRepository_1 = __importDefault(require("repositories/categoryRepository"));
+const aiServiceFactory_1 = __importDefault(require("./ai/aiServiceFactory"));
+const transactionRepository_1 = __importDefault(require("../repositories/transactionRepository"));
+const createTransactionValidator_1 = __importDefault(require("../validators/createTransactionValidator"));
+const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
 class TransactionService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
