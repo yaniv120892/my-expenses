@@ -1,5 +1,5 @@
 import { WebhookRequest } from './requests';
-import { transactionManager } from '../services/transactionManager';
+import { transactionManager, UserStatus } from '../services/transactionManager';
 import logger from '../utils/logger';
 import transactionService from '../services/transactionService';
 import categoryService from '../services/categoryService';
@@ -7,122 +7,201 @@ import categoryService from '../services/categoryService';
 class WebhookController {
   async handleWebhook(req: WebhookRequest) {
     const chatId = req.message.chat.id;
-    const text = req.message.text;
-    const sanitizedText = text?.toLowerCase().trim();
+    const text = req.message.text?.toLowerCase().trim();
+
+    if (!text) return this.createResponse('Please enter a valid command.');
+
+    const [command, ...args] = text.split(' ');
 
     try {
-      if (!sanitizedText) {
-        return { message: 'Please enter a valid command.' };
-      }
-
-      const [command, ...args] = sanitizedText.split(' ');
-
       switch (command) {
         case '/start':
-          return {
-            message: `Welcome to the transaction bot.
-1. /create - Create a new transaction.
-2. /list <days> - List transactions from the last <days> days (default: 10 days).
-3. /summary - Get a summary of your income and expenses.
-4. /categories - List available transaction categories.
-5. /delete <transaction_id> - Delete a specific transaction.
-6. /reset - Reset the state.
-7. /help - Show available commands.`,
-          };
+          return this.handleStart(chatId);
 
         case '/help':
-          return {
-            message: `Available commands:
-1. /create - Create a transaction.
+          return this.handleHelp(chatId);
+
+        case '/create':
+          return await this.handleCreate(chatId);
+
+        case '/list':
+          return await this.handleList(chatId, args);
+
+        case '/summary':
+          return await this.handleSummary(chatId);
+
+        case '/categories':
+          return await this.handleCategories(chatId);
+
+        case '/delete':
+          return await this.handleDelete(chatId, args);
+
+        case '/reset':
+          return this.handleReset(chatId);
+
+        default:
+          return await this.handleUserState(chatId, text);
+      }
+    } catch (error) {
+      logger.error('Failed to handle webhook:', error);
+      return this.createResponse(`Failed to handle command: ${command}`);
+    }
+  }
+
+  /** Helper to create response messages with available options */
+  private createResponse(message: string, showOptions: boolean = true) {
+    return {
+      message: showOptions
+        ? `${message}\n\n${this.getOptionsMessage()}`
+        : message,
+    };
+  }
+
+  /** Returns the options menu */
+  private getOptionsMessage(): string {
+    return `Available commands:
+1. /create - Create a new transaction.
 2. /list <days> - List transactions from the last <days> days (default: 10).
 3. /summary - Get a summary of your transactions.
 4. /categories - List available transaction categories.
 5. /delete <transaction_id> - Delete a specific transaction.
-6. /reset - Reset user state.`,
-          };
+6. /reset - Reset user state.
+7. /help - Show available commands.`;
+  }
 
-        case '/create':
-          transactionManager.resetUserState(chatId);
-          return transactionManager.handleUserState(chatId, sanitizedText);
+  /** Handles /start command */
+  private handleStart(chatId: number) {
+    transactionManager.resetUserState(chatId);
+    return this.createResponse(
+      `Welcome to the transaction bot. You can manage your expenses using the commands below.`,
+    );
+  }
 
-        case '/list': {
-          const days = args.length ? parseInt(args[0]) || 10 : 10;
-          const startDate = new Date();
-          startDate.setDate(startDate.getDate() - days);
+  /** Handles /help command */
+  private handleHelp(chatId: number) {
+    transactionManager.resetUserState(chatId);
+    return this.createResponse(`Here are the available commands.`);
+  }
 
-          const transactions = await transactionService.getTransactions({
-            startDate,
-            transactionType: 'EXPENSE',
-            page: 1,
-            perPage: 10,
-          });
+  /** Handles /create command */
+  private async handleCreate(chatId: number) {
+    const { message, nextStep } = await transactionManager.handleUserState(
+      chatId,
+      '/create',
+    );
+    return this.createResponse(message, nextStep !== UserStatus.FAILURE);
+  }
 
-          const transactionString = transactions
-            .map((transaction) => {
-              const formattedDate = new Date(transaction.date)
-                .toISOString()
-                .split('T')[0];
-              return `*Description*: ${transaction.description}
-*Value*: ${transaction.value} 
-*Date*: ${formattedDate}
-*Type*: ${transaction.type}
-*Category*: ${transaction.category.name}`;
-            })
-            .join('\n\n');
+  /** Handles /list <days> command */
+  private async handleList(chatId: number, args: string[]) {
+    transactionManager.resetUserState(chatId);
+    const days = args.length ? parseInt(args[0]) || 10 : 10;
 
-          return { message: transactionString || 'No transactions found.' };
-        }
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
 
-        case '/summary': {
-          const summary = await transactionService.getTransactionsSummary({});
-          return {
-            message: `Transaction Summary:
+    const transactions = await transactionService.getTransactions({
+      startDate,
+      transactionType: 'EXPENSE',
+      page: 1,
+      perPage: 10,
+    });
+
+    if (transactions.length === 0) {
+      return this.createResponse('No transactions found.');
+    }
+
+    const transactionList = transactions
+      .map(
+        (t) => `*Description*: ${t.description}
+*Value*: ${t.value} 
+*Date*: ${new Date(t.date).toISOString().split('T')[0]}
+*Type*: ${t.type}
+*Category*: ${t.category.name}`,
+      )
+      .join('\n\n');
+
+    return this.createResponse(transactionList);
+  }
+
+  /** Handles /summary command */
+  private async handleSummary(chatId: number) {
+    transactionManager.resetUserState(chatId);
+    const summary = await transactionService.getTransactionsSummary({});
+
+    return this.createResponse(
+      `Transaction Summary:
 *Total Income*: ${summary.totalIncome}
 *Total Expense*: ${summary.totalExpense}`,
-          };
-        }
+    );
+  }
 
-        case '/categories': {
-          const categories = await categoryService.list();
-          const categoryList = categories
-            .map((c) => `*${c.id}*: ${c.name}`)
-            .join('\n');
-          return { message: `Available Categories:\n${categoryList}` };
-        }
+  /** Handles /categories command */
+  private async handleCategories(chatId: number) {
+    transactionManager.resetUserState(chatId);
+    const categories = await categoryService.list();
 
-        case '/delete': {
-          if (!args.length) {
-            return { message: 'Please provide a transaction ID to delete.' };
-          }
-
-          const transactionId = args[0];
-          try {
-            await transactionService.deleteTransaction(transactionId);
-            return {
-              message: `Transaction ${transactionId} deleted successfully.`,
-            };
-          } catch (error) {
-            return {
-              message: `Failed to delete transaction: ${JSON.stringify(error)}`,
-            };
-          }
-        }
-
-        case '/reset':
-          transactionManager.resetUserState(chatId);
-          return { message: 'State has been reset.' };
-
-        default:
-          const textWithoutCommand = sanitizedText.replace('/', '');
-          return await transactionManager.handleUserState(
-            chatId,
-            textWithoutCommand,
-          );
-      }
-    } catch (error) {
-      logger.error('Failed to handle webhook:', error);
-      throw error;
+    if (categories.length === 0) {
+      return this.createResponse('No categories found.');
     }
+
+    const categoryList = categories
+      .map((c) => `*${c.id}*: ${c.name}`)
+      .join('\n');
+    return this.createResponse(`Available Categories:\n${categoryList}`);
+  }
+
+  /** Handles /delete <transaction_id> command */
+  private async handleDelete(chatId: number, args: string[]) {
+    transactionManager.resetUserState(chatId);
+
+    if (!args.length) {
+      return this.createResponse('Please provide a transaction ID to delete.');
+    }
+
+    const transactionId = args[0];
+
+    try {
+      await transactionService.deleteTransaction(transactionId);
+      return this.createResponse(
+        `Transaction ${transactionId} deleted successfully.`,
+      );
+    } catch (error) {
+      logger.error(`Failed to delete transaction ${transactionId}`, error);
+      return this.createResponse(
+        `Failed to delete transaction ${transactionId}.`,
+      );
+    }
+  }
+
+  /** Handles /reset command */
+  private handleReset(chatId: number) {
+    transactionManager.resetUserState(chatId);
+    return this.createResponse('State has been reset.');
+  }
+
+  /** Handles user state progression (handles transaction creation flow) */
+  private async handleUserState(chatId: number, text: string) {
+    const { message, nextStep } = await transactionManager.handleUserState(
+      chatId,
+      text,
+    );
+
+    if (nextStep === UserStatus.TRANSACTION_COMPLETE) {
+      return this.createResponse(
+        `${message}\n\n🎉 Transaction successfully recorded!`,
+        true,
+      );
+    }
+
+    if (nextStep === UserStatus.FAILURE) {
+      return this.createResponse(
+        `❌ Transaction failed. Please try again.`,
+        true,
+      );
+    }
+
+    return this.createResponse(message, false);
   }
 }
 
