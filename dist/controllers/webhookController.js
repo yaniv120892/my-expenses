@@ -41,8 +41,7 @@ class WebhookController {
                 case '/insights':
                     return await this.handleInsights();
                 default:
-                    const sanitizedText = text.replace('/', '');
-                    return await this.handleUserState(chatId, sanitizedText);
+                    return await this.handleUserState(chatId, text);
             }
         }
         catch (error) {
@@ -167,14 +166,22 @@ class WebhookController {
     }
     /** Handles user state progression (handles transaction creation flow) */
     async handleUserState(chatId, text) {
-        const { message, nextStep } = await transactionManager_1.transactionManager.handleUserState(chatId, text);
-        if (nextStep === transactionManager_1.UserStatus.TRANSACTION_COMPLETE) {
-            return this.createResponse(`${message}`, true);
+        logger_1.default.debug(`Handling user state for chatId: ${chatId}, text: ${text}`);
+        const sanitizedText = text.replace('/', '').trim();
+        const { message, nextStep } = await transactionManager_1.transactionManager.handleUserState(chatId, sanitizedText);
+        let response = { message: 'Failed to handle user state.' };
+        switch (nextStep) {
+            case transactionManager_1.UserStatus.AWAITING_AMOUNT:
+            case transactionManager_1.UserStatus.AWAITING_DESCRIPTION:
+            case transactionManager_1.UserStatus.AWAITING_DATE:
+                response = this.createResponse(message, false);
+            case transactionManager_1.UserStatus.TRANSACTION_COMPLETE:
+                response = this.createResponse(message, true);
+            case transactionManager_1.UserStatus.FAILURE:
+                response = this.createResponse('❌ Transaction failed. Please try again.', true);
         }
-        if (nextStep === transactionManager_1.UserStatus.FAILURE) {
-            return this.createResponse(`❌ Transaction failed. Please try again.`, true);
-        }
-        return this.createResponse(message, false);
+        logger_1.default.debug(`User state response: ${response.message}`);
+        return response;
     }
 }
 exports.webhookController = new WebhookController();
