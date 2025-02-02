@@ -3,6 +3,7 @@ import { transactionManager, UserStatus } from '../services/transactionManager';
 import logger from '../utils/logger';
 import transactionService from '../services/transactionService';
 import categoryService from '../services/categoryService';
+import { aiService } from '../services/aiService';
 
 class WebhookController {
   async handleWebhook(req: WebhookRequest) {
@@ -39,6 +40,8 @@ class WebhookController {
         case '/reset':
           return this.handleReset(chatId);
 
+        case '/insights':
+          return await this.handleInsights();
         default:
           return await this.handleUserState(chatId, text);
       }
@@ -66,7 +69,8 @@ class WebhookController {
 4. /categories - List available transaction categories.
 5. /delete <transaction_id> - Delete a specific transaction.
 6. /reset - Reset user state.
-7. /help - Show available commands.`;
+7. /insights - Get AI-generated expense insights.
+8. /help - Show available commands.`;
   }
 
   /** Handles /start command */
@@ -128,11 +132,8 @@ class WebhookController {
   private async handleSummary(chatId: number) {
     transactionManager.resetUserState(chatId);
     const summary = await transactionService.getTransactionsSummary({});
-
     return this.createResponse(
-      `Transaction Summary:
-*Total Income*: ${summary.totalIncome}
-*Total Expense*: ${summary.totalExpense}`,
+      `Transaction Summary:\n*Total Income*: ${summary.totalIncome}\n*Total Expense*: ${summary.totalExpense}`,
     );
   }
 
@@ -178,6 +179,31 @@ class WebhookController {
   private handleReset(chatId: number) {
     transactionManager.resetUserState(chatId);
     return this.createResponse('State has been reset.');
+  }
+
+  /** Handles /insights command */
+  private async handleInsights() {
+    const transactions = await transactionService.getTransactions({
+      startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
+      transactionType: 'EXPENSE',
+      page: 1,
+      perPage: 20,
+    });
+
+    if (transactions.length === 0) {
+      return this.createResponse('No transactions found.');
+    }
+
+    const expenseSummary = transactions
+      .map(
+        (t) =>
+          `${t.date.toISOString().split('T')[0]} - ${t.description}: $${t.value}`,
+      )
+      .join('\n');
+
+    const insights = await aiService.analyzeExpenses(expenseSummary);
+
+    return this.createResponse(`💡 Expense Insights:\n${insights}`);
   }
 
   /** Handles user state progression (handles transaction creation flow) */
