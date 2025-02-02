@@ -32,6 +32,10 @@ class TransactionService {
   ): Promise<TransactionSummary> {
     return TransactionRepository.getTransactionsSummary(filters);
   }
+
+  public async deleteTransaction(transactionId: string): Promise<void> {
+    return TransactionRepository.deleteTransaction(transactionId);
+  }
 }
 
 export default new TransactionService();

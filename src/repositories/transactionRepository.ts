@@ -10,6 +10,12 @@ import {
 } from '..//types/transaction';
 
 class TransactionRepository {
+  public async deleteTransaction(transactionId: string): Promise<void> {
+    await prisma.transaction.delete({
+      where: { id: transactionId },
+    });
+  }
+
   public async getTransactionsSummary(
     filters: TransactionSummaryFilters,
   ): Promise<TransactionSummary> {

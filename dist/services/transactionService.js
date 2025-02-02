@@ -19,5 +19,8 @@ class TransactionService {
     async getTransactionsSummary(filters) {
         return transactionRepository_1.default.getTransactionsSummary(filters);
     }
+    async deleteTransaction(transactionId) {
+        return transactionRepository_1.default.deleteTransaction(transactionId);
+    }
 }
 exports.default = new TransactionService();
