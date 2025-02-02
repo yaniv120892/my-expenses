@@ -31,10 +31,11 @@ const csv_parser_1 = __importDefault(require("csv-parser"));
 const client_1 = __importDefault(require("..//prisma/client"));
 const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
-const csvFilePath = 'src/scripts/CSV_09_28__22_10_29.csv';
+const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
 dotenv.config();
 async function importData() {
     const rows = [];
+    console.log('Importing data...');
     await readCSVFile(rows);
     await processRowsSequentially(rows);
     console.log('Import completed!');
@@ -51,11 +52,13 @@ async function readCSVFile(rows) {
 }
 async function processRowsSequentially(rows) {
     for (const row of rows) {
+        console.log('Processing row:', row);
         await processRow(row);
+        console.log('Row processed:', row);
     }
 }
 async function processRow(row) {
-    const { transactionValue, categoryName, transactionDate } = row;
+    const { categoryName, transactionDate } = row;
     const category = await findOrCreateCategory(categoryName);
     const parsedDate = parseTransactionDate(transactionDate);
     await createTransaction(row, parsedDate, category.id);

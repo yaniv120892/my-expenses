@@ -3,9 +3,11 @@ import { transactionManager, UserStatus } from '../services/transactionManager';
 import logger from '../utils/logger';
 import transactionService from '../services/transactionService';
 import categoryService from '../services/categoryService';
-import { aiService } from '../services/aiService';
+import aiServiceFactory from '../services/ai/aiServiceFactory';
 
 class WebhookController {
+  private aiService = aiServiceFactory.getAIService();
+
   async handleWebhook(req: WebhookRequest) {
     const chatId = req.message.chat.id;
     const text = req.message.text?.toLowerCase().trim();
@@ -187,7 +189,7 @@ class WebhookController {
       startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
       transactionType: 'EXPENSE',
       page: 1,
-      perPage: 20,
+      perPage: 100,
     });
 
     if (transactions.length === 0) {
@@ -201,7 +203,7 @@ class WebhookController {
       )
       .join('\n');
 
-    const insights = await aiService.analyzeExpenses(expenseSummary);
+    const insights = await this.aiService.analyzeExpenses(expenseSummary);
 
     return this.createResponse(`💡 Expense Insights:\n${insights}`);
   }
