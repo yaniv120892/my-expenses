@@ -22,15 +22,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -42,70 +33,58 @@ const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
 const csvFilePath = 'src/scripts/CSV_09_28__22_10_29.csv';
 dotenv.config();
-function importData() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const rows = [];
-        yield readCSVFile(rows);
-        yield processRowsSequentially(rows);
-        console.log('Import completed!');
-        yield client_1.default.$disconnect();
+async function importData() {
+    const rows = [];
+    await readCSVFile(rows);
+    await processRowsSequentially(rows);
+    console.log('Import completed!');
+    await client_1.default.$disconnect();
+}
+async function readCSVFile(rows) {
+    return new Promise((resolve, reject) => {
+        fs_1.default.createReadStream(csvFilePath)
+            .pipe((0, csv_parser_1.default)({ separator: ';' }))
+            .on('data', (row) => rows.push(row))
+            .on('end', resolve)
+            .on('error', reject);
     });
 }
-function readCSVFile(rows) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve, reject) => {
-            fs_1.default.createReadStream(csvFilePath)
-                .pipe((0, csv_parser_1.default)({ separator: ';' }))
-                .on('data', (row) => rows.push(row))
-                .on('end', resolve)
-                .on('error', reject);
+async function processRowsSequentially(rows) {
+    for (const row of rows) {
+        await processRow(row);
+    }
+}
+async function processRow(row) {
+    const { transactionValue, categoryName, transactionDate } = row;
+    const category = await findOrCreateCategory(categoryName);
+    const parsedDate = parseTransactionDate(transactionDate);
+    await createTransaction(row, parsedDate, category.id);
+}
+async function findOrCreateCategory(categoryName) {
+    let category = await client_1.default.category.findFirst({
+        where: { name: categoryName },
+    });
+    if (!category) {
+        category = await client_1.default.category.create({
+            data: { name: categoryName },
         });
-    });
-}
-function processRowsSequentially(rows) {
-    return __awaiter(this, void 0, void 0, function* () {
-        for (const row of rows) {
-            yield processRow(row);
-        }
-    });
-}
-function processRow(row) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { transactionValue, categoryName, transactionDate } = row;
-        const category = yield findOrCreateCategory(categoryName);
-        const parsedDate = parseTransactionDate(transactionDate);
-        yield createTransaction(row, parsedDate, category.id);
-    });
-}
-function findOrCreateCategory(categoryName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let category = yield client_1.default.category.findFirst({
-            where: { name: categoryName },
-        });
-        if (!category) {
-            category = yield client_1.default.category.create({
-                data: { name: categoryName },
-            });
-        }
-        return category;
-    });
+    }
+    return category;
 }
 function parseTransactionDate(transactionDate) {
     return (0, date_fns_1.parse)(transactionDate, 'MM/dd/yy', new Date());
 }
-function createTransaction(row, parsedDate, categoryId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const type = row.transactionValue > 0 ? 'INCOME' : 'EXPENSE';
-        const value = Math.abs(row.transactionValue);
-        yield client_1.default.transaction.create({
-            data: {
-                description: row.Notes || '',
-                value,
-                date: parsedDate,
-                categoryId,
-                type,
-            },
-        });
+async function createTransaction(row, parsedDate, categoryId) {
+    const type = row.transactionValue > 0 ? 'INCOME' : 'EXPENSE';
+    const value = Math.abs(row.transactionValue);
+    await client_1.default.transaction.create({
+        data: {
+            description: row.Notes || '',
+            value,
+            date: parsedDate,
+            categoryId,
+            type,
+        },
     });
 }
 importData();

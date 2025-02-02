@@ -7,5 +7,5 @@ const express_1 = __importDefault(require("express"));
 const handleRequest_1 = require("..//utils/handleRequest");
 const categoryController_1 = __importDefault(require("..//controllers/categoryController"));
 const router = express_1.default.Router();
-router.get('/', (0, handleRequest_1.handleRequest)((_req) => categoryController_1.default.getAllCategories(), 200));
+router.get('/', (0, handleRequest_1.handleRequest)((_req) => categoryController_1.default.list(), 200));
 exports.default = router;

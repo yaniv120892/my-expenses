@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
+import logger from '../utils/logger';
 
 export const validateRequest = (type: any, isQuery: boolean = false) => {
   return async (
@@ -17,6 +18,7 @@ export const validateRequest = (type: any, isQuery: boolean = false) => {
         .map((err) => Object.values(err.constraints || {}))
         .flat();
 
+      logger.warn(`Validation failed: ${extractedErrors.join(', ')}`);
       // Send response directly, but don't return it
       res.status(400).json({
         message: 'Validation failed',
