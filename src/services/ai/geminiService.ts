@@ -22,7 +22,7 @@ export class GeminiService implements AIProvider {
             role: 'user',
             parts: [
               {
-                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS.`,
+                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew`,
               },
             ],
           },
@@ -46,6 +46,9 @@ export class GeminiService implements AIProvider {
     categoryOptions: Category[],
   ): Promise<string> {
     try {
+      logger.debug(
+        `Start suggesting category for expense: ${expenseDescription}`,
+      );
       const model = this.gemini.getGenerativeModel({ model: this.modelName });
       const response = await model.generateContent({
         contents: [
@@ -70,6 +73,9 @@ export class GeminiService implements AIProvider {
         (category) => category.name === aiSuggestedCategory,
       )?.id;
 
+      logger.debug(
+        `Done suggesting category for expense: ${expenseDescription} - ${aiSuggestedCategory}`,
+      );
       return categoryId || 'No category found.';
     } catch (error) {
       console.error('Gemini API Error:', error);

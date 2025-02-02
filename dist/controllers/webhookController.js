@@ -169,7 +169,7 @@ class WebhookController {
     async handleUserState(chatId, text) {
         const { message, nextStep } = await transactionManager_1.transactionManager.handleUserState(chatId, text);
         if (nextStep === transactionManager_1.UserStatus.TRANSACTION_COMPLETE) {
-            return this.createResponse(`${message}\n\n🎉 Transaction successfully recorded!`, true);
+            return this.createResponse(`${message}`, true);
         }
         if (nextStep === transactionManager_1.UserStatus.FAILURE) {
             return this.createResponse(`❌ Transaction failed. Please try again.`, true);
