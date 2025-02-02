@@ -6,10 +6,6 @@ export interface CreateTransaction {
   date: Date | null;
 }
 
-export interface DeleteTransaction {
-  id: string;
-}
-
 export interface TransactionSummaryFilters {
   startDate?: Date;
   endDate?: Date;

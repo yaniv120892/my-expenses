@@ -1,9 +1,12 @@
 import winston from 'winston';
 
 // Define the log format
-const logFormat = winston.format.printf(({ level, message, timestamp }) => {
-  return `${timestamp} ${level}: ${message}`;
-});
+const logFormat = winston.format.printf(
+  ({ level, message, timestamp, ...meta }) => {
+    const metaString = Object.keys(meta).length ? JSON.stringify(meta) : '';
+    return `${timestamp} ${level}: ${message} ${metaString}`;
+  },
+);
 
 // Create the logger instance
 const logger = winston.createLogger({

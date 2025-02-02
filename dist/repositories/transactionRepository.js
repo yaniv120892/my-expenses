@@ -6,11 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const client_2 = __importDefault(require("..//prisma/client"));
 class TransactionRepository {
-    async deleteTransaction(transactionId) {
-        await client_2.default.transaction.delete({
-            where: { id: transactionId },
-        });
-    }
     async getTransactionsSummary(filters) {
         const transactions = await client_2.default.transaction.findMany({
             where: {
@@ -68,17 +63,6 @@ class TransactionRepository {
             include: { category: true },
         });
         return transaction ? this.mapToDomain(transaction) : null;
-    }
-    async updateTransaction(transactionId, updateData) {
-        await client_2.default.transaction.update({
-            where: { id: transactionId },
-            data: {
-                description: updateData.description,
-                value: updateData.value,
-                date: updateData.date,
-                categoryId: updateData.categoryId,
-            },
-        });
     }
     mapToDomain(transaction) {
         return {
