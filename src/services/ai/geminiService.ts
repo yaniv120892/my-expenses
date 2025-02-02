@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AIProvider } from 'services/ai/aiProvider';
-import logger from 'utils/logger';
+import { AIProvider } from './aiProvider';
+import logger from '../../utils/logger';
 import { Category } from '../../types/category';
 
 export class GeminiService implements AIProvider {
@@ -54,7 +54,8 @@ export class GeminiService implements AIProvider {
             parts: [
               {
                 text: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map(
-                  (category) => `- ${category.name}\n, return only the category name`,
+                  (category) =>
+                    `- ${category.name}\n, return only the category name`,
                 )}`,
               },
             ],

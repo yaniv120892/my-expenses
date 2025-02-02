@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GeminiService = void 0;
 const generative_ai_1 = require("@google/generative-ai");
-const logger_1 = __importDefault(require("utils/logger"));
+const logger_1 = __importDefault(require("../../utils/logger"));
 class GeminiService {
     constructor() {
         this.modelName = 'gemini-pro'; // Use 'gemini-1.5-pro' if needed
