@@ -15,6 +15,7 @@ export interface TransactionSummaryFilters {
   endDate?: Date;
   categoryId?: string;
   transactionType?: TransactionType;
+  searchTerm?: string;
 }
 
 export interface TransactionFilters extends TransactionSummaryFilters {

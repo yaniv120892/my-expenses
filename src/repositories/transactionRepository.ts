@@ -69,6 +69,9 @@ class TransactionRepository {
         },
         categoryId: filters.categoryId,
         type: filters.transactionType,
+        description: {
+          contains: filters.searchTerm,
+        },
       },
       take: filters.perPage,
       skip: (filters.page - 1) * filters.perPage,

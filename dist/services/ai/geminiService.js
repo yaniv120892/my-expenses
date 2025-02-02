@@ -8,7 +8,7 @@ const generative_ai_1 = require("@google/generative-ai");
 const logger_1 = __importDefault(require("../../utils/logger"));
 class GeminiService {
     constructor() {
-        this.modelName = 'gemini-pro'; // Use 'gemini-1.5-pro' if needed
+        this.modelName = 'gemini-pro';
         this.gemini = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     }
     /** Analyzes user's expenses and provides insights */
@@ -23,7 +23,7 @@ class GeminiService {
                         role: 'user',
                         parts: [
                             {
-                                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew`,
+                                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence`,
                             },
                         ],
                     },
