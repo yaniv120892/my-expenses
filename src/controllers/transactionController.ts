@@ -10,9 +10,10 @@ class TransactionController {
   async createTransaction(createTransactionRequest: CreateTransactionRequest) {
     try {
       logger.debug('Start create transaction', createTransactionRequest);
-      const transactionId = await transactionService.createTransaction(
-        createTransactionRequest,
-      );
+      const transactionId = await transactionService.createTransaction({
+        ...createTransactionRequest,
+        date: createTransactionRequest.date || new Date(),
+      });
       logger.debug(
         'Done create transaction',
         createTransactionRequest,

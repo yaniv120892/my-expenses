@@ -8,7 +8,7 @@
     "strictBindCallApply": true,
     "esModuleInterop": true,
     "strict": true,
-    "target": "ES6",
+    "target": "es2017",
     "module": "commonjs",
     "moduleResolution": "Node",
     "forceConsistentCasingInFileNames": true,

@@ -1,6 +1,4 @@
-import { GetTransactionsRequest } from '..//controllers/requests';
 import { RequestHandler, Request } from 'express';
-import { ParsedQs } from 'qs';
 
 export const handleRequest = (
   fn: (param: Request) => Promise<any>,

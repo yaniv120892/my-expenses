@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -15,26 +6,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const transactionRepository_1 = __importDefault(require("..//repositories/transactionRepository"));
 const createTransactionValidator_1 = __importDefault(require("..//validators/createTransactionValidator"));
 class TransactionService {
-    createTransaction(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield createTransactionValidator_1.default.validate(data);
-            return transactionRepository_1.default.createTransaction(data);
-        });
+    async createTransaction(data) {
+        await createTransactionValidator_1.default.validate(data);
+        return transactionRepository_1.default.createTransaction(data);
     }
-    getTransactions(filters) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return transactionRepository_1.default.getTransactions(filters);
-        });
+    async getTransactions(filters) {
+        return transactionRepository_1.default.getTransactions(filters);
     }
-    getTransactionItem(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return transactionRepository_1.default.getTransactionItem(data);
-        });
+    async getTransactionItem(data) {
+        return transactionRepository_1.default.getTransactionItem(data);
     }
-    getTransactionsSummary(filters) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return transactionRepository_1.default.getTransactionsSummary(filters);
-        });
+    async getTransactionsSummary(filters) {
+        return transactionRepository_1.default.getTransactionsSummary(filters);
     }
 }
 exports.default = new TransactionService();

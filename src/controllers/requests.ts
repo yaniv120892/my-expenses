@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsUUID,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -22,6 +23,10 @@ export class CreateTransactionRequest {
 
   @IsString()
   type: TransactionType;
+
+  @IsOptional()
+  @IsDate()
+  date?: Date;
 }
 
 export class GetTransactionsSummaryRequest {
@@ -72,4 +77,23 @@ export class GetTransactionsRequest {
   @Min(10)
   @Type(() => Number)
   perPage: number;
+}
+
+export class WebhookChat {
+  @IsNumber()
+  @Type(() => Number)
+  id: number;
+}
+
+export class WebhookMessage {
+  @IsString()
+  text: string;
+
+  @ValidateNested()
+  chat: WebhookChat;
+}
+
+export class WebhookRequest {
+  @ValidateNested()
+  message: WebhookMessage;
 }

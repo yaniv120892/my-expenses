@@ -3,6 +3,7 @@ export interface CreateTransaction {
   value: number;
   categoryId: string;
   type: TransactionType;
+  date: Date | null;
 }
 
 export interface DeleteTransaction {

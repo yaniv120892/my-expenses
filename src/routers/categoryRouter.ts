@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get(
   '/',
-  handleRequest((_req: Request) => categoryController.getAllCategories(), 200),
+  handleRequest((_req: Request) => categoryController.list(), 200),
 );
 
 export default router;
