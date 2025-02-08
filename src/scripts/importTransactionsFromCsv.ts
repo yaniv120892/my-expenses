@@ -1,6 +1,6 @@
 import fs from 'fs';
 import csv from 'csv-parser';
-import prisma from '..//prisma/client';
+import prisma from '../prisma/client';
 import * as dotenv from 'dotenv';
 import { parse } from 'date-fns';
 

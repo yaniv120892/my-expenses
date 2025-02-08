@@ -28,7 +28,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const csv_parser_1 = __importDefault(require("csv-parser"));
-const client_1 = __importDefault(require("..//prisma/client"));
+const client_1 = __importDefault(require("../prisma/client"));
 const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
 dotenv.config();
