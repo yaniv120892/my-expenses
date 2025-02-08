@@ -1,0 +1,12 @@
+📌 My Expenses API
+🚀 A powerful API for managing incomes and expenses, built with TypeScript & Express.js.
+It uses PostgreSQL with Prisma ORM, AI-driven categorization (FastText & Gemini/ChatGPT fallback), and supports Telegram command handlers & transaction search.
+
+🛠️ Features
+✅ Manage Expenses & Incomes - Create, update, delete transactions.
+✅ AI-Powered Expense Categorization - Uses expenses-categorizer for category predictions.
+✅ Gemini/ChatGPT Fallback - If the AI model fails, falls back to Gemini or ChatGPT for categorization.
+✅ PostgreSQL + Prisma - Uses PostgreSQL as the database, managed via Prisma ORM.
+✅ Telegram Bot Support - Allows adding expenses via Telegram command handlers.
+✅ AI-Driven Insights - Provides spending analytics & financial insights.
+✅ Search Transactions - Easily find transactions by description, category, or date.
