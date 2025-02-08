@@ -10,6 +10,9 @@ import {
 } from '../types/transaction';
 import createTransactionValidator from '../validators/createTransactionValidator';
 import categoryRepository from '../repositories/categoryRepository';
+import axios from 'axios';
+import logger from 'utils/logger';
+import { Category } from 'types/category';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
@@ -54,7 +57,7 @@ class TransactionService {
 
     const categories = await categoryRepository.getAllCategories();
 
-    const suggestedCategoryId = await this.aiService.suggestCategory(
+    const suggestedCategoryId = await this.getSuggestedCategory(
       transaction.description,
       categories,
     );
@@ -63,6 +66,44 @@ class TransactionService {
       ...transaction,
       categoryId: suggestedCategoryId,
     };
+  }
+
+  private async getSuggestedCategory(
+    description: string,
+    categories: Category[],
+  ): Promise<string> {
+    let categoryFoundUsingCategorizer = false;
+    let category: string | null = null;
+    try {
+      category = await this.categorizeExpense(description);
+
+      if (category && categories.find((c) => c.name === category)) {
+        categoryFoundUsingCategorizer = true;
+      }
+    } catch (err) {
+      logger.warn(`Failed to categorize expense: ${description}`);
+    }
+
+    if (categoryFoundUsingCategorizer) {
+      return category as string;
+    }
+
+    return this.aiService.suggestCategory(description, categories);
+  }
+
+  private async categorizeExpense(description: string): Promise<string | null> {
+    const expenseCategorizerBaseUrl = process.env.EXPENSE_CATEGORIZER_BASE_URL;
+    const response = await axios.post(`${expenseCategorizerBaseUrl}/predict`, {
+      description,
+    });
+    logger.debug(`Done categorizing expense: ${description}`);
+
+    if (!response.data.category) {
+      logger.error('No category found for expense using categorizer.');
+      return null;
+    }
+
+    return response.data.category;
   }
 }
 
