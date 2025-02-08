@@ -8,7 +8,7 @@ const transactionRepository_1 = __importDefault(require("../repositories/transac
 const createTransactionValidator_1 = __importDefault(require("../validators/createTransactionValidator"));
 const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
 const axios_1 = __importDefault(require("axios"));
-const logger_1 = __importDefault(require("utils/logger"));
+const logger_1 = __importDefault(require("../utils/logger"));
 class TransactionService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();

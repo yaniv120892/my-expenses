@@ -19,6 +19,7 @@ export class CreateTransactionRequest {
   value: number;
 
   @IsUUID()
+  @IsOptional()
   categoryId: string;
 
   @IsString()

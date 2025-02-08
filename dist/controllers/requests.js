@@ -26,6 +26,7 @@ __decorate([
 ], CreateTransactionRequest.prototype, "value", void 0);
 __decorate([
     (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateTransactionRequest.prototype, "categoryId", void 0);
 __decorate([
