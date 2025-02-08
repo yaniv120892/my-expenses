@@ -11,8 +11,8 @@ import {
 import createTransactionValidator from '../validators/createTransactionValidator';
 import categoryRepository from '../repositories/categoryRepository';
 import axios from 'axios';
-import logger from 'utils/logger';
-import { Category } from 'types/category';
+import logger from '../utils/logger';
+import { Category } from '../types/category';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
