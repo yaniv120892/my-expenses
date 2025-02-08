@@ -29,7 +29,7 @@ class TransactionHandler {
         const transactionList = transactions
             .map((transaction) => (0, transactionUtils_1.formatTransaction)(transaction))
             .join('\n\n');
-        return telegramService_1.telegramService.sendMessage(chatId, transactionList);
+        await telegramService_1.telegramService.sendMessage(chatId, transactionList);
     }
     async handleSummary(chatId, args) {
         const days = args.length ? parseInt(args[0]) : 30;
@@ -38,7 +38,7 @@ class TransactionHandler {
         const summary = await transactionService_1.default.getTransactionsSummary({
             startDate,
         });
-        return telegramService_1.telegramService.sendMessage(chatId, `📊 *Transaction Summary:*\n💰 Income: $${summary.totalIncome.toLocaleString()}\n💸 Expenses: $${summary.totalExpense.toLocaleString()}`);
+        await telegramService_1.telegramService.sendMessage(chatId, `📊 *Transaction Summary:*\n💰 Income: $${summary.totalIncome.toLocaleString()}\n💸 Expenses: $${summary.totalExpense.toLocaleString()}`);
     }
     async handleSearch(chatId, args) {
         if (args.length === 0) {
@@ -55,7 +55,7 @@ class TransactionHandler {
         const transactionList = transactions
             .map((transaction) => (0, transactionUtils_1.formatTransaction)(transaction))
             .join('\n\n');
-        return telegramService_1.telegramService.sendMessage(chatId, `🔍 *Search results for:* "${args.join(' ')}"\n\n${transactionList}`);
+        await telegramService_1.telegramService.sendMessage(chatId, `🔍 *Search results for:* "${args.join(' ')}"\n\n${transactionList}`);
     }
 }
 exports.transactionHandler = new TransactionHandler();

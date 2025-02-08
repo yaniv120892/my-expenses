@@ -32,7 +32,7 @@ class TransactionHandler {
       .map((transaction) => formatTransaction(transaction))
       .join('\n\n');
 
-    return telegramService.sendMessage(chatId, transactionList);
+    await telegramService.sendMessage(chatId, transactionList);
   }
 
   async handleSummary(chatId: number, args: string[]) {
@@ -43,8 +43,7 @@ class TransactionHandler {
     const summary = await transactionService.getTransactionsSummary({
       startDate,
     });
-
-    return telegramService.sendMessage(
+    await telegramService.sendMessage(
       chatId,
       `📊 *Transaction Summary:*\n💰 Income: $${summary.totalIncome.toLocaleString()}\n💸 Expenses: $${summary.totalExpense.toLocaleString()}`,
     );
@@ -74,7 +73,7 @@ class TransactionHandler {
       .map((transaction) => formatTransaction(transaction))
       .join('\n\n');
 
-    return telegramService.sendMessage(
+    await telegramService.sendMessage(
       chatId,
       `🔍 *Search results for:* "${args.join(' ')}"\n\n${transactionList}`,
     );

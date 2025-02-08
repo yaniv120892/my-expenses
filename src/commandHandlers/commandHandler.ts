@@ -14,17 +14,21 @@ class CommandHandler {
         await userHandler.handleReset(chatId);
         return userHandler.handleHelp(chatId);
       case '/list':
-        return transactionHandler.handleList(chatId, args);
+        await transactionHandler.handleList(chatId, args);
+        return userHandler.handleHelp(chatId);
       case '/create':
         return transactionHandler.handleCreate(chatId);
       case '/summary':
-        return transactionHandler.handleSummary(chatId, args);
+        await transactionHandler.handleSummary(chatId, args);
+        return userHandler.handleHelp(chatId);
       case '/search':
-        return transactionHandler.handleSearch(chatId, args);
+        await transactionHandler.handleSearch(chatId, args);
+        return userHandler.handleHelp(chatId);
       case '/insights':
-        return insightsHandler.handleInsights(chatId);
+        await insightsHandler.handleInsights(chatId);
       case '/categories':
-        return categoryHandler.handleList(chatId);
+        await categoryHandler.handleList(chatId);
+        return userHandler.handleHelp(chatId);
       default:
         return userHandler.handleUserState(chatId, command);
     }

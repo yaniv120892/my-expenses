@@ -31,7 +31,7 @@ class InsightsHandler {
       .join('\n');
     const insights = await this.aiService.analyzeExpenses(expenseSummary);
 
-    return telegramService.sendMessage(
+    await telegramService.sendMessage(
       chatId,
       `💡 *Expense Insights:*\n${insights}`,
     );

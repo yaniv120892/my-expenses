@@ -26,7 +26,7 @@ class InsightsHandler {
             .map((t) => `${t.date.toISOString().split('T')[0]} - ${t.description}: $${t.value}`)
             .join('\n');
         const insights = await this.aiService.analyzeExpenses(expenseSummary);
-        return telegramService_1.telegramService.sendMessage(chatId, `💡 *Expense Insights:*\n${insights}`);
+        await telegramService_1.telegramService.sendMessage(chatId, `💡 *Expense Insights:*\n${insights}`);
     }
 }
 exports.insightsHandler = new InsightsHandler();
