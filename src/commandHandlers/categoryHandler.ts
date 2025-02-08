@@ -13,7 +13,7 @@ class CategoryHandler {
       .map((category) => `📌 *${category.name}* (ID: \`${category.id}\`)`)
       .join('\n');
 
-    return telegramService.sendMessage(
+    await telegramService.sendMessage(
       chatId,
       `📂 *Available Categories:*\n\n${categoryList}`,
     );

@@ -15,7 +15,7 @@ class CategoryHandler {
         const categoryList = categories
             .map((category) => `📌 *${category.name}* (ID: \`${category.id}\`)`)
             .join('\n');
-        return telegramService_1.telegramService.sendMessage(chatId, `📂 *Available Categories:*\n\n${categoryList}`);
+        await telegramService_1.telegramService.sendMessage(chatId, `📂 *Available Categories:*\n\n${categoryList}`);
     }
 }
 exports.categoryHandler = new CategoryHandler();
