@@ -4,6 +4,7 @@ exports.commandHandler = void 0;
 const userHandler_1 = require("./userHandler");
 const transactionHandler_1 = require("./transactionHandler");
 const insightHandler_1 = require("./insightHandler");
+const categoryHandler_1 = require("./categoryHandler");
 class CommandHandler {
     async executeCommand(command, chatId, args) {
         switch (command) {
@@ -24,6 +25,8 @@ class CommandHandler {
                 return transactionHandler_1.transactionHandler.handleSearch(chatId, args);
             case '/insights':
                 return insightHandler_1.insightsHandler.handleInsights(chatId);
+            case '/categories':
+                return categoryHandler_1.categoryHandler.handleList(chatId);
             default:
                 return userHandler_1.userHandler.handleUserState(chatId, command);
         }

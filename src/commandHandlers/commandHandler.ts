@@ -1,6 +1,7 @@
 import { userHandler } from './userHandler';
 import { transactionHandler } from './transactionHandler';
 import { insightsHandler } from './insightHandler';
+import { categoryHandler } from './categoryHandler';
 
 class CommandHandler {
   async executeCommand(command: string, chatId: number, args: string[]) {
@@ -22,6 +23,8 @@ class CommandHandler {
         return transactionHandler.handleSearch(chatId, args);
       case '/insights':
         return insightsHandler.handleInsights(chatId);
+      case '/categories':
+        return categoryHandler.handleList(chatId);
       default:
         return userHandler.handleUserState(chatId, command);
     }
