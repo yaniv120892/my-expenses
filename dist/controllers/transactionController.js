@@ -42,5 +42,29 @@ class TransactionController {
             throw error;
         }
     }
+    async updateTransaction(id, updateTransactionRequest) {
+        try {
+            logger_1.default.debug('Start update transaction', id, updateTransactionRequest);
+            const transactionId = await transactionService_1.default.updateTransaction(id, updateTransactionRequest);
+            logger_1.default.debug('Done update transaction', id, transactionId);
+            return transactionId;
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to update transaction ${id}, ${error.message}`);
+            throw error;
+        }
+    }
+    async deleteTransaction(id) {
+        try {
+            logger_1.default.debug('Start delete transaction', id);
+            await transactionService_1.default.deleteTransaction(id);
+            logger_1.default.debug('Done delete transaction', id);
+            return;
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to delete transaction ${id}, ${error.message}`);
+            throw error;
+        }
+    }
 }
 exports.default = new TransactionController();

@@ -30,6 +30,24 @@ export class CreateTransactionRequest {
   date?: Date;
 }
 
+export class UpdateTransactionRequest {
+  @IsString()
+  description: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  value: number;
+
+  @IsUUID()
+  categoryId: string;
+
+  @IsString()
+  type: TransactionType;
+
+  @IsDate()
+  date: Date;
+}
+
 export class GetTransactionsSummaryRequest {
   @IsOptional()
   @IsDate()

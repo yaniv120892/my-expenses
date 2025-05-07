@@ -1,4 +1,4 @@
-import { TransactionType } from "types/transaction";
+import { TransactionType } from 'types/transaction';
 
 export interface CreateTransactionDbModel {
   description: string;
@@ -6,4 +6,12 @@ export interface CreateTransactionDbModel {
   categoryId: string;
   type: TransactionType;
   date: Date;
+}
+
+export interface UpdateTransactionDbModel {
+  description?: string;
+  value?: number;
+  categoryId?: string;
+  type?: TransactionType;
+  date?: Date;
 }

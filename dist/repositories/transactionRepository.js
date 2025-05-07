@@ -77,5 +77,23 @@ class TransactionRepository {
             },
         };
     }
+    async updateTransaction(id, data) {
+        const transaction = await client_2.default.transaction.update({
+            where: { id },
+            data: {
+                description: data.description,
+                value: data.value,
+                date: data.date,
+                categoryId: data.categoryId,
+                type: data.type,
+            },
+        });
+        return transaction.id;
+    }
+    async deleteTransaction(id) {
+        await client_2.default.transaction.delete({
+            where: { id },
+        });
+    }
 }
 exports.default = new TransactionRepository();
