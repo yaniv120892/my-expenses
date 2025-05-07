@@ -6,7 +6,7 @@ import { parse } from 'date-fns';
 
 dotenv.config();
 
-const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
+const csvFilePath = 'src/scripts/data/CSV_05_07__14_03_20.csv';
 const categoryCache: Map<string, string> = new Map(); // Stores category name → ID mapping
 
 async function importData() {
@@ -42,8 +42,8 @@ async function upsertCategories(rows: any[]) {
 
   const uniqueCategories = new Set<string>();
   for (const row of rows) {
-    if (row.categoryName) {
-      uniqueCategories.add(row.categoryName.trim());
+    if (row.Category) {
+      uniqueCategories.add(row.Category.trim());
     }
   }
 
@@ -97,16 +97,16 @@ async function processRowsInBatches(rows: any[], batchSize: number = 10) {
 }
 
 async function processRow(row: any) {
-  const { categoryName, transactionDate } = row;
+  const { Category, Date } = row;
 
-  if (!categoryCache.has(categoryName)) {
+  if (!categoryCache.has(Category)) {
     throw new Error(
-      `Category '${categoryName}' not found in cache. This should not happen.`,
+      `Category '${Category}' not found in cache. This should not happen.`,
     );
   }
 
-  const categoryId = categoryCache.get(categoryName)!;
-  const parsedDate = parseTransactionDate(transactionDate);
+  const categoryId = categoryCache.get(Category)!;
+  const parsedDate = parseTransactionDate(Date);
 
   await createTransaction(row, parsedDate, categoryId);
 }
@@ -120,8 +120,8 @@ async function createTransaction(
   parsedDate: Date,
   categoryId: string,
 ) {
-  const type = row.transactionValue > 0 ? 'INCOME' : 'EXPENSE';
-  const value = Math.abs(row.transactionValue);
+  const type = row.Value > 0 ? 'INCOME' : 'EXPENSE';
+  const value = Math.abs(row.Value);
   await prisma.transaction.create({
     data: {
       description: row.Notes || '',

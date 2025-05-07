@@ -9,7 +9,7 @@
     "start": "npx prisma migrate deploy && node dist/index.js",
     "dev": "npx prisma migrate deploy && ts-node src/index.ts",
     "watch": "npx prisma migrate deploy && nodemon --exec ts-node src/index.ts",
-    "import-csv": "ts-node src/scripts/importCsv.ts",
+    "import-csv": "ts-node src/scripts/importTransactionsFromCsv.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",

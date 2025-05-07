@@ -32,7 +32,7 @@ const client_1 = __importDefault(require("../prisma/client"));
 const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
 dotenv.config();
-const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
+const csvFilePath = 'src/scripts/data/CSV_05_07__14_03_20.csv';
 const categoryCache = new Map(); // Stores category name → ID mapping
 async function importData() {
     console.log('Start importing data');
@@ -60,8 +60,8 @@ async function upsertCategories(rows) {
     console.log('Extracting unique categories...');
     const uniqueCategories = new Set();
     for (const row of rows) {
-        if (row.categoryName) {
-            uniqueCategories.add(row.categoryName.trim());
+        if (row.Category) {
+            uniqueCategories.add(row.Category.trim());
         }
     }
     console.log(`Found ${uniqueCategories.size} unique categories.`);
@@ -95,20 +95,20 @@ async function processRowsInBatches(rows, batchSize = 10) {
     }
 }
 async function processRow(row) {
-    const { categoryName, transactionDate } = row;
-    if (!categoryCache.has(categoryName)) {
-        throw new Error(`Category '${categoryName}' not found in cache. This should not happen.`);
+    const { Category, Date } = row;
+    if (!categoryCache.has(Category)) {
+        throw new Error(`Category '${Category}' not found in cache. This should not happen.`);
     }
-    const categoryId = categoryCache.get(categoryName);
-    const parsedDate = parseTransactionDate(transactionDate);
+    const categoryId = categoryCache.get(Category);
+    const parsedDate = parseTransactionDate(Date);
     await createTransaction(row, parsedDate, categoryId);
 }
 function parseTransactionDate(transactionDate) {
     return (0, date_fns_1.parse)(transactionDate, 'MM/dd/yy', new Date());
 }
 async function createTransaction(row, parsedDate, categoryId) {
-    const type = row.transactionValue > 0 ? 'INCOME' : 'EXPENSE';
-    const value = Math.abs(row.transactionValue);
+    const type = row.Value > 0 ? 'INCOME' : 'EXPENSE';
+    const value = Math.abs(row.Value);
     await client_1.default.transaction.create({
         data: {
             description: row.Notes || '',
