@@ -3,6 +3,7 @@ dotenv.config();
 
 import 'reflect-metadata';
 import express from 'express';
+import cors from 'cors';
 import router from './routers/index';
 import logger, { requestLogger } from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
@@ -15,6 +16,7 @@ const apiURL = process.env.API_URL || `http://localhost:${PORT}`;
 const token = process.env.TELEGRAM_BOT_TOKEN || 'MY_TOKEN';
 const bot = new TelegramBot(token);
 
+app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 
