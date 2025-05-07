@@ -10,7 +10,7 @@ import { errorHandler } from './middlewares/errorHandler';
 import TelegramBot from 'node-telegram-bot-api';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const apiURL = process.env.API_URL || `http://localhost:${PORT}`;
 
 const token = process.env.TELEGRAM_BOT_TOKEN || 'MY_TOKEN';
@@ -24,7 +24,7 @@ app.use('/', router);
 
 // Set webhook for Telegram bot (optional)
 const setWebhook = async () => {
-  const webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:3000/webhook';
+  const webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:3001/webhook';
 
   logger.info(`Setting Telegram webhook to: ${webhookUrl}`);
   try {
