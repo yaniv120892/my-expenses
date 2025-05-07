@@ -1,5 +1,5 @@
 import aiServiceFactory from './ai/aiServiceFactory';
-import TransactionRepository from '../repositories/transactionRepository';
+import transactionRepository from '../repositories/transactionRepository';
 import {
   CreateTransaction,
   TransactionFilters,
@@ -8,6 +8,11 @@ import {
   TransactionSummaryFilters,
   TransactionSummary,
 } from '../types/transaction';
+import {
+  CreateTransactionRequest,
+  GetTransactionsRequest,
+  GetTransactionsSummaryRequest,
+} from '../controllers/requests';
 import createTransactionValidator from '../validators/createTransactionValidator';
 import categoryRepository from '../repositories/categoryRepository';
 import axios from 'axios';
@@ -27,25 +32,36 @@ class TransactionService {
       categoryId: createTransaction.categoryId as string,
       type: createTransaction.type,
     };
-    return TransactionRepository.createTransaction(CreateTransactionDbModel);
+    return transactionRepository.createTransaction(CreateTransactionDbModel);
   }
 
   public async getTransactions(
     filters: TransactionFilters,
   ): Promise<Transaction[]> {
-    return TransactionRepository.getTransactions(filters);
+    return transactionRepository.getTransactions(filters);
   }
 
   public async getTransactionItem(
     data: TransactionItem,
   ): Promise<Transaction | null> {
-    return TransactionRepository.getTransactionItem(data);
+    return transactionRepository.getTransactionItem(data);
   }
 
   public async getTransactionsSummary(
     filters: TransactionSummaryFilters,
   ): Promise<TransactionSummary> {
-    return TransactionRepository.getTransactionsSummary(filters);
+    return transactionRepository.getTransactionsSummary(filters);
+  }
+
+  public async updateTransaction(
+    id: string,
+    data: CreateTransactionRequest,
+  ): Promise<void> {
+    await transactionRepository.updateTransaction(id, data);
+  }
+
+  public async deleteTransaction(id: string): Promise<void> {
+    return transactionRepository.deleteTransaction(id);
   }
 
   private async updateCategory(

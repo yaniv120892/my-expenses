@@ -3,6 +3,7 @@ import {
   CreateTransactionRequest,
   GetTransactionsRequest,
   GetTransactionsSummaryRequest,
+  UpdateTransactionRequest,
 } from '../controllers/requests';
 import transactionService from '../services/transactionService';
 
@@ -60,6 +61,36 @@ class TransactionController {
       return summary;
     } catch (error: any) {
       logger.error(`Failed to get transactions summary, ${error.message}`);
+      throw error;
+    }
+  }
+
+  async updateTransaction(
+    id: string,
+    updateTransactionRequest: UpdateTransactionRequest,
+  ) {
+    try {
+      logger.debug('Start update transaction', id, updateTransactionRequest);
+      const transactionId = await transactionService.updateTransaction(
+        id,
+        updateTransactionRequest,
+      );
+      logger.debug('Done update transaction', id, transactionId);
+      return transactionId;
+    } catch (error: any) {
+      logger.error(`Failed to update transaction ${id}, ${error.message}`);
+      throw error;
+    }
+  }
+
+  async deleteTransaction(id: string) {
+    try {
+      logger.debug('Start delete transaction', id);
+      await transactionService.deleteTransaction(id);
+      logger.debug('Done delete transaction', id);
+      return;
+    } catch (error: any) {
+      logger.error(`Failed to delete transaction ${id}, ${error.message}`);
       throw error;
     }
   }

@@ -51,4 +51,22 @@ router.get(
   ),
 );
 
+router.put(
+  '/:id',
+  validateRequest(CreateTransactionRequest),
+  handleRequest(
+    (req: Request) =>
+      transactionController.updateTransaction(req.params.id, req.body),
+    200,
+  ),
+);
+
+router.delete(
+  '/:id',
+  handleRequest(
+    (req: Request) => transactionController.deleteTransaction(req.params.id),
+    204,
+  ),
+);
+
 export default router;

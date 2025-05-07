@@ -34,6 +34,12 @@ class TransactionService {
     async getTransactionsSummary(filters) {
         return transactionRepository_1.default.getTransactionsSummary(filters);
     }
+    async updateTransaction(id, data) {
+        await transactionRepository_1.default.updateTransaction(id, data);
+    }
+    async deleteTransaction(id) {
+        return transactionRepository_1.default.deleteTransaction(id);
+    }
     async updateCategory(transaction) {
         if (transaction.categoryId) {
             return transaction;

@@ -7,7 +7,10 @@ import {
   TransactionSummaryFilters,
   TransactionSummary,
 } from '..//types/transaction';
-import { CreateTransactionDbModel } from 'repositories/types';
+import {
+  CreateTransactionDbModel,
+  UpdateTransactionDbModel,
+} from 'repositories/types';
 
 class TransactionRepository {
   public async getTransactionsSummary(
@@ -98,6 +101,29 @@ class TransactionRepository {
         name: transaction.category.name,
       },
     };
+  }
+
+  public async updateTransaction(
+    id: string,
+    data: UpdateTransactionDbModel,
+  ): Promise<string> {
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        description: data.description,
+        value: data.value,
+        date: data.date,
+        categoryId: data.categoryId,
+        type: data.type,
+      },
+    });
+    return transaction.id;
+  }
+
+  public async deleteTransaction(id: string): Promise<void> {
+    await prisma.transaction.delete({
+      where: { id },
+    });
   }
 }
 
