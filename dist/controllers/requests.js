@@ -35,6 +35,7 @@ __decorate([
 ], CreateTransactionRequest.prototype, "type", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], CreateTransactionRequest.prototype, "date", void 0);
@@ -59,6 +60,7 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateTransactionRequest.prototype, "type", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], UpdateTransactionRequest.prototype, "date", void 0);
@@ -67,11 +69,13 @@ class GetTransactionsSummaryRequest {
 exports.GetTransactionsSummaryRequest = GetTransactionsSummaryRequest;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], GetTransactionsSummaryRequest.prototype, "startDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], GetTransactionsSummaryRequest.prototype, "endDate", void 0);
@@ -90,11 +94,13 @@ class GetTransactionsRequest {
 exports.GetTransactionsRequest = GetTransactionsRequest;
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], GetTransactionsRequest.prototype, "startDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Date),
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], GetTransactionsRequest.prototype, "endDate", void 0);
