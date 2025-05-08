@@ -60,19 +60,23 @@ class TransactionRepository {
   ): Promise<Transaction[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        date: {
-          gte: filters.startDate,
-          lte: filters.endDate,
-        },
-        categoryId: filters.categoryId,
-        type: filters.transactionType,
-        description: {
-          contains: filters.searchTerm,
-        },
+        ...(filters.startDate && filters.endDate
+          ? { date: { gte: filters.startDate, lte: filters.endDate } }
+          : filters.startDate
+            ? { date: { gte: filters.startDate } }
+            : filters.endDate
+              ? { date: { lte: filters.endDate } }
+              : {}),
+        ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+        ...(filters.transactionType ? { type: filters.transactionType } : {}),
+        ...(filters.searchTerm
+          ? { description: { contains: filters.searchTerm } }
+          : {}),
       },
       take: filters.perPage,
       skip: (filters.page - 1) * filters.perPage,
       include: { category: true },
+      orderBy: { date: 'desc' },
     });
 
     return transactions.map(this.mapToDomain);
