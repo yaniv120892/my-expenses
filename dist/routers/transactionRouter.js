@@ -20,8 +20,10 @@ router.get('/', (0, validation_1.validateRequest)(requests_1.GetTransactionsRequ
         : undefined,
     categoryId: req.query.categoryId,
     type: req.query.type,
-    page: parseInt(req.query.page, 10) || 1,
-    perPage: parseInt(req.query.perPage, 10) || 10,
+    page: req.query.page ? parseInt(req.query.page, 10) : 1,
+    perPage: req.query.perPage
+        ? parseInt(req.query.perPage, 10)
+        : 10,
     searchTerm: req.query.searchTerm,
 }), 200));
 router.put('/:id', (0, validation_1.validateRequest)(requests_1.CreateTransactionRequest), (0, handleRequest_1.handleRequest)((req) => transactionController_1.default.updateTransaction(req.params.id, req.body), 200));

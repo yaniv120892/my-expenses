@@ -41,11 +41,13 @@ router.get(
         endDate: req.query.endDate
           ? new Date(req.query.endDate as string)
           : undefined,
-        categoryId: req.query.categoryId as string,
-        type: req.query.type as TransactionType,
-        page: parseInt(req.query.page as string, 10) || 1,
-        perPage: parseInt(req.query.perPage as string, 10) || 10,
-        searchTerm: req.query.searchTerm as string,
+        categoryId: req.query.categoryId as string | undefined,
+        type: req.query.type as TransactionType | undefined,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : 1,
+        perPage: req.query.perPage
+          ? parseInt(req.query.perPage as string, 10)
+          : 10,
+        searchTerm: req.query.searchTerm as string | undefined,
       }),
     200,
   ),
