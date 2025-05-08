@@ -26,6 +26,7 @@ export class CreateTransactionRequest {
   type: TransactionType;
 
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   date?: Date;
 }
@@ -44,16 +45,19 @@ export class UpdateTransactionRequest {
   @IsString()
   type: TransactionType;
 
+  @Type(() => Date)
   @IsDate()
   date: Date;
 }
 
 export class GetTransactionsSummaryRequest {
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   startDate?: Date;
 
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   endDate?: Date;
 
@@ -68,10 +72,12 @@ export class GetTransactionsSummaryRequest {
 
 export class GetTransactionsRequest {
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   startDate?: Date;
 
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   endDate?: Date;
 
