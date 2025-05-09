@@ -21,7 +21,11 @@ class TransactionController {
     async getTransactions(getTransactionsRequest) {
         try {
             logger_1.default.debug('Start get transactions', getTransactionsRequest);
-            const transactions = await transactionService_1.default.getTransactions(getTransactionsRequest);
+            const transactions = await transactionService_1.default.getTransactions(Object.assign(Object.assign({}, getTransactionsRequest), { startDate: getTransactionsRequest.startDate
+                    ? new Date(getTransactionsRequest.startDate)
+                    : undefined, endDate: getTransactionsRequest.endDate
+                    ? new Date(getTransactionsRequest.endDate)
+                    : undefined, transactionType: getTransactionsRequest.type }));
             logger_1.default.debug('Done get transactions', getTransactionsRequest, transactions);
             return transactions;
         }
