@@ -20,9 +20,12 @@ model Transaction {
 }
 
 model Category {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String    @unique
-  transactions   Transaction[]
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique
+  parentId  String?    @db.Uuid
+  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryToCategory")
+  transactions Transaction[]
 }
 
 enum TransactionType {
