@@ -14,6 +14,7 @@ class TransactionController {
       const transactionId = await transactionService.createTransaction({
         ...createTransactionRequest,
         date: createTransactionRequest.date || new Date(),
+        categoryId: createTransactionRequest.categoryId || null,
       });
       logger.debug(
         'Done create transaction',
