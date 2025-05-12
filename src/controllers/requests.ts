@@ -18,9 +18,9 @@ export class CreateTransactionRequest {
   @Type(() => Number)
   value: number;
 
-  @IsUUID()
   @IsOptional()
-  categoryId: string;
+  @IsUUID()
+  categoryId?: string;
 
   @IsString()
   type: TransactionType;
