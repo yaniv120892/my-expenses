@@ -29,6 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const csv_parser_1 = __importDefault(require("csv-parser"));
 const dotenv = __importStar(require("dotenv"));
+const categoryMappingUtils_1 = require("./categoryMappingUtils");
 dotenv.config();
 const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const exportedFilePath = 'src/scripts/data/exported.csv';
@@ -39,8 +40,8 @@ async function exportCsv() {
     const rowsWithDescriptionAndCategory = new Set();
     for (const row of rows) {
         const description = row.Notes;
-        const categoryName = row.categoryName;
-        const data = `${normalize(description)};${normalize(categoryName)}\n`;
+        const categoryName = row.Category;
+        const data = `${normalize(description)};${(0, categoryMappingUtils_1.normalizeCategoryName)(categoryName)}\n`;
         rowsWithDescriptionAndCategory.add(data);
     }
     const uniqueRows = new Set();

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import csv from 'csv-parser';
 import * as dotenv from 'dotenv';
+import { normalizeCategoryName } from './categoryMappingUtils';
 
 dotenv.config();
 
@@ -16,9 +17,9 @@ async function exportCsv() {
   const rowsWithDescriptionAndCategory = new Set<string>();
   for (const row of rows) {
     const description: string = row.Notes;
-    const categoryName: string = row.categoryName;
+    const categoryName: string = row.Category;
 
-    const data = `${normalize(description)};${normalize(categoryName)}\n`;
+    const data = `${normalize(description)};${normalizeCategoryName(categoryName)}\n`;
     rowsWithDescriptionAndCategory.add(data);
   }
 

@@ -3,42 +3,12 @@ import csv from 'csv-parser';
 import prisma from '../prisma/client';
 import * as dotenv from 'dotenv';
 import { parse } from 'date-fns';
+import { normalizeCategoryName } from './categoryMappingUtils';
 
 dotenv.config();
 
 const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const categoryCache: Map<string, string> = new Map(); // Stores category name → ID mapping
-
-// Add mapping for Hebrew → English category names
-const categoryNameMap: Record<string, string> = {
-  'אופניים וקורקינט': 'Bikes & Scooters',
-  'אינטרנט וטלוויזיה': 'Internet & TV',
-  'חשבון גז': 'Gas Bill',
-  'חשבון מים': 'Water Bill',
-  השקעות: 'Investments',
-  'ועד בית': 'Building Committee',
-  חשבונות: 'Bills',
-  חשמל: 'Electricity',
-  חתונה: 'Wedding',
-  טלפון: 'Phone',
-  מונית: 'Taxi',
-  'מוצרים לבית': 'Home Products',
-  משכנתא: 'Mortgage',
-  קולנוע: 'Cinema',
-  'קופ"ח': 'HMO/Health Fund',
-  תינוקות: 'Babies',
-  תרומה: 'Donation',
-};
-
-function normalizeCategoryName(name: string): string {
-  try {
-    const trimmed = name.trim();
-    return categoryNameMap[trimmed] || trimmed;
-  } catch (error) {
-    console.error(`Error normalizing category name: ${name}`, error);
-    throw new Error(`Failed to normalize category name: ${name}, ${error}`);
-  }
-}
 
 async function importData() {
   console.log('Start importing data');
