@@ -61,8 +61,10 @@ class TransactionService {
             logger_1.default.warn(`Failed to categorize expense: ${description}`);
         }
         if (categoryFoundUsingCategorizer) {
+            logger_1.default.debug(`Categorizer found category for expense: ${description} - ${category}`);
             return category;
         }
+        logger_1.default.warn(`No category found for expense using categorizer. Using AI service instead.`);
         return this.aiService.suggestCategory(description, categories);
     }
     async categorizeExpense(description) {

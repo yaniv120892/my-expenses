@@ -18,6 +18,7 @@ import categoryRepository from '../repositories/categoryRepository';
 import axios from 'axios';
 import logger from '../utils/logger';
 import { Category } from '../types/category';
+import { log } from 'winston';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
@@ -101,8 +102,15 @@ class TransactionService {
     }
 
     if (categoryFoundUsingCategorizer) {
+      logger.debug(
+        `Categorizer found category for expense: ${description} - ${category}`,
+      );
       return category as string;
     }
+
+    logger.warn(
+      `No category found for expense using categorizer. Using AI service instead.`,
+    );
 
     return this.aiService.suggestCategory(description, categories);
   }
