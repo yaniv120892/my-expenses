@@ -31,39 +31,10 @@ const csv_parser_1 = __importDefault(require("csv-parser"));
 const client_1 = __importDefault(require("../prisma/client"));
 const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
+const categoryMappingUtils_1 = require("./categoryMappingUtils");
 dotenv.config();
 const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const categoryCache = new Map(); // Stores category name → ID mapping
-// Add mapping for Hebrew → English category names
-const categoryNameMap = {
-    'אופניים וקורקינט': 'Bikes & Scooters',
-    'אינטרנט וטלוויזיה': 'Internet & TV',
-    'חשבון גז': 'Gas Bill',
-    'חשבון מים': 'Water Bill',
-    השקעות: 'Investments',
-    'ועד בית': 'Building Committee',
-    חשבונות: 'Bills',
-    חשמל: 'Electricity',
-    חתונה: 'Wedding',
-    טלפון: 'Phone',
-    מונית: 'Taxi',
-    'מוצרים לבית': 'Home Products',
-    משכנתא: 'Mortgage',
-    קולנוע: 'Cinema',
-    'קופ"ח': 'HMO/Health Fund',
-    תינוקות: 'Babies',
-    תרומה: 'Donation',
-};
-function normalizeCategoryName(name) {
-    try {
-        const trimmed = name.trim();
-        return categoryNameMap[trimmed] || trimmed;
-    }
-    catch (error) {
-        console.error(`Error normalizing category name: ${name}`, error);
-        throw new Error(`Failed to normalize category name: ${name}, ${error}`);
-    }
-}
 async function importData() {
     console.log('Start importing data');
     const rows = [];
@@ -89,7 +60,7 @@ async function upsertCategories(rows) {
     const uniqueCategories = new Set();
     for (const row of rows) {
         if (row.Category) {
-            uniqueCategories.add(normalizeCategoryName(row.Category));
+            uniqueCategories.add((0, categoryMappingUtils_1.normalizeCategoryName)(row.Category));
         }
     }
     console.log(`Found ${uniqueCategories.size} unique categories.`);
@@ -121,7 +92,7 @@ async function processRowsInBatches(rows, batchSize = 10) {
 }
 async function processRow(row) {
     const { Category, Date } = row;
-    const normalizedCategory = normalizeCategoryName(Category);
+    const normalizedCategory = (0, categoryMappingUtils_1.normalizeCategoryName)(Category);
     if (!categoryCache.has(normalizedCategory)) {
         throw new Error(`Category '${normalizedCategory}' not found in cache. This should not happen.`);
     }
