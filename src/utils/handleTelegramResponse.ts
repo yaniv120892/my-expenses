@@ -5,6 +5,5 @@ export const handleResponse = async (
   response: { message: string },
   bot: TelegramBot,
 ) => {
-  // Send the message to the user via Telegram
   await bot.sendMessage(chatId, response.message);
 };

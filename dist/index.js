@@ -44,7 +44,6 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(logger_1.requestLogger);
 app.use('/', index_1.default);
-// Set webhook for Telegram bot (optional)
 const setWebhook = async () => {
     const webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:3001/webhook';
     logger_1.default.info(`Setting Telegram webhook to: ${webhookUrl}`);

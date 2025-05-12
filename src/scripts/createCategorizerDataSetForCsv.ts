@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
+const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const exportedFilePath = 'src/scripts/data/exported.csv';
 
 async function exportCsv() {
@@ -15,7 +15,6 @@ async function exportCsv() {
 
   const rowsWithDescriptionAndCategory = new Set<string>();
   for (const row of rows) {
-    // write description and category to a new csv file and remove duplicates
     const description: string = row.Notes;
     const categoryName: string = row.categoryName;
 

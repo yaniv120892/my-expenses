@@ -32,15 +32,43 @@ const client_1 = __importDefault(require("../prisma/client"));
 const dotenv = __importStar(require("dotenv"));
 const date_fns_1 = require("date-fns");
 dotenv.config();
-const csvFilePath = 'src/scripts/data/CSV_05_07__14_03_20.csv';
+const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const categoryCache = new Map(); // Stores category name → ID mapping
+// Add mapping for Hebrew → English category names
+const categoryNameMap = {
+    'אופניים וקורקינט': 'Bikes & Scooters',
+    'אינטרנט וטלוויזיה': 'Internet & TV',
+    'חשבון גז': 'Gas Bill',
+    'חשבון מים': 'Water Bill',
+    השקעות: 'Investments',
+    'ועד בית': 'Building Committee',
+    חשבונות: 'Bills',
+    חשמל: 'Electricity',
+    חתונה: 'Wedding',
+    טלפון: 'Phone',
+    מונית: 'Taxi',
+    'מוצרים לבית': 'Home Products',
+    משכנתא: 'Mortgage',
+    קולנוע: 'Cinema',
+    'קופ"ח': 'HMO/Health Fund',
+    תינוקות: 'Babies',
+    תרומה: 'Donation',
+};
+function normalizeCategoryName(name) {
+    try {
+        const trimmed = name.trim();
+        return categoryNameMap[trimmed] || trimmed;
+    }
+    catch (error) {
+        console.error(`Error normalizing category name: ${name}`, error);
+        throw new Error(`Failed to normalize category name: ${name}, ${error}`);
+    }
+}
 async function importData() {
     console.log('Start importing data');
     const rows = [];
     await readCSVFile(rows);
-    // Step 1: Find all unique categories and insert missing ones into DB
     await upsertCategories(rows);
-    // Step 2: Process transactions using the in-memory category cache
     await processRowsInBatches(rows);
     console.log('Data imported successfully');
     await client_1.default.$disconnect();
@@ -61,23 +89,21 @@ async function upsertCategories(rows) {
     const uniqueCategories = new Set();
     for (const row of rows) {
         if (row.Category) {
-            uniqueCategories.add(row.Category.trim());
+            uniqueCategories.add(normalizeCategoryName(row.Category));
         }
     }
     console.log(`Found ${uniqueCategories.size} unique categories.`);
-    // Check which categories already exist in DB
     const existingCategories = await client_1.default.category.findMany({
         where: { name: { in: Array.from(uniqueCategories) } },
     });
-    // Store existing categories in cache
     for (const category of existingCategories) {
         categoryCache.set(category.name, category.id);
     }
-    // Identify missing categories
     const existingCategoryNames = new Set(existingCategories.map((c) => c.name));
     const missingCategories = Array.from(uniqueCategories).filter((name) => !existingCategoryNames.has(name));
     if (missingCategories.length > 0) {
         console.log(`Inserting ${missingCategories.length} new categories...`);
+        console.log(`Missing categories: ${missingCategories.join(', ')}`);
         const insertedCategories = await client_1.default.$transaction(missingCategories.map((name) => client_1.default.category.create({ data: { name } })));
         for (const category of insertedCategories) {
             categoryCache.set(category.name, category.id);
@@ -85,7 +111,6 @@ async function upsertCategories(rows) {
     }
     console.log('Category upsert complete.');
 }
-/** Step 3: Process transactions using in-memory category cache */
 async function processRowsInBatches(rows, batchSize = 10) {
     for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
@@ -96,10 +121,11 @@ async function processRowsInBatches(rows, batchSize = 10) {
 }
 async function processRow(row) {
     const { Category, Date } = row;
-    if (!categoryCache.has(Category)) {
-        throw new Error(`Category '${Category}' not found in cache. This should not happen.`);
+    const normalizedCategory = normalizeCategoryName(Category);
+    if (!categoryCache.has(normalizedCategory)) {
+        throw new Error(`Category '${normalizedCategory}' not found in cache. This should not happen.`);
     }
-    const categoryId = categoryCache.get(Category);
+    const categoryId = categoryCache.get(normalizedCategory);
     const parsedDate = parseTransactionDate(Date);
     await createTransaction(row, parsedDate, categoryId);
 }

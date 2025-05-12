@@ -16,7 +16,7 @@ class ChatGPTService {
         var _a;
         try {
             const response = await this.openai.chat.completions.create({
-                model: 'gpt-4-turbo', // Ensure you use a model you have access to
+                model: 'gpt-4-turbo',
                 messages: [
                     {
                         role: 'system',
