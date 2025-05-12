@@ -26,7 +26,6 @@ class TransactionManager {
         });
         const sanitizedText = text.replace('/', '').trim().toLowerCase();
         const currentState = this.chatIdToUserStateMapping.get(chatId);
-        // Initialize user state if not already set or handle reset/start
         if (!currentState) {
             this.chatIdToUserStateMapping.set(chatId, {
                 inProcessTransaction: {},
@@ -124,7 +123,6 @@ class TransactionManager {
         const date = ['now', 'today'].includes(sanitizedText)
             ? new Date()
             : new Date(sanitizedText);
-        // Create the transaction
         const createdTransaction = await transactionService_1.default.createTransaction({
             type: inProcessTransaction.type,
             value: inProcessTransaction.value,
@@ -132,7 +130,6 @@ class TransactionManager {
             categoryId: null,
             date,
         });
-        // Fetch transaction details (including category)
         const transaction = await transactionService_1.default.getTransactionItem({
             id: createdTransaction,
         });

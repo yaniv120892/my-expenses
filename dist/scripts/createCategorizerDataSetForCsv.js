@@ -30,7 +30,7 @@ const fs_1 = __importDefault(require("fs"));
 const csv_parser_1 = __importDefault(require("csv-parser"));
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
-const csvFilePath = 'src/scripts/data/CSV_02_02__09_20_08.csv';
+const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const exportedFilePath = 'src/scripts/data/exported.csv';
 async function exportCsv() {
     console.log('Start export data');
@@ -38,7 +38,6 @@ async function exportCsv() {
     await readCSVFile(rows);
     const rowsWithDescriptionAndCategory = new Set();
     for (const row of rows) {
-        // write description and category to a new csv file and remove duplicates
         const description = row.Notes;
         const categoryName = row.categoryName;
         const data = `${normalize(description)};${normalize(categoryName)}\n`;

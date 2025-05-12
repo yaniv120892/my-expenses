@@ -22,7 +22,6 @@ app.use(requestLogger);
 
 app.use('/', router);
 
-// Set webhook for Telegram bot (optional)
 const setWebhook = async () => {
   const webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:3001/webhook';
 
