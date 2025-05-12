@@ -105,7 +105,7 @@ class TransactionService {
       logger.debug(
         `Categorizer found category for expense: ${description} - ${category}`,
       );
-      return category as string;
+      return categories.find((c) => c.name === category)?.id as string;
     }
 
     logger.warn(

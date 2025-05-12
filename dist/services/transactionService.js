@@ -49,6 +49,7 @@ class TransactionService {
         return Object.assign(Object.assign({}, transaction), { categoryId: suggestedCategoryId });
     }
     async getSuggestedCategory(description, categories) {
+        var _a;
         let categoryFoundUsingCategorizer = false;
         let category = null;
         try {
@@ -62,7 +63,7 @@ class TransactionService {
         }
         if (categoryFoundUsingCategorizer) {
             logger_1.default.debug(`Categorizer found category for expense: ${description} - ${category}`);
-            return category;
+            return (_a = categories.find((c) => c.name === category)) === null || _a === void 0 ? void 0 : _a.id;
         }
         logger_1.default.warn(`No category found for expense using categorizer. Using AI service instead.`);
         return this.aiService.suggestCategory(description, categories);
