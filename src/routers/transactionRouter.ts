@@ -5,6 +5,7 @@ import {
   CreateTransactionRequest,
   GetTransactionsRequest,
   GetTransactionsSummaryRequest,
+  UpdateTransactionRequest,
 } from '..//controllers/requests';
 import { handleRequest } from '..//utils/handleRequest';
 import { TransactionType } from '..//types/transaction';
@@ -55,7 +56,7 @@ router.get(
 
 router.put(
   '/:id',
-  validateRequest(CreateTransactionRequest),
+  validateRequest(UpdateTransactionRequest),
   handleRequest(
     (req: Request) =>
       transactionController.updateTransaction(req.params.id, req.body),

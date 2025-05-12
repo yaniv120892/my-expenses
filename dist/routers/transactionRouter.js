@@ -26,6 +26,6 @@ router.get('/', (0, validation_1.validateRequest)(requests_1.GetTransactionsRequ
         : 10,
     searchTerm: req.query.searchTerm,
 }), 200));
-router.put('/:id', (0, validation_1.validateRequest)(requests_1.CreateTransactionRequest), (0, handleRequest_1.handleRequest)((req) => transactionController_1.default.updateTransaction(req.params.id, req.body), 200));
+router.put('/:id', (0, validation_1.validateRequest)(requests_1.UpdateTransactionRequest), (0, handleRequest_1.handleRequest)((req) => transactionController_1.default.updateTransaction(req.params.id, req.body), 200));
 router.delete('/:id', (0, handleRequest_1.handleRequest)((req) => transactionController_1.default.deleteTransaction(req.params.id), 204));
 exports.default = router;
