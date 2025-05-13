@@ -6,6 +6,7 @@ import {
   UpdateScheduledTransaction,
   ScheduledTransactionDomain,
 } from '../types/scheduledTransaction';
+import { ScheduleType } from '@prisma/client';
 
 class ScheduledTransactionService {
   public async processDueScheduledTransactions(date: Date): Promise<void> {
@@ -20,7 +21,11 @@ class ScheduledTransactionService {
         date,
         status: 'PENDING_APPROVAL',
       });
-      const nextRunDate = this.calculateNextRunDate(scheduled, date);
+      const nextRunDate = this.calculateNextRunDate(
+        scheduled.scheduleType,
+        scheduled.interval,
+        date,
+      );
       await scheduledTransactionRepository.updateLastRunAndNextRun(
         scheduled.id,
         date,
@@ -30,20 +35,21 @@ class ScheduledTransactionService {
   }
 
   private calculateNextRunDate(
-    scheduled: ScheduledTransactionDomain,
+    scheduleType: ScheduleType,
+    interval: number | undefined,
     fromDate: Date,
   ): Date {
-    switch (scheduled.scheduleType) {
+    switch (scheduleType) {
       case 'DAILY':
-        return addDays(fromDate, scheduled.interval || 1);
+        return addDays(fromDate, interval || 1);
       case 'WEEKLY':
-        return addWeeks(fromDate, scheduled.interval || 1);
+        return addWeeks(fromDate, interval || 1);
       case 'MONTHLY':
-        return addMonths(fromDate, scheduled.interval || 1);
+        return addMonths(fromDate, interval || 1);
       case 'YEARLY':
-        return addYears(fromDate, scheduled.interval || 1);
+        return addYears(fromDate, interval || 1);
       case 'CUSTOM':
-        return addDays(fromDate, scheduled.interval || 1);
+        return addDays(fromDate, interval || 1);
       default:
         return addDays(fromDate, 1);
     }
@@ -52,7 +58,15 @@ class ScheduledTransactionService {
   public async createScheduledTransaction(
     data: CreateScheduledTransaction,
   ): Promise<string> {
-    return scheduledTransactionRepository.createScheduledTransaction(data);
+    const nextRunDate = this.calculateNextRunDate(
+      data.scheduleType,
+      data.interval,
+      new Date(),
+    );
+    return scheduledTransactionRepository.createScheduledTransaction(
+      data,
+      nextRunDate,
+    );
   }
 
   public async updateScheduledTransaction(

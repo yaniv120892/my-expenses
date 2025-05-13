@@ -18,28 +18,29 @@ class ScheduledTransactionService {
                 date,
                 status: 'PENDING_APPROVAL',
             });
-            const nextRunDate = this.calculateNextRunDate(scheduled, date);
+            const nextRunDate = this.calculateNextRunDate(scheduled.scheduleType, scheduled.interval, date);
             await scheduledTransactionRepository_1.default.updateLastRunAndNextRun(scheduled.id, date, nextRunDate);
         }
     }
-    calculateNextRunDate(scheduled, fromDate) {
-        switch (scheduled.scheduleType) {
+    calculateNextRunDate(scheduleType, interval, fromDate) {
+        switch (scheduleType) {
             case 'DAILY':
-                return (0, date_fns_1.addDays)(fromDate, scheduled.interval || 1);
+                return (0, date_fns_1.addDays)(fromDate, interval || 1);
             case 'WEEKLY':
-                return (0, date_fns_1.addWeeks)(fromDate, scheduled.interval || 1);
+                return (0, date_fns_1.addWeeks)(fromDate, interval || 1);
             case 'MONTHLY':
-                return (0, date_fns_1.addMonths)(fromDate, scheduled.interval || 1);
+                return (0, date_fns_1.addMonths)(fromDate, interval || 1);
             case 'YEARLY':
-                return (0, date_fns_1.addYears)(fromDate, scheduled.interval || 1);
+                return (0, date_fns_1.addYears)(fromDate, interval || 1);
             case 'CUSTOM':
-                return (0, date_fns_1.addDays)(fromDate, scheduled.interval || 1);
+                return (0, date_fns_1.addDays)(fromDate, interval || 1);
             default:
                 return (0, date_fns_1.addDays)(fromDate, 1);
         }
     }
     async createScheduledTransaction(data) {
-        return scheduledTransactionRepository_1.default.createScheduledTransaction(data);
+        const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, new Date());
+        return scheduledTransactionRepository_1.default.createScheduledTransaction(data, nextRunDate);
     }
     async updateScheduledTransaction(id, data) {
         return scheduledTransactionRepository_1.default.updateScheduledTransaction(id, data);
