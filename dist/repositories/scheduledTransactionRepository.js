@@ -23,7 +23,7 @@ class ScheduledTransactionRepository {
     }
     async createScheduledTransaction(data, nextRunDate) {
         const scheduledTransaction = await client_1.default.scheduledTransaction.create({
-            data: Object.assign(Object.assign({}, data), { nextRunDate }),
+            data: Object.assign(Object.assign({}, data), { interval: data.interval === undefined ? null : data.interval, dayOfWeek: data.dayOfWeek === undefined ? null : data.dayOfWeek, dayOfMonth: data.dayOfMonth === undefined ? null : data.dayOfMonth, monthOfYear: data.monthOfYear === undefined ? null : data.monthOfYear, nextRunDate }),
         });
         return scheduledTransaction.id;
     }
@@ -48,7 +48,7 @@ class ScheduledTransactionRepository {
     async updateScheduledTransaction(id, data, nextRunDate) {
         const scheduledTransaction = await client_1.default.scheduledTransaction.update({
             where: { id },
-            data: Object.assign(Object.assign({}, data), { nextRunDate }),
+            data: Object.assign(Object.assign({}, data), { interval: data.interval === undefined ? null : data.interval, dayOfWeek: data.dayOfWeek === undefined ? null : data.dayOfWeek, dayOfMonth: data.dayOfMonth === undefined ? null : data.dayOfMonth, monthOfYear: data.monthOfYear === undefined ? null : data.monthOfYear, nextRunDate }),
         });
         return scheduledTransaction.id;
     }

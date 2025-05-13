@@ -32,6 +32,10 @@ class ScheduledTransactionRepository {
     const scheduledTransaction = await prisma.scheduledTransaction.create({
       data: {
         ...data,
+        interval: data.interval === undefined ? null : data.interval,
+        dayOfWeek: data.dayOfWeek === undefined ? null : data.dayOfWeek,
+        dayOfMonth: data.dayOfMonth === undefined ? null : data.dayOfMonth,
+        monthOfYear: data.monthOfYear === undefined ? null : data.monthOfYear,
         nextRunDate,
       },
     });
@@ -76,6 +80,10 @@ class ScheduledTransactionRepository {
       where: { id },
       data: {
         ...data,
+        interval: data.interval === undefined ? null : data.interval,
+        dayOfWeek: data.dayOfWeek === undefined ? null : data.dayOfWeek,
+        dayOfMonth: data.dayOfMonth === undefined ? null : data.dayOfMonth,
+        monthOfYear: data.monthOfYear === undefined ? null : data.monthOfYear,
         nextRunDate,
       },
     });
