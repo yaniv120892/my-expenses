@@ -21,9 +21,9 @@ class ScheduledTransactionRepository {
             nextRunDate: db.nextRunDate === null ? undefined : db.nextRunDate,
         };
     }
-    async createScheduledTransaction(data) {
+    async createScheduledTransaction(data, nextRunDate) {
         const scheduledTransaction = await client_1.default.scheduledTransaction.create({
-            data,
+            data: Object.assign(Object.assign({}, data), { nextRunDate }),
         });
         return scheduledTransaction.id;
     }
@@ -34,7 +34,7 @@ class ScheduledTransactionRepository {
     async getDueScheduledTransactions(date) {
         const scheduledTransactions = await client_1.default.scheduledTransaction.findMany({
             where: {
-                OR: [{ nextRunDate: { lte: date } }, { lastRunDate: null }],
+                nextRunDate: { lte: date },
             },
         });
         return scheduledTransactions.map(this.mapScheduledTransactionDbToDomain);
