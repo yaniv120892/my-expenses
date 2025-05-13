@@ -28,7 +28,11 @@ class ScheduledTransactionRepository {
         return scheduledTransaction.id;
     }
     async getAllScheduledTransactions() {
-        const scheduledTransactions = await client_1.default.scheduledTransaction.findMany();
+        const scheduledTransactions = await client_1.default.scheduledTransaction.findMany({
+            orderBy: {
+                nextRunDate: 'asc',
+            },
+        });
         return scheduledTransactions.map(this.mapScheduledTransactionDbToDomain);
     }
     async getDueScheduledTransactions(date) {

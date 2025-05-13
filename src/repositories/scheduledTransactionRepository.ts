@@ -45,7 +45,11 @@ class ScheduledTransactionRepository {
   public async getAllScheduledTransactions(): Promise<
     ScheduledTransactionDomain[]
   > {
-    const scheduledTransactions = await prisma.scheduledTransaction.findMany();
+    const scheduledTransactions = await prisma.scheduledTransaction.findMany({
+      orderBy: {
+        nextRunDate: 'asc',
+      },
+    });
     return scheduledTransactions.map(this.mapScheduledTransactionDbToDomain);
   }
 
