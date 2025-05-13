@@ -12,5 +12,13 @@
       "src": "/(.*)",
       "dest": "dist/index.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/process-scheduled-transactions",
+      "schedule": "0 7 * * *",
+      "timezone": "Europe/Jerusalem",
+      "method": "POST"
+    }
   ]
 }
