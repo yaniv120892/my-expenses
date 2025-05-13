@@ -2,7 +2,7 @@ import express from 'express';
 import transactionRouter from '../routers/transactionRouter';
 import categoryRouter from '../routers/categoryRouter';
 import webhookRouter from '../routers/webhookRouter';
-import scheduledTransactionRouter from 'routers/scheduledTransactionRouter';
+import scheduledTransactionRouter from '../routers/scheduledTransactionRouter';
 
 const router = express.Router();
 router.use('/webhook', webhookRouter);

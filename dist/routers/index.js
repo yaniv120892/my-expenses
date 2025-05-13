@@ -7,7 +7,7 @@ const express_1 = __importDefault(require("express"));
 const transactionRouter_1 = __importDefault(require("../routers/transactionRouter"));
 const categoryRouter_1 = __importDefault(require("../routers/categoryRouter"));
 const webhookRouter_1 = __importDefault(require("../routers/webhookRouter"));
-const scheduledTransactionRouter_1 = __importDefault(require("routers/scheduledTransactionRouter"));
+const scheduledTransactionRouter_1 = __importDefault(require("../routers/scheduledTransactionRouter"));
 const router = express_1.default.Router();
 router.use('/webhook', webhookRouter_1.default);
 router.use('/api/transactions', transactionRouter_1.default);
