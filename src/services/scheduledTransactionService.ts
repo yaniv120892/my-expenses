@@ -73,7 +73,18 @@ class ScheduledTransactionService {
     id: string,
     data: UpdateScheduledTransaction,
   ): Promise<string> {
-    return scheduledTransactionRepository.updateScheduledTransaction(id, data);
+    const oldScheduledTransaction =
+      await scheduledTransactionRepository.getScheduledTransactionById(id);
+    const nextRunDate = this.calculateNextRunDate(
+      data.scheduleType,
+      data.interval,
+      oldScheduledTransaction?.lastRunDate || new Date(),
+    );
+    return scheduledTransactionRepository.updateScheduledTransaction(
+      id,
+      data,
+      nextRunDate,
+    );
   }
 
   public async listScheduledTransactions(): Promise<

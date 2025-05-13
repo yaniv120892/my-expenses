@@ -45,15 +45,24 @@ class ScheduledTransactionRepository {
             data: { lastRunDate, nextRunDate },
         });
     }
-    async updateScheduledTransaction(id, data) {
+    async updateScheduledTransaction(id, data, nextRunDate) {
         const scheduledTransaction = await client_1.default.scheduledTransaction.update({
             where: { id },
-            data,
+            data: Object.assign(Object.assign({}, data), { nextRunDate }),
         });
         return scheduledTransaction.id;
     }
     async deleteScheduledTransaction(id) {
         await client_1.default.scheduledTransaction.delete({ where: { id } });
+    }
+    async getScheduledTransactionById(id) {
+        const scheduledTransaction = await client_1.default.scheduledTransaction.findUnique({
+            where: { id },
+        });
+        if (!scheduledTransaction) {
+            return null;
+        }
+        return this.mapScheduledTransactionDbToDomain(scheduledTransaction);
     }
 }
 exports.default = new ScheduledTransactionRepository();
