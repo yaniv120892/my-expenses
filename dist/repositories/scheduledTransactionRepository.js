@@ -34,7 +34,7 @@ class ScheduledTransactionRepository {
     async getDueScheduledTransactions(date) {
         const scheduledTransactions = await client_1.default.scheduledTransaction.findMany({
             where: {
-                nextRunDate: { lte: date },
+                OR: [{ nextRunDate: { lte: date } }, { lastRunDate: null }],
             },
         });
         return scheduledTransactions.map(this.mapScheduledTransactionDbToDomain);

@@ -1,8 +1,18 @@
 import express, { Request } from 'express';
 import scheduledTransactionController from '../controllers/scheduledTransactionController';
 import { handleRequest } from '../utils/handleRequest';
+import scheduledTransactionService from 'services/scheduledTransactionService';
 
 const router = express.Router();
+
+router.post(
+  '/process-scheduled-transactions',
+  handleRequest(
+    (req: Request) =>
+      scheduledTransactionService.processDueScheduledTransactions(new Date()),
+    200,
+  ),
+);
 
 router.post(
   '/',
