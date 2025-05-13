@@ -17,7 +17,6 @@
     {
       "path": "/api/scheduled-transactions/process",
       "schedule": "0 7 * * *",
-      "timezone": "Europe/Jerusalem",
       "method": "POST"
     }
   ]
