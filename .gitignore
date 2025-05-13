@@ -4,3 +4,4 @@ node_modules
 
 # include for vercel
 #/dist
+src/scripts/ca.pem
