@@ -5,7 +5,7 @@ import scheduledTransactionService from '../services/scheduledTransactionService
 
 const router = express.Router();
 
-router.post(
+router.get(
   '/process',
   handleRequest(
     (req: Request) =>
