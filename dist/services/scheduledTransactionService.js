@@ -43,7 +43,9 @@ class ScheduledTransactionService {
         return scheduledTransactionRepository_1.default.createScheduledTransaction(data, nextRunDate);
     }
     async updateScheduledTransaction(id, data) {
-        return scheduledTransactionRepository_1.default.updateScheduledTransaction(id, data);
+        const oldScheduledTransaction = await scheduledTransactionRepository_1.default.getScheduledTransactionById(id);
+        const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, (oldScheduledTransaction === null || oldScheduledTransaction === void 0 ? void 0 : oldScheduledTransaction.lastRunDate) || new Date());
+        return scheduledTransactionRepository_1.default.updateScheduledTransaction(id, data, nextRunDate);
     }
     async listScheduledTransactions() {
         return scheduledTransactionRepository_1.default.getAllScheduledTransactions();

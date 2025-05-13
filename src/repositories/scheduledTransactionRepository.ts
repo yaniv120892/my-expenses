@@ -70,16 +70,33 @@ class ScheduledTransactionRepository {
   public async updateScheduledTransaction(
     id: string,
     data: UpdateScheduledTransaction,
+    nextRunDate: Date,
   ): Promise<string> {
     const scheduledTransaction = await prisma.scheduledTransaction.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        nextRunDate,
+      },
     });
     return scheduledTransaction.id;
   }
 
   public async deleteScheduledTransaction(id: string): Promise<void> {
     await prisma.scheduledTransaction.delete({ where: { id } });
+  }
+
+  public async getScheduledTransactionById(
+    id: string,
+  ): Promise<ScheduledTransactionDomain | null> {
+    const scheduledTransaction = await prisma.scheduledTransaction.findUnique({
+      where: { id },
+    });
+
+    if (!scheduledTransaction) {
+      return null;
+    }
+    return this.mapScheduledTransactionDbToDomain(scheduledTransaction);
   }
 }
 

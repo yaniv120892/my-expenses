@@ -14,11 +14,11 @@ export interface CreateScheduledTransaction {
 }
 
 export interface UpdateScheduledTransaction {
-  description?: string;
-  value?: number;
-  type?: TransactionType;
-  categoryId?: string;
-  scheduleType?: ScheduleType;
+  description: string;
+  value: number;
+  type: TransactionType;
+  categoryId: string;
+  scheduleType: ScheduleType;
   interval?: number;
   dayOfWeek?: number;
   dayOfMonth?: number;
