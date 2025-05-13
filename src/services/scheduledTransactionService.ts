@@ -1,6 +1,14 @@
 import scheduledTransactionRepository from '../repositories/scheduledTransactionRepository';
 import transactionService from './transactionService';
-import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
+import {
+  addDays,
+  addWeeks,
+  addMonths,
+  addYears,
+  setDay,
+  setDate,
+  isAfter,
+} from 'date-fns';
 import {
   CreateScheduledTransaction,
   UpdateScheduledTransaction,
@@ -25,6 +33,8 @@ class ScheduledTransactionService {
         scheduled.scheduleType,
         scheduled.interval,
         date,
+        scheduled.dayOfWeek,
+        scheduled.dayOfMonth,
       );
       await scheduledTransactionRepository.updateLastRunAndNextRun(
         scheduled.id,
@@ -38,21 +48,43 @@ class ScheduledTransactionService {
     scheduleType: ScheduleType,
     interval: number | undefined,
     fromDate: Date,
+    dayOfWeek?: number,
+    dayOfMonth?: number,
   ): Date {
-    switch (scheduleType) {
-      case 'DAILY':
-        return addDays(fromDate, interval || 1);
-      case 'WEEKLY':
-        return addWeeks(fromDate, interval || 1);
-      case 'MONTHLY':
-        return addMonths(fromDate, interval || 1);
-      case 'YEARLY':
-        return addYears(fromDate, interval || 1);
-      case 'CUSTOM':
-        return addDays(fromDate, interval || 1);
-      default:
-        return addDays(fromDate, 1);
+    const intervalValue = interval || 1;
+    if (scheduleType === 'DAILY') {
+      return addDays(fromDate, intervalValue);
     }
+    if (scheduleType === 'WEEKLY') {
+      const baseDate = addWeeks(fromDate, intervalValue);
+      if (dayOfWeek !== undefined) {
+        let next = setDay(baseDate, dayOfWeek, { weekStartsOn: 1 });
+        if (!isAfter(next, fromDate)) {
+          next = addWeeks(next, 1);
+        }
+        return next;
+      }
+      return baseDate;
+    }
+    if (scheduleType === 'MONTHLY') {
+      const baseDate = addMonths(fromDate, intervalValue);
+      if (dayOfMonth !== undefined) {
+        let next = setDate(baseDate, dayOfMonth);
+        if (!isAfter(next, fromDate)) {
+          next = addMonths(next, 1);
+          next = setDate(next, dayOfMonth);
+        }
+        return next;
+      }
+      return baseDate;
+    }
+    if (scheduleType === 'YEARLY') {
+      return addYears(fromDate, intervalValue);
+    }
+    if (scheduleType === 'CUSTOM') {
+      return addDays(fromDate, intervalValue);
+    }
+    return addDays(fromDate, 1);
   }
 
   public async createScheduledTransaction(
@@ -62,6 +94,8 @@ class ScheduledTransactionService {
       data.scheduleType,
       data.interval,
       new Date(),
+      data.dayOfWeek,
+      data.dayOfMonth,
     );
     return scheduledTransactionRepository.createScheduledTransaction(
       data,
@@ -79,6 +113,8 @@ class ScheduledTransactionService {
       data.scheduleType,
       data.interval,
       oldScheduledTransaction?.lastRunDate || new Date(),
+      data.dayOfWeek,
+      data.dayOfMonth,
     );
     return scheduledTransactionRepository.updateScheduledTransaction(
       id,

@@ -2,6 +2,11 @@ import express, { Request } from 'express';
 import scheduledTransactionController from '../controllers/scheduledTransactionController';
 import { handleRequest } from '../utils/handleRequest';
 import scheduledTransactionService from '../services/scheduledTransactionService';
+import { validateRequest } from '../middlewares/validation';
+import {
+  CreateScheduledTransactionRequest,
+  UpdateScheduledTransactionRequest,
+} from '../controllers/requests';
 
 const router = express.Router();
 
@@ -16,6 +21,7 @@ router.get(
 
 router.post(
   '/',
+  validateRequest(CreateScheduledTransactionRequest),
   handleRequest(
     (req: Request) => scheduledTransactionController.create(req.body),
     201,
@@ -24,6 +30,7 @@ router.post(
 
 router.put(
   '/:id',
+  validateRequest(UpdateScheduledTransactionRequest),
   handleRequest(
     (req: Request) =>
       scheduledTransactionController.update(req.params.id, req.body),
