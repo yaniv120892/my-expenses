@@ -39,16 +39,15 @@ class ScheduledTransactionService {
             return baseDate;
         }
         if (scheduleType === 'MONTHLY') {
-            const baseDate = (0, date_fns_1.addMonths)(fromDate, intervalValue);
             if (dayOfMonth !== undefined) {
-                let next = (0, date_fns_1.setDate)(baseDate, dayOfMonth);
-                if (!(0, date_fns_1.isAfter)(next, fromDate)) {
-                    next = (0, date_fns_1.addMonths)(next, 1);
-                    next = (0, date_fns_1.setDate)(next, dayOfMonth);
+                const currentMonthDate = (0, date_fns_1.setDate)(new Date(fromDate), dayOfMonth);
+                if ((0, date_fns_1.isAfter)(currentMonthDate, fromDate)) {
+                    return currentMonthDate;
                 }
-                return next;
+                const nextMonth = (0, date_fns_1.addMonths)(fromDate, intervalValue);
+                return (0, date_fns_1.setDate)(nextMonth, dayOfMonth);
             }
-            return baseDate;
+            return (0, date_fns_1.addMonths)(fromDate, intervalValue);
         }
         if (scheduleType === 'YEARLY') {
             return (0, date_fns_1.addYears)(fromDate, intervalValue);
