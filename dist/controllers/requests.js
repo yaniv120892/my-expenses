@@ -9,9 +9,42 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
+exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+const client_1 = require("@prisma/client");
+function IsValidScheduledCombination(validationOptions) {
+    return function (object, propertyName) {
+        (0, class_validator_1.registerDecorator)({
+            name: 'isValidScheduledCombination',
+            target: object.constructor,
+            propertyName,
+            options: validationOptions,
+            validator: {
+                validate(_, args) {
+                    const { scheduleType, dayOfWeek, dayOfMonth } = args.object;
+                    if (scheduleType === 'WEEKLY') {
+                        if (dayOfWeek === undefined || dayOfWeek === null)
+                            return false;
+                        if (dayOfMonth !== undefined)
+                            return false;
+                    }
+                    if (scheduleType === 'MONTHLY') {
+                        if (dayOfMonth === undefined || dayOfMonth === null)
+                            return false;
+                        if (dayOfWeek !== undefined)
+                            return false;
+                    }
+                    if (scheduleType !== 'WEEKLY' && dayOfWeek !== undefined)
+                        return false;
+                    if (scheduleType !== 'MONTHLY' && dayOfMonth !== undefined)
+                        return false;
+                    return true;
+                },
+            },
+        });
+    };
+}
 class CreateTransactionRequest {
 }
 exports.CreateTransactionRequest = CreateTransactionRequest;
@@ -164,3 +197,103 @@ __decorate([
     (0, class_validator_1.ValidateNested)(),
     __metadata("design:type", WebhookMessage)
 ], WebhookRequest.prototype, "message", void 0);
+class CreateScheduledTransactionRequest {
+}
+exports.CreateScheduledTransactionRequest = CreateScheduledTransactionRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateScheduledTransactionRequest.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateScheduledTransactionRequest.prototype, "value", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], CreateScheduledTransactionRequest.prototype, "categoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(client_1.ScheduleType),
+    __metadata("design:type", String)
+], CreateScheduledTransactionRequest.prototype, "scheduleType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateScheduledTransactionRequest.prototype, "interval", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateScheduledTransactionRequest.prototype, "dayOfWeek", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateScheduledTransactionRequest.prototype, "dayOfMonth", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateScheduledTransactionRequest.prototype, "monthOfYear", void 0);
+__decorate([
+    IsValidScheduledCombination({
+        message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
+    }),
+    __metadata("design:type", Object)
+], CreateScheduledTransactionRequest.prototype, "dummy", void 0);
+class UpdateScheduledTransactionRequest {
+}
+exports.UpdateScheduledTransactionRequest = UpdateScheduledTransactionRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateScheduledTransactionRequest.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateScheduledTransactionRequest.prototype, "value", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], UpdateScheduledTransactionRequest.prototype, "categoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(client_1.ScheduleType),
+    __metadata("design:type", String)
+], UpdateScheduledTransactionRequest.prototype, "scheduleType", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateScheduledTransactionRequest.prototype, "interval", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateScheduledTransactionRequest.prototype, "dayOfWeek", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateScheduledTransactionRequest.prototype, "dayOfMonth", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateScheduledTransactionRequest.prototype, "monthOfYear", void 0);
+__decorate([
+    IsValidScheduledCombination({
+        message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
+    }),
+    __metadata("design:type", Object)
+], UpdateScheduledTransactionRequest.prototype, "dummy", void 0);

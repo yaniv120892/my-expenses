@@ -7,8 +7,42 @@ import {
   IsUUID,
   Min,
   ValidateNested,
+  IsEnum,
+  registerDecorator,
+  ValidationOptions,
+  ValidationArguments,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ScheduleType } from '@prisma/client';
+
+function IsValidScheduledCombination(validationOptions?: ValidationOptions) {
+  return function (object: any, propertyName: string) {
+    registerDecorator({
+      name: 'isValidScheduledCombination',
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: {
+        validate(_: any, args: ValidationArguments) {
+          const { scheduleType, dayOfWeek, dayOfMonth } = args.object as any;
+          if (scheduleType === 'WEEKLY') {
+            if (dayOfWeek === undefined || dayOfWeek === null) return false;
+            if (dayOfMonth !== undefined) return false;
+          }
+          if (scheduleType === 'MONTHLY') {
+            if (dayOfMonth === undefined || dayOfMonth === null) return false;
+            if (dayOfWeek !== undefined) return false;
+          }
+          if (scheduleType !== 'WEEKLY' && dayOfWeek !== undefined)
+            return false;
+          if (scheduleType !== 'MONTHLY' && dayOfMonth !== undefined)
+            return false;
+          return true;
+        },
+      },
+    });
+  };
+}
 
 export class CreateTransactionRequest {
   @IsString()
@@ -126,4 +160,84 @@ export class WebhookMessage {
 export class WebhookRequest {
   @ValidateNested()
   message: WebhookMessage;
+}
+
+export class CreateScheduledTransactionRequest {
+  @IsString()
+  description: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  value: number;
+
+  @IsUUID()
+  categoryId: string;
+
+  @IsEnum(ScheduleType)
+  scheduleType: ScheduleType;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  interval?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  dayOfWeek?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  dayOfMonth?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  monthOfYear?: number;
+
+  @IsValidScheduledCombination({
+    message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
+  })
+  dummy?: any;
+}
+
+export class UpdateScheduledTransactionRequest {
+  @IsString()
+  description: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  value: number;
+
+  @IsUUID()
+  categoryId: string;
+
+  @IsEnum(ScheduleType)
+  scheduleType: ScheduleType;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  interval?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  dayOfWeek?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  dayOfMonth?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  monthOfYear?: number;
+
+  @IsValidScheduledCombination({
+    message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
+  })
+  dummy?: any;
 }

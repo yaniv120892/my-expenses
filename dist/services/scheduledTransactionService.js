@@ -18,33 +18,53 @@ class ScheduledTransactionService {
                 date,
                 status: 'PENDING_APPROVAL',
             });
-            const nextRunDate = this.calculateNextRunDate(scheduled.scheduleType, scheduled.interval, date);
+            const nextRunDate = this.calculateNextRunDate(scheduled.scheduleType, scheduled.interval, date, scheduled.dayOfWeek, scheduled.dayOfMonth);
             await scheduledTransactionRepository_1.default.updateLastRunAndNextRun(scheduled.id, date, nextRunDate);
         }
     }
-    calculateNextRunDate(scheduleType, interval, fromDate) {
-        switch (scheduleType) {
-            case 'DAILY':
-                return (0, date_fns_1.addDays)(fromDate, interval || 1);
-            case 'WEEKLY':
-                return (0, date_fns_1.addWeeks)(fromDate, interval || 1);
-            case 'MONTHLY':
-                return (0, date_fns_1.addMonths)(fromDate, interval || 1);
-            case 'YEARLY':
-                return (0, date_fns_1.addYears)(fromDate, interval || 1);
-            case 'CUSTOM':
-                return (0, date_fns_1.addDays)(fromDate, interval || 1);
-            default:
-                return (0, date_fns_1.addDays)(fromDate, 1);
+    calculateNextRunDate(scheduleType, interval, fromDate, dayOfWeek, dayOfMonth) {
+        const intervalValue = interval || 1;
+        if (scheduleType === 'DAILY') {
+            return (0, date_fns_1.addDays)(fromDate, intervalValue);
         }
+        if (scheduleType === 'WEEKLY') {
+            const baseDate = (0, date_fns_1.addWeeks)(fromDate, intervalValue);
+            if (dayOfWeek !== undefined) {
+                let next = (0, date_fns_1.setDay)(baseDate, dayOfWeek, { weekStartsOn: 1 });
+                if (!(0, date_fns_1.isAfter)(next, fromDate)) {
+                    next = (0, date_fns_1.addWeeks)(next, 1);
+                }
+                return next;
+            }
+            return baseDate;
+        }
+        if (scheduleType === 'MONTHLY') {
+            const baseDate = (0, date_fns_1.addMonths)(fromDate, intervalValue);
+            if (dayOfMonth !== undefined) {
+                let next = (0, date_fns_1.setDate)(baseDate, dayOfMonth);
+                if (!(0, date_fns_1.isAfter)(next, fromDate)) {
+                    next = (0, date_fns_1.addMonths)(next, 1);
+                    next = (0, date_fns_1.setDate)(next, dayOfMonth);
+                }
+                return next;
+            }
+            return baseDate;
+        }
+        if (scheduleType === 'YEARLY') {
+            return (0, date_fns_1.addYears)(fromDate, intervalValue);
+        }
+        if (scheduleType === 'CUSTOM') {
+            return (0, date_fns_1.addDays)(fromDate, intervalValue);
+        }
+        return (0, date_fns_1.addDays)(fromDate, 1);
     }
     async createScheduledTransaction(data) {
-        const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, new Date());
+        const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, new Date(), data.dayOfWeek, data.dayOfMonth);
         return scheduledTransactionRepository_1.default.createScheduledTransaction(data, nextRunDate);
     }
     async updateScheduledTransaction(id, data) {
         const oldScheduledTransaction = await scheduledTransactionRepository_1.default.getScheduledTransactionById(id);
-        const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, (oldScheduledTransaction === null || oldScheduledTransaction === void 0 ? void 0 : oldScheduledTransaction.lastRunDate) || new Date());
+        const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, (oldScheduledTransaction === null || oldScheduledTransaction === void 0 ? void 0 : oldScheduledTransaction.lastRunDate) || new Date(), data.dayOfWeek, data.dayOfMonth);
         return scheduledTransactionRepository_1.default.updateScheduledTransaction(id, data, nextRunDate);
     }
     async listScheduledTransactions() {
