@@ -10,6 +10,7 @@ const webhookRouter_1 = __importDefault(require("../routers/webhookRouter"));
 const router = express_1.default.Router();
 router.use('/webhook', webhookRouter_1.default);
 router.use('/api/transactions', transactionRouter_1.default);
+router.use('/api/scheduled-transactions', transactionRouter_1.default);
 router.use('/api/categories', categoryRouter_1.default);
 router.get('/', (req, res) => {
     res.send('ok');
