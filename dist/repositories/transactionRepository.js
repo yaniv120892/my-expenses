@@ -15,6 +15,7 @@ class TransactionRepository {
                 },
                 categoryId: filters.categoryId,
                 type: filters.transactionType,
+                status: filters.status || client_1.TransactionStatus.APPROVED,
             },
         });
         const totalIncome = transactions
@@ -33,6 +34,7 @@ class TransactionRepository {
                 date: data.date,
                 categoryId: data.categoryId,
                 type: data.type,
+                status: data.status || client_1.TransactionStatus.APPROVED,
             },
             include: { category: true },
         });
@@ -40,7 +42,7 @@ class TransactionRepository {
     }
     async getTransactions(filters) {
         const transactions = await client_2.default.transaction.findMany({
-            where: Object.assign(Object.assign(Object.assign(Object.assign({}, (filters.startDate && filters.endDate
+            where: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (filters.startDate && filters.endDate
                 ? { date: { gte: filters.startDate, lte: filters.endDate } }
                 : filters.startDate
                     ? { date: { gte: filters.startDate } }
@@ -48,13 +50,28 @@ class TransactionRepository {
                         ? { date: { lte: filters.endDate } }
                         : {})), (filters.categoryId ? { categoryId: filters.categoryId } : {})), (filters.transactionType ? { type: filters.transactionType } : {})), (filters.searchTerm
                 ? { description: { contains: filters.searchTerm } }
-                : {})),
+                : {})), { status: filters.status || client_1.TransactionStatus.APPROVED }),
             take: filters.perPage,
             skip: (filters.page - 1) * filters.perPage,
             include: { category: true },
             orderBy: { date: 'desc' },
         });
         return transactions.map(this.mapToDomain);
+    }
+    async getPendingTransactions() {
+        const transactions = await client_2.default.transaction.findMany({
+            where: { status: client_1.TransactionStatus.PENDING_APPROVAL },
+            include: { category: true },
+            orderBy: { date: 'desc' },
+        });
+        return transactions.map(this.mapToDomain);
+    }
+    async updateTransactionStatus(id, status) {
+        const transaction = await client_2.default.transaction.update({
+            where: { id },
+            data: { status },
+        });
+        return transaction.id;
     }
     async getTransactionItem(data) {
         const transaction = await client_2.default.transaction.findUnique({
@@ -70,6 +87,7 @@ class TransactionRepository {
             value: transaction.value,
             date: transaction.date,
             type: transaction.type,
+            status: transaction.status,
             category: {
                 id: transaction.category.id,
                 name: transaction.category.name,
@@ -85,6 +103,7 @@ class TransactionRepository {
                 date: data.date,
                 categoryId: data.categoryId,
                 type: data.type,
+                status: data.status,
             },
         });
         return transaction.id;

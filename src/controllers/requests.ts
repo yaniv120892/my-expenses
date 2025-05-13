@@ -1,4 +1,4 @@
-import { TransactionType } from '../types/transaction';
+import { TransactionStatus, TransactionType } from '../types/transaction';
 import {
   IsString,
   IsNumber,
@@ -48,6 +48,11 @@ export class UpdateTransactionRequest {
   @Type(() => Date)
   @IsDate()
   date: Date;
+}
+
+export class UpdateTransactionStatusRequest {
+  @IsString()
+  status: TransactionStatus;
 }
 
 export class GetTransactionsSummaryRequest {

@@ -6,6 +6,7 @@ import {
   UpdateTransactionRequest,
 } from '../controllers/requests';
 import transactionService from '../services/transactionService';
+import { TransactionStatus } from '../types/transaction';
 
 class TransactionController {
   async createTransaction(createTransactionRequest: CreateTransactionRequest) {
@@ -99,6 +100,35 @@ class TransactionController {
       return;
     } catch (error: any) {
       logger.error(`Failed to delete transaction ${id}, ${error.message}`);
+      throw error;
+    }
+  }
+
+  public async getPendingTransactions() {
+    try {
+      logger.debug('Start get pending transactions');
+      const transactions = await transactionService.getPendingTransactions();
+      logger.debug('Done get pending transactions', transactions);
+      return transactions;
+    } catch (error: any) {
+      logger.error(`Failed to get pending transactions, ${error.message}`);
+      throw error;
+    }
+  }
+
+  public async updateTransactionStatus(id: string, status: TransactionStatus) {
+    try {
+      logger.debug('Start update transaction status', { id, status });
+      const transactionId = await transactionService.updateTransactionStatus(
+        id,
+        status,
+      );
+      logger.debug('Done update transaction status', { id, status });
+      return transactionId;
+    } catch (error: any) {
+      logger.error(
+        `Failed to update transaction status for ${id}, ${error.message}`,
+      );
       throw error;
     }
   }

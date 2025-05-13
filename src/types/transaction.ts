@@ -1,9 +1,12 @@
+export type TransactionStatus = 'APPROVED' | 'PENDING_APPROVAL';
+
 export interface CreateTransaction {
   description: string;
   value: number;
   categoryId: string | null;
   type: TransactionType;
   date: Date | null;
+  status?: TransactionStatus;
 }
 
 export interface TransactionSummaryFilters {
@@ -12,6 +15,7 @@ export interface TransactionSummaryFilters {
   categoryId?: string;
   transactionType?: TransactionType;
   searchTerm?: string;
+  status?: TransactionStatus;
 }
 
 export interface TransactionFilters extends TransactionSummaryFilters {
@@ -29,6 +33,7 @@ export interface Transaction {
   value: number;
   date: Date;
   type: TransactionType;
+  status: TransactionStatus;
   category: {
     id: string;
     name: string;
