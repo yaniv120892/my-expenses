@@ -16,8 +16,7 @@
   "crons": [
     {
       "path": "/api/scheduled-transactions/process",
-      "schedule": "0 7 * * *",
-      "method": "POST"
+      "schedule": "0 7 * * *"
     }
   ]
 }
