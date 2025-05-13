@@ -6,9 +6,10 @@ import {
   GetTransactionsRequest,
   GetTransactionsSummaryRequest,
   UpdateTransactionRequest,
+  UpdateTransactionStatusRequest,
 } from '..//controllers/requests';
 import { handleRequest } from '..//utils/handleRequest';
-import { TransactionType } from '..//types/transaction';
+import { TransactionType, TransactionStatus } from '..//types/transaction';
 
 const router = express.Router();
 
@@ -54,6 +55,13 @@ router.get(
   ),
 );
 
+router.get(
+  '/pending',
+  handleRequest(() => {
+    return transactionController.getPendingTransactions();
+  }, 200),
+);
+
 router.put(
   '/:id',
   validateRequest(UpdateTransactionRequest),
@@ -62,6 +70,15 @@ router.put(
       transactionController.updateTransaction(req.params.id, req.body),
     200,
   ),
+);
+
+router.patch(
+  '/:id/status',
+  validateRequest(UpdateTransactionStatusRequest),
+  handleRequest((req: Request) => {
+    const status = req.body.status as TransactionStatus;
+    return transactionController.updateTransactionStatus(req.params.id, status);
+  }, 200),
 );
 
 router.delete(

@@ -1,4 +1,4 @@
-import { TransactionType } from '@prisma/client';
+import { TransactionType, TransactionStatus } from '@prisma/client';
 import prisma from '..//prisma/client';
 import {
   TransactionFilters,
@@ -24,6 +24,7 @@ class TransactionRepository {
         },
         categoryId: filters.categoryId,
         type: filters.transactionType,
+        status: filters.status || TransactionStatus.APPROVED,
       },
     });
 
@@ -48,6 +49,7 @@ class TransactionRepository {
         date: data.date,
         categoryId: data.categoryId,
         type: data.type,
+        status: data.status || TransactionStatus.APPROVED,
       },
       include: { category: true },
     });
@@ -72,6 +74,7 @@ class TransactionRepository {
         ...(filters.searchTerm
           ? { description: { contains: filters.searchTerm } }
           : {}),
+        status: filters.status || TransactionStatus.APPROVED,
       },
       take: filters.perPage,
       skip: (filters.page - 1) * filters.perPage,
@@ -80,6 +83,26 @@ class TransactionRepository {
     });
 
     return transactions.map(this.mapToDomain);
+  }
+
+  public async getPendingTransactions(): Promise<Transaction[]> {
+    const transactions = await prisma.transaction.findMany({
+      where: { status: TransactionStatus.PENDING_APPROVAL },
+      include: { category: true },
+      orderBy: { date: 'desc' },
+    });
+    return transactions.map(this.mapToDomain);
+  }
+
+  public async updateTransactionStatus(
+    id: string,
+    status: TransactionStatus,
+  ): Promise<string> {
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data: { status },
+    });
+    return transaction.id;
   }
 
   public async getTransactionItem(
@@ -100,6 +123,7 @@ class TransactionRepository {
       value: transaction.value,
       date: transaction.date,
       type: transaction.type,
+      status: transaction.status,
       category: {
         id: transaction.category.id,
         name: transaction.category.name,
@@ -119,6 +143,7 @@ class TransactionRepository {
         date: data.date,
         categoryId: data.categoryId,
         type: data.type,
+        status: data.status,
       },
     });
     return transaction.id;

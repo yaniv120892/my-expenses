@@ -22,17 +22,24 @@ class TransactionService {
             date: createTransaction.date || new Date(),
             categoryId: createTransaction.categoryId,
             type: createTransaction.type,
+            status: createTransaction.status || 'APPROVED',
         };
         return transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
     }
     async getTransactions(filters) {
-        return transactionRepository_1.default.getTransactions(filters);
+        return transactionRepository_1.default.getTransactions(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));
+    }
+    async getPendingTransactions() {
+        return transactionRepository_1.default.getPendingTransactions();
+    }
+    async updateTransactionStatus(id, status) {
+        return transactionRepository_1.default.updateTransactionStatus(id, status);
     }
     async getTransactionItem(data) {
         return transactionRepository_1.default.getTransactionItem(data);
     }
     async getTransactionsSummary(filters) {
-        return transactionRepository_1.default.getTransactionsSummary(filters);
+        return transactionRepository_1.default.getTransactionsSummary(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));
     }
     async updateTransaction(id, data) {
         await transactionRepository_1.default.updateTransaction(id, data);

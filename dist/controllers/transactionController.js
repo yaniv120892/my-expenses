@@ -70,5 +70,29 @@ class TransactionController {
             throw error;
         }
     }
+    async getPendingTransactions() {
+        try {
+            logger_1.default.debug('Start get pending transactions');
+            const transactions = await transactionService_1.default.getPendingTransactions();
+            logger_1.default.debug('Done get pending transactions', transactions);
+            return transactions;
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to get pending transactions, ${error.message}`);
+            throw error;
+        }
+    }
+    async updateTransactionStatus(id, status) {
+        try {
+            logger_1.default.debug('Start update transaction status', { id, status });
+            const transactionId = await transactionService_1.default.updateTransactionStatus(id, status);
+            logger_1.default.debug('Done update transaction status', { id, status });
+            return transactionId;
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to update transaction status for ${id}, ${error.message}`);
+            throw error;
+        }
+    }
 }
 exports.default = new TransactionController();

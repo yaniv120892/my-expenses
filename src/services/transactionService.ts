@@ -7,6 +7,7 @@ import {
   TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
+  TransactionStatus,
 } from '../types/transaction';
 import {
   CreateTransactionRequest,
@@ -32,6 +33,7 @@ class TransactionService {
       date: createTransaction.date || new Date(),
       categoryId: createTransaction.categoryId as string,
       type: createTransaction.type,
+      status: createTransaction.status || 'APPROVED',
     };
     return transactionRepository.createTransaction(CreateTransactionDbModel);
   }
@@ -39,7 +41,22 @@ class TransactionService {
   public async getTransactions(
     filters: TransactionFilters,
   ): Promise<Transaction[]> {
-    return transactionRepository.getTransactions(filters);
+    return transactionRepository.getTransactions({
+      ...filters,
+      status: filters.status || 'APPROVED',
+    });
+  }
+
+  public async getPendingTransactions(
+  ): Promise<Transaction[]> {
+    return transactionRepository.getPendingTransactions();
+  }
+
+  public async updateTransactionStatus(
+    id: string,
+    status: TransactionStatus,
+  ): Promise<string> {
+    return transactionRepository.updateTransactionStatus(id, status);
   }
 
   public async getTransactionItem(
@@ -51,7 +68,10 @@ class TransactionService {
   public async getTransactionsSummary(
     filters: TransactionSummaryFilters,
   ): Promise<TransactionSummary> {
-    return transactionRepository.getTransactionsSummary(filters);
+    return transactionRepository.getTransactionsSummary({
+      ...filters,
+      status: filters.status || 'APPROVED',
+    });
   }
 
   public async updateTransaction(

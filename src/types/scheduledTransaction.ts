@@ -1,25 +1,7 @@
-import { TransactionType, TransactionStatus } from 'types/transaction';
+import { TransactionType } from './transaction';
 import { ScheduleType } from '@prisma/client';
 
-export interface CreateTransactionDbModel {
-  description: string;
-  value: number;
-  categoryId: string;
-  type: TransactionType;
-  date: Date;
-  status?: TransactionStatus;
-}
-
-export interface UpdateTransactionDbModel {
-  description?: string;
-  value?: number;
-  categoryId?: string;
-  type?: TransactionType;
-  date?: Date;
-  status?: TransactionStatus;
-}
-
-export interface CreateScheduledTransactionDbModel {
+export interface CreateScheduledTransaction {
   description: string;
   value: number;
   type: TransactionType;
@@ -31,7 +13,19 @@ export interface CreateScheduledTransactionDbModel {
   monthOfYear?: number;
 }
 
-export interface ScheduledTransaction {
+export interface UpdateScheduledTransaction {
+  description?: string;
+  value?: number;
+  type?: TransactionType;
+  categoryId?: string;
+  scheduleType?: ScheduleType;
+  interval?: number;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  monthOfYear?: number;
+}
+
+export interface ScheduledTransactionDomain {
   id: string;
   description: string;
   value: number;

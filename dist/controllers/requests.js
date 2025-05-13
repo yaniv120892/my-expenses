@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
+exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateTransactionRequest {
@@ -64,6 +64,13 @@ __decorate([
     (0, class_validator_1.IsDate)(),
     __metadata("design:type", Date)
 ], UpdateTransactionRequest.prototype, "date", void 0);
+class UpdateTransactionStatusRequest {
+}
+exports.UpdateTransactionStatusRequest = UpdateTransactionStatusRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateTransactionStatusRequest.prototype, "status", void 0);
 class GetTransactionsSummaryRequest {
 }
 exports.GetTransactionsSummaryRequest = GetTransactionsSummaryRequest;
