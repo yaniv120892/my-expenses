@@ -8,6 +8,7 @@ import {
   setDay,
   setDate,
   isAfter,
+  startOfDay,
 } from 'date-fns';
 import {
   CreateScheduledTransaction,
@@ -52,38 +53,38 @@ class ScheduledTransactionService {
     dayOfMonth?: number,
   ): Date {
     const intervalValue = interval || 1;
-    if (scheduleType === 'DAILY') {
-      return addDays(fromDate, intervalValue);
-    }
-    if (scheduleType === 'WEEKLY') {
-      const baseDate = addWeeks(fromDate, intervalValue);
-      if (dayOfWeek !== undefined) {
-        let next = setDay(baseDate, dayOfWeek, { weekStartsOn: 1 });
-        if (!isAfter(next, fromDate)) {
-          next = addWeeks(next, 1);
+    switch (scheduleType) {
+      case 'DAILY':
+        return startOfDay(addDays(fromDate, intervalValue));
+      case 'WEEKLY': {
+        const baseDate = addWeeks(fromDate, intervalValue);
+        if (dayOfWeek !== undefined) {
+          let next = setDay(baseDate, dayOfWeek, { weekStartsOn: 1 });
+          if (!isAfter(next, fromDate)) {
+            next = addWeeks(next, 1);
+          }
+          return startOfDay(next);
         }
-        return next;
+        return startOfDay(baseDate);
       }
-      return baseDate;
-    }
-    if (scheduleType === 'MONTHLY') {
-      if (dayOfMonth !== undefined) {
-        const currentMonthDate = setDate(new Date(fromDate), dayOfMonth);
-        if (isAfter(currentMonthDate, fromDate)) {
-          return currentMonthDate;
+      case 'MONTHLY': {
+        if (dayOfMonth !== undefined) {
+          const currentMonthDate = setDate(new Date(fromDate), dayOfMonth);
+          if (isAfter(currentMonthDate, fromDate)) {
+            return startOfDay(currentMonthDate);
+          }
+          const nextMonth = addMonths(fromDate, intervalValue);
+          return startOfDay(setDate(nextMonth, dayOfMonth));
         }
-        const nextMonth = addMonths(fromDate, intervalValue);
-        return setDate(nextMonth, dayOfMonth);
+        return startOfDay(addMonths(fromDate, intervalValue));
       }
-      return addMonths(fromDate, intervalValue);
+      case 'YEARLY':
+        return startOfDay(addYears(fromDate, intervalValue));
+      case 'CUSTOM':
+        return startOfDay(addDays(fromDate, intervalValue));
+      default:
+        return startOfDay(addDays(fromDate, 1));
     }
-    if (scheduleType === 'YEARLY') {
-      return addYears(fromDate, intervalValue);
-    }
-    if (scheduleType === 'CUSTOM') {
-      return addDays(fromDate, intervalValue);
-    }
-    return addDays(fromDate, 1);
   }
 
   public async createScheduledTransaction(
