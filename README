@@ -10,3 +10,4 @@ It uses PostgreSQL with Prisma ORM, AI-driven categorization (FastText & Gemini/
 ✅ Telegram Bot Support - Allows adding expenses via Telegram command handlers.
 ✅ AI-Driven Insights - Provides spending analytics & financial insights.
 ✅ Search Transactions - Easily find transactions by description, category, or date.
+✅ Scheduled Transactions - Create, update, list, and process recurring transactions with flexible scheduling (daily, weekly, monthly, or custom intervals).
