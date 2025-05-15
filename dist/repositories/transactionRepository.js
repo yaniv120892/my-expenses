@@ -5,13 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const client_2 = __importDefault(require("..//prisma/client"));
+const date_fns_1 = require("date-fns");
 class TransactionRepository {
     async getTransactionsSummary(filters) {
+        const { startDate, endDate } = this.getNormalizedDateRange(filters.startDate, filters.endDate);
         const transactions = await client_2.default.transaction.findMany({
             where: {
                 date: {
-                    gte: filters.startDate,
-                    lte: filters.endDate,
+                    gte: startDate,
+                    lte: endDate,
                 },
                 categoryId: filters.categoryId,
                 type: filters.transactionType,
@@ -41,13 +43,14 @@ class TransactionRepository {
         return transaction.id;
     }
     async getTransactions(filters) {
+        const { startDate, endDate } = this.getNormalizedDateRange(filters.startDate, filters.endDate);
         const transactions = await client_2.default.transaction.findMany({
             where: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (filters.startDate && filters.endDate
-                ? { date: { gte: filters.startDate, lte: filters.endDate } }
+                ? { date: { gte: startDate, lte: endDate } }
                 : filters.startDate
-                    ? { date: { gte: filters.startDate } }
+                    ? { date: { gte: startDate } }
                     : filters.endDate
-                        ? { date: { lte: filters.endDate } }
+                        ? { date: { lte: endDate } }
                         : {})), (filters.categoryId ? { categoryId: filters.categoryId } : {})), (filters.transactionType ? { type: filters.transactionType } : {})), (filters.searchTerm
                 ? { description: { contains: filters.searchTerm } }
                 : {})), { status: filters.status || client_1.TransactionStatus.APPROVED }),
@@ -112,6 +115,13 @@ class TransactionRepository {
         await client_2.default.transaction.delete({
             where: { id },
         });
+    }
+    getNormalizedDateRange(startDate, endDate) {
+        let normalizedStartDate = startDate
+            ? (0, date_fns_1.startOfDay)(new Date(startDate))
+            : undefined;
+        let normalizedEndDate = endDate ? (0, date_fns_1.endOfDay)(new Date(endDate)) : undefined;
+        return { startDate: normalizedStartDate, endDate: normalizedEndDate };
     }
 }
 exports.default = new TransactionRepository();
