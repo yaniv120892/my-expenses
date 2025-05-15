@@ -11,16 +11,21 @@ import {
   CreateTransactionDbModel,
   UpdateTransactionDbModel,
 } from 'repositories/types';
+import { endOfDay, startOfDay } from 'date-fns';
 
 class TransactionRepository {
   public async getTransactionsSummary(
     filters: TransactionSummaryFilters,
   ): Promise<TransactionSummary> {
+    const { startDate, endDate } = this.getNormalizedDateRange(
+      filters.startDate,
+      filters.endDate,
+    );
     const transactions = await prisma.transaction.findMany({
       where: {
         date: {
-          gte: filters.startDate,
-          lte: filters.endDate,
+          gte: startDate,
+          lte: endDate,
         },
         categoryId: filters.categoryId,
         type: filters.transactionType,
@@ -60,14 +65,19 @@ class TransactionRepository {
   public async getTransactions(
     filters: TransactionFilters,
   ): Promise<Transaction[]> {
+    const { startDate, endDate } = this.getNormalizedDateRange(
+      filters.startDate,
+      filters.endDate,
+    );
+
     const transactions = await prisma.transaction.findMany({
       where: {
         ...(filters.startDate && filters.endDate
-          ? { date: { gte: filters.startDate, lte: filters.endDate } }
+          ? { date: { gte: startDate, lte: endDate } }
           : filters.startDate
-            ? { date: { gte: filters.startDate } }
+            ? { date: { gte: startDate } }
             : filters.endDate
-              ? { date: { lte: filters.endDate } }
+              ? { date: { lte: endDate } }
               : {}),
         ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
         ...(filters.transactionType ? { type: filters.transactionType } : {}),
@@ -153,6 +163,14 @@ class TransactionRepository {
     await prisma.transaction.delete({
       where: { id },
     });
+  }
+
+  private getNormalizedDateRange(startDate?: Date, endDate?: Date) {
+    let normalizedStartDate = startDate
+      ? startOfDay(new Date(startDate))
+      : undefined;
+    let normalizedEndDate = endDate ? endOfDay(new Date(endDate)) : undefined;
+    return { startDate: normalizedStartDate, endDate: normalizedEndDate };
   }
 }
 
