@@ -9,9 +9,11 @@ const createTransactionValidator_1 = __importDefault(require("../validators/crea
 const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
 const axios_1 = __importDefault(require("axios"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const transactionCreatedNotifierFactory_1 = __importDefault(require("./transactionNotification/transactionCreatedNotifierFactory"));
 class TransactionService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
+        this.transactionCreatedNotifier = transactionCreatedNotifierFactory_1.default.getNotifier();
     }
     async createTransaction(data) {
         const createTransaction = await this.updateCategory(data);
@@ -24,7 +26,12 @@ class TransactionService {
             type: createTransaction.type,
             status: createTransaction.status || 'APPROVED',
         };
-        return transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
+        const transactionId = await transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
+        const transaction = await this.getTransactionItem({ id: transactionId });
+        if (transaction) {
+            await this.transactionCreatedNotifier.notifyTransactionCreated(transaction);
+        }
+        return transactionId;
     }
     async getTransactions(filters) {
         return transactionRepository_1.default.getTransactions(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));

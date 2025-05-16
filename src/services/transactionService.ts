@@ -20,9 +20,12 @@ import axios from 'axios';
 import logger from '../utils/logger';
 import { Category } from '../types/category';
 import { log } from 'winston';
+import TransactionCreatedNotifierFactory from './transactionNotification/transactionCreatedNotifierFactory';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
+  private transactionCreatedNotifier =
+    TransactionCreatedNotifierFactory.getNotifier();
 
   public async createTransaction(data: CreateTransaction): Promise<string> {
     const createTransaction = await this.updateCategory(data);
@@ -35,7 +38,16 @@ class TransactionService {
       type: createTransaction.type,
       status: createTransaction.status || 'APPROVED',
     };
-    return transactionRepository.createTransaction(CreateTransactionDbModel);
+    const transactionId = await transactionRepository.createTransaction(
+      CreateTransactionDbModel,
+    );
+    const transaction = await this.getTransactionItem({ id: transactionId });
+    if (transaction) {
+      await this.transactionCreatedNotifier.notifyTransactionCreated(
+        transaction,
+      );
+    }
+    return transactionId;
   }
 
   public async getTransactions(
@@ -47,8 +59,7 @@ class TransactionService {
     });
   }
 
-  public async getPendingTransactions(
-  ): Promise<Transaction[]> {
+  public async getPendingTransactions(): Promise<Transaction[]> {
     return transactionRepository.getPendingTransactions();
   }
 
