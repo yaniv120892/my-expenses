@@ -9,11 +9,7 @@ import {
   TransactionSummary,
   TransactionStatus,
 } from '../types/transaction';
-import {
-  CreateTransactionRequest,
-  GetTransactionsRequest,
-  GetTransactionsSummaryRequest,
-} from '../controllers/requests';
+import { CreateTransactionRequest } from '../controllers/requests';
 import createTransactionValidator from '../validators/createTransactionValidator';
 import categoryRepository from '../repositories/categoryRepository';
 import axios from 'axios';
@@ -39,10 +35,9 @@ class TransactionService {
     const transactionId = await transactionRepository.createTransaction(
       CreateTransactionDbModel,
     );
-    const transaction = await this.getTransactionItem({ id: transactionId });
-    if (transaction) {
-      await this.transactionNotifier.notifyTransactionCreated(transaction);
-    }
+
+    await this.notifyTransactionCreatedSafe(transactionId);
+
     return transactionId;
   }
 
@@ -63,7 +58,15 @@ class TransactionService {
     id: string,
     status: TransactionStatus,
   ): Promise<string> {
-    return transactionRepository.updateTransactionStatus(id, status);
+    const transactionId = await transactionRepository.updateTransactionStatus(
+      id,
+      status,
+    );
+    if (status === 'APPROVED') {
+      await this.notifyTransactionCreatedSafe(transactionId);
+    }
+
+    return transactionId;
   }
 
   public async getTransactionItem(
@@ -155,6 +158,23 @@ class TransactionService {
     }
 
     return response.data.category;
+  }
+
+  private async notifyTransactionCreatedSafe(transactionId: string) {
+    try {
+      const transaction = await this.getTransactionItem({ id: transactionId });
+      if (!transaction) {
+        logger.warn(
+          `skipped notification for transaction ${transactionId} - transaction not found`,
+        );
+        return;
+      }
+      await this.transactionNotifier.notifyTransactionCreated(transaction);
+    } catch (error) {
+      logger.error(
+        `Failed to notify transaction created: ${transactionId} - ${error}`,
+      );
+    }
   }
 }
 
