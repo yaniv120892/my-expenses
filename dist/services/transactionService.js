@@ -27,10 +27,7 @@ class TransactionService {
             status: createTransaction.status || 'APPROVED',
         };
         const transactionId = await transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
-        const transaction = await this.getTransactionItem({ id: transactionId });
-        if (transaction) {
-            await this.transactionNotifier.notifyTransactionCreated(transaction);
-        }
+        await this.notifyTransactionCreatedSafe(transactionId);
         return transactionId;
     }
     async getTransactions(filters) {
@@ -40,7 +37,11 @@ class TransactionService {
         return transactionRepository_1.default.getPendingTransactions();
     }
     async updateTransactionStatus(id, status) {
-        return transactionRepository_1.default.updateTransactionStatus(id, status);
+        const transactionId = await transactionRepository_1.default.updateTransactionStatus(id, status);
+        if (status === 'APPROVED') {
+            await this.notifyTransactionCreatedSafe(transactionId);
+        }
+        return transactionId;
     }
     async getTransactionItem(data) {
         return transactionRepository_1.default.getTransactionItem(data);
@@ -93,6 +94,19 @@ class TransactionService {
             return null;
         }
         return response.data.category;
+    }
+    async notifyTransactionCreatedSafe(transactionId) {
+        try {
+            const transaction = await this.getTransactionItem({ id: transactionId });
+            if (!transaction) {
+                logger_1.default.warn(`skipped notification for transaction ${transactionId} - transaction not found`);
+                return;
+            }
+            await this.transactionNotifier.notifyTransactionCreated(transaction);
+        }
+        catch (error) {
+            logger_1.default.error(`Failed to notify transaction created: ${transactionId} - ${error}`);
+        }
     }
 }
 exports.default = new TransactionService();
