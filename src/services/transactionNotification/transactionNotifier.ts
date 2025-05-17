@@ -1,9 +1,10 @@
 import { Transaction } from 'types/transaction';
 
-export enum TransactionCreatedNotifierType {
+export enum TransactionNotifierType {
   TELEGRAM = 'TELEGRAM',
 }
 
-export interface TransactionCreatedNotifier {
+export interface TransactionNotifier {
   notifyTransactionCreated(transaction: Transaction): Promise<void>;
+  sendDailySummary(dailySummary: string): Promise<void>;
 }

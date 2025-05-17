@@ -8,11 +8,10 @@ const generative_ai_1 = require("@google/generative-ai");
 const logger_1 = __importDefault(require("../../utils/logger"));
 class GeminiService {
     constructor() {
-        this.modelName = 'gemini-pro';
+        this.modelName = 'gemini-2.0-flash';
         this.gemini = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     }
-    /** Analyzes user's expenses and provides insights */
-    async analyzeExpenses(expenseSummary) {
+    async analyzeExpenses(expenseSummary, suffixPrompt) {
         var _a, _b, _c, _d, _e, _f;
         try {
             logger_1.default.debug(`Start analyzing expenses`);
@@ -23,7 +22,7 @@ class GeminiService {
                         role: 'user',
                         parts: [
                             {
-                                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence`,
+                                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence, ${suffixPrompt}`,
                             },
                         ],
                     },
@@ -38,7 +37,6 @@ class GeminiService {
             return 'I encountered an issue analyzing your expenses.';
         }
     }
-    /** Suggests a category for a given expense description */
     async suggestCategory(expenseDescription, categoryOptions) {
         var _a, _b, _c, _d, _e, _f, _g;
         try {

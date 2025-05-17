@@ -11,8 +11,10 @@ export class ChatGPTService implements AIProvider {
     });
   }
 
-  /** Analyzes user's expenses and provides insights */
-  async analyzeExpenses(expenseSummary: string): Promise<string> {
+  async analyzeExpenses(
+    expenseSummary: string,
+    suffixPrompt?: string,
+  ): Promise<string> {
     try {
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4-turbo',
@@ -24,7 +26,7 @@ export class ChatGPTService implements AIProvider {
           },
           {
             role: 'user',
-            content: `Analyze my recent expenses:\n\n${expenseSummary}`,
+            content: `Analyze my recent expenses:\n\n${expenseSummary}, ${suffixPrompt}`,
           },
         ],
         max_tokens: 200,
@@ -37,7 +39,6 @@ export class ChatGPTService implements AIProvider {
     }
   }
 
-  /** Suggests a category for a given expense description */
   async suggestCategory(
     expenseDescription: string,
     categoryOptions: Category[],

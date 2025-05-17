@@ -11,8 +11,7 @@ class ChatGPTService {
             apiKey: process.env.OPENAI_API_KEY,
         });
     }
-    /** Analyzes user's expenses and provides insights */
-    async analyzeExpenses(expenseSummary) {
+    async analyzeExpenses(expenseSummary, suffixPrompt) {
         var _a;
         try {
             const response = await this.openai.chat.completions.create({
@@ -24,7 +23,7 @@ class ChatGPTService {
                     },
                     {
                         role: 'user',
-                        content: `Analyze my recent expenses:\n\n${expenseSummary}`,
+                        content: `Analyze my recent expenses:\n\n${expenseSummary}, ${suffixPrompt}`,
                     },
                 ],
                 max_tokens: 200,
@@ -36,7 +35,6 @@ class ChatGPTService {
             return 'I encountered an issue analyzing your expenses.';
         }
     }
-    /** Suggests a category for a given expense description */
     async suggestCategory(expenseDescription, categoryOptions) {
         var _a;
         try {
