@@ -19,13 +19,11 @@ import categoryRepository from '../repositories/categoryRepository';
 import axios from 'axios';
 import logger from '../utils/logger';
 import { Category } from '../types/category';
-import { log } from 'winston';
-import TransactionCreatedNotifierFactory from './transactionNotification/transactionCreatedNotifierFactory';
+import TransactionNotifierFactory from './transactionNotification/transactionNotifierFactory';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
-  private transactionCreatedNotifier =
-    TransactionCreatedNotifierFactory.getNotifier();
+  private transactionNotifier = TransactionNotifierFactory.getNotifier();
 
   public async createTransaction(data: CreateTransaction): Promise<string> {
     const createTransaction = await this.updateCategory(data);
@@ -43,9 +41,7 @@ class TransactionService {
     );
     const transaction = await this.getTransactionItem({ id: transactionId });
     if (transaction) {
-      await this.transactionCreatedNotifier.notifyTransactionCreated(
-        transaction,
-      );
+      await this.transactionNotifier.notifyTransactionCreated(transaction);
     }
     return transactionId;
   }

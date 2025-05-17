@@ -5,14 +5,16 @@ import { Category } from '../../types/category';
 
 export class GeminiService implements AIProvider {
   private gemini: GoogleGenerativeAI;
-  private modelName: string = 'gemini-pro';
+  private modelName: string = 'gemini-2.0-flash';
 
   constructor() {
     this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   }
 
-  /** Analyzes user's expenses and provides insights */
-  async analyzeExpenses(expenseSummary: string): Promise<string> {
+  async analyzeExpenses(
+    expenseSummary: string,
+    suffixPrompt?: string,
+  ): Promise<string> {
     try {
       logger.debug(`Start analyzing expenses`);
       const model = this.gemini.getGenerativeModel({ model: this.modelName });
@@ -22,7 +24,7 @@ export class GeminiService implements AIProvider {
             role: 'user',
             parts: [
               {
-                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence`,
+                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence, ${suffixPrompt}`,
               },
             ],
           },
@@ -40,7 +42,6 @@ export class GeminiService implements AIProvider {
     }
   }
 
-  /** Suggests a category for a given expense description */
   async suggestCategory(
     expenseDescription: string,
     categoryOptions: Category[],
