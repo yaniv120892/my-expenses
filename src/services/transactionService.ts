@@ -169,6 +169,14 @@ class TransactionService {
         );
         return;
       }
+
+      if (transaction.status !== 'APPROVED') {
+        logger.warn(
+          `skipped notification for transaction ${transactionId} - transaction not approved`,
+        );
+        return;
+      }
+
       await this.transactionNotifier.notifyTransactionCreated(transaction);
     } catch (error) {
       logger.error(
