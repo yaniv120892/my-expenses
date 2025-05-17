@@ -24,7 +24,7 @@ export class GeminiService implements AIProvider {
             role: 'user',
             parts: [
               {
-                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 4 sentences, add new line after each sentence, ${suffixPrompt}`,
+                text: `Analyze my recent expenses:\n\n${expenseSummary}, all expenses are in NIS, response in hebrew, no more than 2 sentences, add new line after each sentence, ${suffixPrompt}`,
               },
             ],
           },

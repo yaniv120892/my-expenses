@@ -1,6 +1,7 @@
 import TransactionNotifierFactory from '../services/transactionNotification/transactionNotifierFactory';
 import AIServiceFactory from '../services/ai/aiServiceFactory';
 import transactionService from '../services/transactionService';
+import { Transaction } from 'types/transaction';
 
 class SummaryController {
   private transactionNotifier = TransactionNotifierFactory.getNotifier();
@@ -14,17 +15,24 @@ class SummaryController {
   private async getAllTodayTransactions() {
     const transactions = [];
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const endOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+    );
 
     let hasMoreTransactions = true;
     let page = 1;
     const perPage = 100;
     while (hasMoreTransactions) {
       const transactionsPage = await transactionService.getTransactions({
-        startDate: start,
-        endDate: end,
+        startDate: startOfToday,
+        endDate: endOfToday,
         page,
         perPage,
         transactionType: 'EXPENSE',
@@ -40,23 +48,61 @@ class SummaryController {
     return transactions;
   }
 
+  private formatTransactionList(transactions: Transaction[]) {
+    return transactions
+      .map((transaction) => {
+        const description = transaction.description || '';
+        const category = transaction.category?.name || '';
+        const amount = transaction.value || 0;
+        return `${category}, ${description}, ${amount} ש״ח`;
+      })
+      .join('\n');
+  }
+
+  private formatTotalAmount(totalAmount: number) {
+    return `*סך הכל הוצאות:*\n${totalAmount} ש״ח\n`;
+  }
+
+  private formatAiInsights(aiInsights: string) {
+    return `*סיכום:*\n${aiInsights}`;
+  }
+
+  private formatSummaryMessage(
+    transactions: Transaction[],
+    totalAmount: number,
+    aiInsights: string,
+  ) {
+    const transactionList = this.formatTransactionList(transactions);
+    const totalAmountSection = this.formatTotalAmount(totalAmount);
+    const aiInsightsSection = this.formatAiInsights(aiInsights);
+
+    return [
+      '*ההוצאות של היום:*',
+      transactionList,
+      '',
+      totalAmountSection,
+      '',
+      aiInsightsSection,
+    ].join('\n');
+  }
+
   private async getSummaryMessage() {
     const transactions = await this.getAllTodayTransactions();
     if (transactions.length === 0) {
-      return 'No transactions added today.';
+      return 'לא נוספו הוצאות היום.';
     }
-    const transactionsText = transactions
+    const transactionsTextForAiAnalyzer = transactions
       .map(
         (t) =>
           `description:${t.description}, category: ${t.category?.name}, amount: ${t.value}`,
       )
       .join('\n');
     const aiInsights = await this.aiProvider.analyzeExpenses(
-      transactionsText,
+      transactionsTextForAiAnalyzer,
       'add a funny summary based on my expenses at the end',
     );
-    const fullSummaryMessage = `*Today's expenses:*\n${transactionsText}\n\n*AI Insights:*\n${aiInsights}`;
-    return fullSummaryMessage;
+    const total = transactions.reduce((sum, t) => sum + t.value, 0);
+    return this.formatSummaryMessage(transactions, total, aiInsights);
   }
 }
 
