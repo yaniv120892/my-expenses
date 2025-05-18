@@ -16,29 +16,14 @@ class SummaryController {
         await this.transactionNotifier.sendDailySummary(fullSummaryMessage);
     }
     async getAllTodayTransactions() {
-        const transactions = [];
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        let hasMoreTransactions = true;
-        let page = 1;
-        const perPage = 100;
-        while (hasMoreTransactions) {
-            const transactionsPage = await transactionService_1.default.getTransactions({
-                startDate: startOfToday,
-                endDate: endOfToday,
-                page,
-                perPage,
-                transactionType: 'EXPENSE',
-                status: 'APPROVED',
-            });
-            transactions.push(...transactionsPage);
-            if (transactionsPage.length < perPage) {
-                hasMoreTransactions = false;
-            }
-            page++;
-        }
-        return transactions;
+        const transactionsToday = await transactionService_1.default.getAllTransactions({
+            startDate: startOfToday,
+            endDate: endOfToday,
+        });
+        return transactionsToday;
     }
     formatTransactionList(transactions) {
         return transactions

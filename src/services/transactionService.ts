@@ -50,6 +50,30 @@ class TransactionService {
     });
   }
 
+  public async getAllTransactions(
+    filters: TransactionSummaryFilters,
+  ): Promise<Transaction[]> {
+    const transactions = [];
+
+    let hasMoreTransactions = true;
+    let page = 1;
+    const perPage = 100;
+    while (hasMoreTransactions) {
+      const transactionsPage = await this.getTransactions({
+        ...filters,
+        page,
+        perPage,
+      });
+      transactions.push(...transactionsPage);
+      if (transactionsPage.length < perPage) {
+        hasMoreTransactions = false;
+      }
+      page++;
+    }
+
+    return transactions;
+  }
+
   public async getPendingTransactions(): Promise<Transaction[]> {
     return transactionRepository.getPendingTransactions();
   }

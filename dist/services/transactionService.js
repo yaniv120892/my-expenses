@@ -33,6 +33,22 @@ class TransactionService {
     async getTransactions(filters) {
         return transactionRepository_1.default.getTransactions(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));
     }
+    async getAllTransactions(filters) {
+        const transactions = [];
+        let hasMoreTransactions = true;
+        let page = 1;
+        const perPage = 100;
+        while (hasMoreTransactions) {
+            const transactionsPage = await this.getTransactions(Object.assign(Object.assign({}, filters), { page,
+                perPage }));
+            transactions.push(...transactionsPage);
+            if (transactionsPage.length < perPage) {
+                hasMoreTransactions = false;
+            }
+            page++;
+        }
+        return transactions;
+    }
     async getPendingTransactions() {
         return transactionRepository_1.default.getPendingTransactions();
     }
