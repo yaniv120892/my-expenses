@@ -13,7 +13,6 @@ class SummaryController {
   }
 
   private async getAllTodayTransactions() {
-    const transactions = [];
     const now = new Date();
     const startOfToday = new Date(
       now.getFullYear(),
@@ -26,26 +25,12 @@ class SummaryController {
       now.getDate() + 1,
     );
 
-    let hasMoreTransactions = true;
-    let page = 1;
-    const perPage = 100;
-    while (hasMoreTransactions) {
-      const transactionsPage = await transactionService.getTransactions({
-        startDate: startOfToday,
-        endDate: endOfToday,
-        page,
-        perPage,
-        transactionType: 'EXPENSE',
-        status: 'APPROVED',
-      });
-      transactions.push(...transactionsPage);
-      if (transactionsPage.length < perPage) {
-        hasMoreTransactions = false;
-      }
-      page++;
-    }
+    const transactionsToday = await transactionService.getAllTransactions({
+      startDate: startOfToday,
+      endDate: endOfToday,
+    });
 
-    return transactions;
+    return transactionsToday;
   }
 
   private formatTransactionList(transactions: Transaction[]) {
