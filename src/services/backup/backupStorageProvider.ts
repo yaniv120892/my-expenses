@@ -8,4 +8,5 @@ export interface BackupStorageProvider {
 
 export enum BackupStorageProviderType {
   GOOGLE = 'GOOGLE',
+  AWS = 'AWS',
 }

@@ -4,4 +4,5 @@ exports.BackupStorageProviderType = void 0;
 var BackupStorageProviderType;
 (function (BackupStorageProviderType) {
     BackupStorageProviderType["GOOGLE"] = "GOOGLE";
+    BackupStorageProviderType["AWS"] = "AWS";
 })(BackupStorageProviderType || (exports.BackupStorageProviderType = BackupStorageProviderType = {}));
