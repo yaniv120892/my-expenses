@@ -4,23 +4,38 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const transporter = nodemailer_1.default.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-    },
-});
-const emailService = {
-    async send({ to, subject, text, }) {
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM,
-            to,
-            subject,
-            text,
+const logger_1 = __importDefault(require("../utils/logger"));
+class EmailService {
+    constructor() {
+        this.transporter = nodemailer_1.default.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT),
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
         });
-    },
-};
-exports.default = emailService;
+    }
+    async send({ to, subject, text, html, }) {
+        try {
+            await this.transporter.verify();
+            await this.transporter.sendMail({
+                from: process.env.SMTP_FROM,
+                to,
+                subject,
+                text,
+                html,
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Failed to send email', error, {
+                to,
+                subject,
+                text,
+            });
+            throw new Error('Failed to send email');
+        }
+    }
+}
+exports.default = new EmailService();

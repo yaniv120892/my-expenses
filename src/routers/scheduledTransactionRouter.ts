@@ -23,6 +23,7 @@ router.get(
 router.post(
   '/',
   validateRequest(CreateScheduledTransactionRequest),
+  authenticateRequest,
   handleRequest(
     (req: Request) =>
       scheduledTransactionController.create(req.body, req.userId ?? ''),
@@ -47,6 +48,7 @@ router.put(
 
 router.get(
   '/',
+  authenticateRequest,
   handleRequest(
     (req: Request) => scheduledTransactionController.list(req.userId ?? ''),
     200,
@@ -55,6 +57,7 @@ router.get(
 
 router.delete(
   '/:id',
+  authenticateRequest,
   handleRequest(
     (req: Request) =>
       scheduledTransactionController.delete(req.params.id, req.userId ?? ''),
