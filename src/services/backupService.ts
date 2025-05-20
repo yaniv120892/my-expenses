@@ -9,9 +9,10 @@ class BackupService {
 
   constructor() {}
 
-  async backupTransactionsToCsvAndUpload(): Promise<string> {
+  async backupTransactionsToCsvAndUpload(userId: string) {
     const transactions = await transactionService.getAllTransactions({
       status: 'APPROVED',
+      userId,
     });
     const csvRows = transactions.map((t: Transaction) => ({
       date: t.date,
@@ -23,7 +24,7 @@ class BackupService {
     const csv = parse(csvRows, {
       fields: ['date', 'description', 'value', 'type', 'categoryName'],
     });
-    const fileName = `transactions-backup-${new Date().toISOString().slice(0, 10)}.csv`;
+    const fileName = `transactions-backup_${userId}-${new Date().toISOString().slice(0, 10)}.csv`;
     const fileBuffer = Buffer.from(csv, 'utf8');
     const mimeType = 'text/csv';
     logger.debug(`Uploading backup file: ${fileName}`);

@@ -35,13 +35,16 @@ export class TelegramTransactionNotifier implements TransactionNotifier {
     }
   }
 
-  public async sendDailySummary(dailySummary: string): Promise<void> {
+  public async sendDailySummary(
+    dailySummary: string,
+    userId: string,
+  ): Promise<void> {
     try {
       logger.debug(
         'Start sending daily summary to Telegram, message:',
         dailySummary,
       );
-      const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+      const chatId = this.getChatId(userId);
       if (!chatId) {
         logger.warn('Telegram chat ID is not set. Skipping daily summary.');
         return;
@@ -58,5 +61,14 @@ export class TelegramTransactionNotifier implements TransactionNotifier {
         `Failed to send daily summary, ${dailySummary}, error: ${JSON.stringify(error)}`,
       );
     }
+  }
+
+  private getChatId(userId: string): string {
+    // TODO: Implement logic to get chat ID from user ID
+    const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+    if (!chatId) {
+      throw new Error('Telegram chat ID is not set');
+    }
+    return chatId;
   }
 }

@@ -16,24 +16,30 @@ class CommandHandler {
                 await userHandler_1.userHandler.handleReset(chatId);
                 return userHandler_1.userHandler.handleHelp(chatId);
             case '/list':
-                await transactionHandler_1.transactionHandler.handleList(chatId, args);
+                await transactionHandler_1.transactionHandler.handleList(chatId, this.extractUserIdFromCommand(args));
                 return userHandler_1.userHandler.handleHelp(chatId);
             case '/create':
                 return transactionHandler_1.transactionHandler.handleCreate(chatId);
             case '/summary':
-                await transactionHandler_1.transactionHandler.handleSummary(chatId, args);
+                await transactionHandler_1.transactionHandler.handleSummary(chatId, this.extractUserIdFromCommand(args));
                 return userHandler_1.userHandler.handleHelp(chatId);
             case '/search':
-                await transactionHandler_1.transactionHandler.handleSearch(chatId, args);
+                await transactionHandler_1.transactionHandler.handleSearch(chatId, this.extractUserIdFromCommand(args), args.slice(2).join(' '));
                 return userHandler_1.userHandler.handleHelp(chatId);
             case '/insights':
-                await insightHandler_1.insightsHandler.handleInsights(chatId);
+                await insightHandler_1.insightsHandler.handleInsights(chatId, this.extractUserIdFromCommand(args));
             case '/categories':
                 await categoryHandler_1.categoryHandler.handleList(chatId);
                 return userHandler_1.userHandler.handleHelp(chatId);
             default:
                 return userHandler_1.userHandler.handleUserState(chatId, command);
         }
+    }
+    extractUserIdFromCommand(args) {
+        if (args.length <= 1) {
+            return null;
+        }
+        return args[1];
     }
 }
 exports.commandHandler = new CommandHandler();

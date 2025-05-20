@@ -25,10 +25,10 @@ class TelegramTransactionNotifier {
             throw new Error(`Failed to send transaction notification, ${JSON.stringify(transaction)}, error: ${JSON.stringify(error)}`);
         }
     }
-    async sendDailySummary(dailySummary) {
+    async sendDailySummary(dailySummary, userId) {
         try {
             logger_1.default.debug('Start sending daily summary to Telegram, message:', dailySummary);
-            const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+            const chatId = this.getChatId(userId);
             if (!chatId) {
                 logger_1.default.warn('Telegram chat ID is not set. Skipping daily summary.');
                 return;
@@ -40,6 +40,14 @@ class TelegramTransactionNotifier {
             logger_1.default.error(`Failed to send daily summary: ${dailySummary}, error: ${JSON.stringify(error)}`);
             throw new Error(`Failed to send daily summary, ${dailySummary}, error: ${JSON.stringify(error)}`);
         }
+    }
+    getChatId(userId) {
+        // TODO: Implement logic to get chat ID from user ID
+        const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+        if (!chatId) {
+            throw new Error('Telegram chat ID is not set');
+        }
+        return chatId;
     }
 }
 exports.TelegramTransactionNotifier = TelegramTransactionNotifier;

@@ -34,13 +34,21 @@ const date_fns_1 = require("date-fns");
 const categoryMappingUtils_1 = require("./categoryMappingUtils");
 dotenv.config();
 const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
-const categoryCache = new Map(); // Stores category name → ID mapping
+const categoryCache = new Map();
+function getUserIdFromArgs() {
+    const userIdArg = process.argv.find((arg) => arg.startsWith('--userId='));
+    if (!userIdArg) {
+        throw new Error('User ID argument (--userId=) is required');
+    }
+    return userIdArg.split('=')[1];
+}
 async function importData() {
+    const userId = getUserIdFromArgs();
     console.log('Start importing data');
     const rows = [];
     await readCSVFile(rows);
     await upsertCategories(rows);
-    await processRowsInBatches(rows);
+    await processRowsInBatches(rows, 10, userId);
     console.log('Data imported successfully');
     await client_1.default.$disconnect();
 }
@@ -82,15 +90,15 @@ async function upsertCategories(rows) {
     }
     console.log('Category upsert complete.');
 }
-async function processRowsInBatches(rows, batchSize = 10) {
+async function processRowsInBatches(rows, batchSize = 10, userId) {
     for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
         console.log(`Processing batch ${i / batchSize + 1} (Rows ${i + 1} - ${i + batch.length})`);
-        await Promise.all(batch.map(async (row) => await processRow(row)));
+        await Promise.all(batch.map(async (row) => await processRow(row, userId)));
         console.log(`Batch ${i / batchSize + 1} processed successfully`);
     }
 }
-async function processRow(row) {
+async function processRow(row, userId) {
     const { Category, Date } = row;
     const normalizedCategory = (0, categoryMappingUtils_1.normalizeCategoryName)(Category);
     if (!categoryCache.has(normalizedCategory)) {
@@ -98,12 +106,12 @@ async function processRow(row) {
     }
     const categoryId = categoryCache.get(normalizedCategory);
     const parsedDate = parseTransactionDate(Date);
-    await createTransaction(row, parsedDate, categoryId);
+    await createTransaction(row, parsedDate, categoryId, userId);
 }
 function parseTransactionDate(transactionDate) {
     return (0, date_fns_1.parse)(transactionDate, 'MM/dd/yy', new Date());
 }
-async function createTransaction(row, parsedDate, categoryId) {
+async function createTransaction(row, parsedDate, categoryId, userId) {
     const type = row.Value > 0 ? 'INCOME' : 'EXPENSE';
     const value = Math.abs(row.Value);
     await client_1.default.transaction.create({
@@ -113,6 +121,7 @@ async function createTransaction(row, parsedDate, categoryId) {
             date: parsedDate,
             categoryId,
             type,
+            userId,
         },
     });
 }

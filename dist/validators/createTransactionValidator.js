@@ -3,8 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const categoryRepository_1 = __importDefault(require("..//repositories/categoryRepository"));
-const validationError_1 = require("..//errors/validationError");
+const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
+const validationError_1 = require("../errors/validationError");
 class CreateTransactionValidator {
     async validate(data) {
         const category = await categoryRepository_1.default.getCategoryById(data.categoryId);

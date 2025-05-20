@@ -7,6 +7,7 @@ import {
   CreateScheduledTransactionRequest,
   UpdateScheduledTransactionRequest,
 } from '../controllers/requests';
+import { authenticateRequest } from '../middlewares/authMiddleware';
 
 const router = express.Router();
 
@@ -23,7 +24,8 @@ router.post(
   '/',
   validateRequest(CreateScheduledTransactionRequest),
   handleRequest(
-    (req: Request) => scheduledTransactionController.create(req.body),
+    (req: Request) =>
+      scheduledTransactionController.create(req.body, req.userId ?? ''),
     201,
   ),
 );
@@ -31,22 +33,31 @@ router.post(
 router.put(
   '/:id',
   validateRequest(UpdateScheduledTransactionRequest),
+  authenticateRequest,
   handleRequest(
     (req: Request) =>
-      scheduledTransactionController.update(req.params.id, req.body),
+      scheduledTransactionController.update(
+        req.params.id,
+        req.body,
+        req.userId ?? '',
+      ),
     200,
   ),
 );
 
 router.get(
   '/',
-  handleRequest(() => scheduledTransactionController.list(), 200),
+  handleRequest(
+    (req: Request) => scheduledTransactionController.list(req.userId ?? ''),
+    200,
+  ),
 );
 
 router.delete(
   '/:id',
   handleRequest(
-    (req: Request) => scheduledTransactionController.delete(req.params.id),
+    (req: Request) =>
+      scheduledTransactionController.delete(req.params.id, req.userId ?? ''),
     204,
   ),
 );

@@ -15,12 +15,15 @@ import {
   UpdateScheduledTransaction,
   ScheduledTransactionDomain,
 } from '../types/scheduledTransaction';
+//TODO: remove this import and create an enum for schedule types that is not depending on Prisma
 import { ScheduleType } from '@prisma/client';
 
 class ScheduledTransactionService {
-  public async processDueScheduledTransactions(date: Date): Promise<void> {
+  public async processDueScheduledTransactions(date: Date) {
     const dueScheduledTransactions =
-      await scheduledTransactionRepository.getDueScheduledTransactions(date);
+      await scheduledTransactionRepository.getDueScheduledTransactions(
+        date,
+      );
     for (const scheduled of dueScheduledTransactions) {
       await transactionService.createTransaction({
         description: scheduled.description,
@@ -29,6 +32,7 @@ class ScheduledTransactionService {
         type: scheduled.type,
         date,
         status: 'PENDING_APPROVAL',
+        userId: scheduled.userId,
       });
       const nextRunDate = this.calculateNextRunDate(
         scheduled.scheduleType,
@@ -106,9 +110,13 @@ class ScheduledTransactionService {
   public async updateScheduledTransaction(
     id: string,
     data: UpdateScheduledTransaction,
+    userId: string,
   ): Promise<string> {
     const oldScheduledTransaction =
-      await scheduledTransactionRepository.getScheduledTransactionById(id);
+      await scheduledTransactionRepository.getScheduledTransactionById(
+        id,
+        userId,
+      );
     const nextRunDate = this.calculateNextRunDate(
       data.scheduleType,
       data.interval,
@@ -119,18 +127,25 @@ class ScheduledTransactionService {
     return scheduledTransactionRepository.updateScheduledTransaction(
       id,
       data,
+      userId,
       nextRunDate,
     );
   }
 
-  public async listScheduledTransactions(): Promise<
-    ScheduledTransactionDomain[]
-  > {
-    return scheduledTransactionRepository.getAllScheduledTransactions();
+  public async listScheduledTransactions(
+    userId: string,
+  ): Promise<ScheduledTransactionDomain[]> {
+    return scheduledTransactionRepository.getAllScheduledTransactions(userId);
   }
 
-  public async deleteScheduledTransaction(id: string): Promise<void> {
-    return scheduledTransactionRepository.deleteScheduledTransaction(id);
+  public async deleteScheduledTransaction(
+    id: string,
+    userId: string,
+  ): Promise<void> {
+    return scheduledTransactionRepository.deleteScheduledTransaction(
+      id,
+      userId,
+    );
   }
 }
 

@@ -6,5 +6,5 @@ export enum TransactionNotifierType {
 
 export interface TransactionNotifier {
   notifyTransactionCreated(transaction: Transaction): Promise<void>;
-  sendDailySummary(dailySummary: string): Promise<void>;
+  sendDailySummary(dailySummary: string, userId: string): Promise<void>;
 }

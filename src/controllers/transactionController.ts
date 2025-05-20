@@ -9,13 +9,17 @@ import transactionService from '../services/transactionService';
 import { TransactionStatus } from '../types/transaction';
 
 class TransactionController {
-  async createTransaction(createTransactionRequest: CreateTransactionRequest) {
+  async createTransaction(
+    createTransactionRequest: CreateTransactionRequest,
+    userId: string,
+  ) {
     try {
       logger.debug('Start create transaction', createTransactionRequest);
       const transactionId = await transactionService.createTransaction({
         ...createTransactionRequest,
         date: createTransactionRequest.date || new Date(),
         categoryId: createTransactionRequest.categoryId || null,
+        userId,
       });
       logger.debug(
         'Done create transaction',
@@ -31,7 +35,10 @@ class TransactionController {
     }
   }
 
-  async getTransactions(getTransactionsRequest: GetTransactionsRequest) {
+  async getTransactions(
+    getTransactionsRequest: GetTransactionsRequest,
+    userId: string,
+  ) {
     try {
       logger.debug('Start get transactions', getTransactionsRequest);
       const transactions = await transactionService.getTransactions({
@@ -43,6 +50,7 @@ class TransactionController {
           ? new Date(getTransactionsRequest.endDate)
           : undefined,
         transactionType: getTransactionsRequest.type,
+        userId,
       });
       logger.debug(
         'Done get transactions',
@@ -56,12 +64,16 @@ class TransactionController {
     }
   }
 
-  async getSummary(getTransactionsRequest: GetTransactionsSummaryRequest) {
+  async getSummary(
+    getTransactionsRequest: GetTransactionsSummaryRequest,
+    userId: string,
+  ) {
     try {
       logger.debug('Start get transactions summary', getTransactionsRequest);
-      const summary = await transactionService.getTransactionsSummary(
-        getTransactionsRequest,
-      );
+      const summary = await transactionService.getTransactionsSummary({
+        ...getTransactionsRequest,
+        userId,
+      });
       logger.debug(
         'Done get transactions summary',
         getTransactionsRequest,
@@ -77,12 +89,14 @@ class TransactionController {
   async updateTransaction(
     id: string,
     updateTransactionRequest: UpdateTransactionRequest,
+    userId: string,
   ) {
     try {
       logger.debug('Start update transaction', id, updateTransactionRequest);
       const transactionId = await transactionService.updateTransaction(
         id,
         updateTransactionRequest,
+        userId,
       );
       logger.debug('Done update transaction', id, transactionId);
       return transactionId;
@@ -92,10 +106,10 @@ class TransactionController {
     }
   }
 
-  async deleteTransaction(id: string) {
+  async deleteTransaction(id: string, userId: string) {
     try {
       logger.debug('Start delete transaction', id);
-      await transactionService.deleteTransaction(id);
+      await transactionService.deleteTransaction(id, userId);
       logger.debug('Done delete transaction', id);
       return;
     } catch (error: any) {
@@ -104,10 +118,11 @@ class TransactionController {
     }
   }
 
-  public async getPendingTransactions() {
+  public async getPendingTransactions(userId: string) {
     try {
       logger.debug('Start get pending transactions');
-      const transactions = await transactionService.getPendingTransactions();
+      const transactions =
+        await transactionService.getPendingTransactions(userId);
       logger.debug('Done get pending transactions', transactions);
       return transactions;
     } catch (error: any) {
@@ -116,12 +131,17 @@ class TransactionController {
     }
   }
 
-  public async updateTransactionStatus(id: string, status: TransactionStatus) {
+  public async updateTransactionStatus(
+    id: string,
+    status: TransactionStatus,
+    userId: string,
+  ) {
     try {
       logger.debug('Start update transaction status', { id, status });
       const transactionId = await transactionService.updateTransactionStatus(
         id,
         status,
+        userId,
       );
       logger.debug('Done update transaction status', { id, status });
       return transactionId;

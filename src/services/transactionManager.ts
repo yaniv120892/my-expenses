@@ -3,6 +3,9 @@ import TransactionService from './transactionService';
 import logger from '../utils/logger';
 import { formatTransaction } from '../utils/transactionUtils';
 
+//TODO: implement logic to get userId from chatId
+const userId = 'dummy-user-id';
+
 export enum UserStatus {
   AWAITING_TYPE = 'AWAITING_TYPE',
   AWAITING_AMOUNT = 'AWAITING_AMOUNT',
@@ -176,11 +179,13 @@ class TransactionManager {
       description: inProcessTransaction.description as string,
       categoryId: null,
       date,
+      userId,
     });
 
-    const transaction = await TransactionService.getTransactionItem({
-      id: createdTransaction,
-    });
+    const transaction = await TransactionService.getTransactionItem(
+      createdTransaction,
+      userId,
+    );
 
     if (!transaction) {
       return {

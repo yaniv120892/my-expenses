@@ -11,13 +11,17 @@ class InsightsHandler {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
     }
-    async handleInsights(chatId) {
+    async handleInsights(chatId, userId) {
+        if (!userId) {
+            return telegramService_1.telegramService.sendMessage(chatId, 'Please provide a user ID');
+        }
         await telegramService_1.telegramService.sendMessage(chatId, '🔄 Analyzing your expenses...');
         const transactions = await transactionService_1.default.getTransactions({
             startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
             transactionType: 'EXPENSE',
             page: 1,
             perPage: 100,
+            userId,
         });
         if (transactions.length === 0) {
             return telegramService_1.telegramService.sendMessage(chatId, '❌ No transactions found.');
