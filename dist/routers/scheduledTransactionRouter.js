@@ -12,11 +12,11 @@ const requests_1 = require("../controllers/requests");
 const authMiddleware_1 = require("../middlewares/authMiddleware");
 const router = express_1.default.Router();
 router.get('/process', (0, handleRequest_1.handleRequest)((req) => scheduledTransactionService_1.default.processDueScheduledTransactions(new Date()), 200));
-router.post('/', (0, validation_1.validateRequest)(requests_1.CreateScheduledTransactionRequest), (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.create(req.body, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 201));
+router.post('/', (0, validation_1.validateRequest)(requests_1.CreateScheduledTransactionRequest), authMiddleware_1.authenticateRequest, (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.create(req.body, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 201));
 router.put('/:id', (0, validation_1.validateRequest)(requests_1.UpdateScheduledTransactionRequest), authMiddleware_1.authenticateRequest, (0, handleRequest_1.handleRequest)((req) => {
     var _a;
     return scheduledTransactionController_1.default.update(req.params.id, req.body, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
 }, 200));
-router.get('/', (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.list((_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 200));
-router.delete('/:id', (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.delete(req.params.id, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 204));
+router.get('/', authMiddleware_1.authenticateRequest, (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.list((_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 200));
+router.delete('/:id', authMiddleware_1.authenticateRequest, (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.delete(req.params.id, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 204));
 exports.default = router;

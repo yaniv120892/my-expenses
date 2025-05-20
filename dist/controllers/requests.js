@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
+exports.SignupRequest = exports.VerifyLoginCodeRequest = exports.LoginRequest = exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 //TODO: remove this import and create an enum for schedule types that is not depending on Prisma
@@ -306,3 +306,42 @@ __decorate([
     }),
     __metadata("design:type", Object)
 ], UpdateScheduledTransactionRequest.prototype, "dummy", void 0);
+class LoginRequest {
+}
+exports.LoginRequest = LoginRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], LoginRequest.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], LoginRequest.prototype, "password", void 0);
+class VerifyLoginCodeRequest {
+}
+exports.VerifyLoginCodeRequest = VerifyLoginCodeRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], VerifyLoginCodeRequest.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], VerifyLoginCodeRequest.prototype, "code", void 0);
+class SignupRequest {
+}
+exports.SignupRequest = SignupRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], SignupRequest.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], SignupRequest.prototype, "password", void 0);

@@ -5,6 +5,7 @@ import webhookRouter from '../routers/webhookRouter';
 import scheduledTransactionRouter from '../routers/scheduledTransactionRouter';
 import summaryRouter from '../routers/summaryRouter';
 import backupRouter from '../routers/backupRouter';
+import authRouter from '../routers/authRouter';
 
 const router = express.Router();
 router.use('/webhook', webhookRouter);
@@ -13,6 +14,7 @@ router.use('/api/scheduled-transactions', scheduledTransactionRouter);
 router.use('/api/categories', categoryRouter);
 router.use('/api/summary', summaryRouter);
 router.use('/api/backup', backupRouter);
+router.use('/api/auth', authRouter);
 
 router.get('/', (req, res) => {
   res.send('ok');

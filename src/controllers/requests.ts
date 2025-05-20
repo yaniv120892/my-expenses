@@ -11,6 +11,8 @@ import {
   registerDecorator,
   ValidationOptions,
   ValidationArguments,
+  IsEmail,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 //TODO: remove this import and create an enum for schedule types that is not depending on Prisma
@@ -247,4 +249,34 @@ export class UpdateScheduledTransactionRequest {
     message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
   })
   dummy?: any;
+}
+
+export class LoginRequest {
+  @IsString()
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+
+export class VerifyLoginCodeRequest {
+  @IsString()
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+}
+
+export class SignupRequest {
+  @IsString()
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }
