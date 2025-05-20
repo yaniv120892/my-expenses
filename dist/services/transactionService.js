@@ -25,9 +25,10 @@ class TransactionService {
             categoryId: createTransaction.categoryId,
             type: createTransaction.type,
             status: createTransaction.status || 'APPROVED',
+            userId: createTransaction.userId,
         };
         const transactionId = await transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
-        await this.notifyTransactionCreatedSafe(transactionId);
+        await this.notifyTransactionCreatedSafe(transactionId, createTransaction.userId);
         return transactionId;
     }
     async getTransactions(filters) {
@@ -49,27 +50,27 @@ class TransactionService {
         }
         return transactions;
     }
-    async getPendingTransactions() {
-        return transactionRepository_1.default.getPendingTransactions();
+    async getPendingTransactions(userId) {
+        return transactionRepository_1.default.getPendingTransactions(userId);
     }
-    async updateTransactionStatus(id, status) {
-        const transactionId = await transactionRepository_1.default.updateTransactionStatus(id, status);
+    async updateTransactionStatus(id, status, userId) {
+        const transactionId = await transactionRepository_1.default.updateTransactionStatus(id, status, userId);
         if (status === 'APPROVED') {
-            await this.notifyTransactionCreatedSafe(transactionId);
+            await this.notifyTransactionCreatedSafe(transactionId, userId);
         }
         return transactionId;
     }
-    async getTransactionItem(data) {
-        return transactionRepository_1.default.getTransactionItem(data);
+    async getTransactionItem(transactionId, userId) {
+        return transactionRepository_1.default.getTransactionItem(transactionId, userId);
     }
     async getTransactionsSummary(filters) {
         return transactionRepository_1.default.getTransactionsSummary(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));
     }
-    async updateTransaction(id, data) {
-        await transactionRepository_1.default.updateTransaction(id, data);
+    async updateTransaction(id, data, userId) {
+        await transactionRepository_1.default.updateTransaction(id, data, userId);
     }
-    async deleteTransaction(id) {
-        return transactionRepository_1.default.deleteTransaction(id);
+    async deleteTransaction(id, userId) {
+        return transactionRepository_1.default.deleteTransaction(id, userId);
     }
     async updateCategory(transaction) {
         if (transaction.categoryId) {
@@ -111,9 +112,9 @@ class TransactionService {
         }
         return response.data.category;
     }
-    async notifyTransactionCreatedSafe(transactionId) {
+    async notifyTransactionCreatedSafe(transactionId, userId) {
         try {
-            const transaction = await this.getTransactionItem({ id: transactionId });
+            const transaction = await this.getTransactionItem(transactionId, userId);
             if (!transaction) {
                 logger_1.default.warn(`skipped notification for transaction ${transactionId} - transaction not found`);
                 return;

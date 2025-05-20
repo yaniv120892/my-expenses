@@ -13,11 +13,11 @@ class UserHandler {
         transactionManager_1.transactionManager.resetUserState(chatId);
         return telegramService_1.telegramService.sendMessage(chatId, `📜 *Available Commands:*
       1. /create
-      2. /list <days>
-      3. /summary <days>
+      2. /list <userId> <days>
+      3. /summary <userId> <days>
       4. /categories
-      5. /search <keyword>
-      6. /insights`);
+      5. /search <userId> <keyword>
+      6. /insights <userId>`);
     }
     async handleReset(chatId) {
         transactionManager_1.transactionManager.resetUserState(chatId);

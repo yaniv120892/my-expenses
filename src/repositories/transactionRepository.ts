@@ -3,7 +3,6 @@ import prisma from '..//prisma/client';
 import {
   TransactionFilters,
   Transaction,
-  TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
 } from '..//types/transaction';
@@ -30,6 +29,7 @@ class TransactionRepository {
         categoryId: filters.categoryId,
         type: filters.transactionType,
         status: filters.status || TransactionStatus.APPROVED,
+        userId: filters.userId,
       },
     });
 
@@ -55,6 +55,7 @@ class TransactionRepository {
         categoryId: data.categoryId,
         type: data.type,
         status: data.status || TransactionStatus.APPROVED,
+        userId: data.userId,
       },
       include: { category: true },
     });
@@ -85,6 +86,7 @@ class TransactionRepository {
           ? { description: { contains: filters.searchTerm } }
           : {}),
         status: filters.status || TransactionStatus.APPROVED,
+        userId: filters.userId,
       },
       take: filters.perPage,
       skip: (filters.page - 1) * filters.perPage,
@@ -95,9 +97,9 @@ class TransactionRepository {
     return transactions.map(this.mapToDomain);
   }
 
-  public async getPendingTransactions(): Promise<Transaction[]> {
+  public async getPendingTransactions(userId: string): Promise<Transaction[]> {
     const transactions = await prisma.transaction.findMany({
-      where: { status: TransactionStatus.PENDING_APPROVAL },
+      where: { status: TransactionStatus.PENDING_APPROVAL, userId: userId },
       include: { category: true },
       orderBy: { date: 'desc' },
     });
@@ -107,19 +109,21 @@ class TransactionRepository {
   public async updateTransactionStatus(
     id: string,
     status: TransactionStatus,
+    userId: string,
   ): Promise<string> {
     const transaction = await prisma.transaction.update({
-      where: { id },
+      where: { id, userId },
       data: { status },
     });
     return transaction.id;
   }
 
   public async getTransactionItem(
-    data: TransactionItem,
+    transactionId: string,
+    userId: string,
   ): Promise<Transaction | null> {
     const transaction = await prisma.transaction.findUnique({
-      where: { id: data.id },
+      where: { id: transactionId, userId },
       include: { category: true },
     });
 
@@ -144,9 +148,10 @@ class TransactionRepository {
   public async updateTransaction(
     id: string,
     data: UpdateTransactionDbModel,
+    userId: string,
   ): Promise<string> {
     const transaction = await prisma.transaction.update({
-      where: { id },
+      where: { id, userId },
       data: {
         description: data.description,
         value: data.value,
@@ -159,9 +164,9 @@ class TransactionRepository {
     return transaction.id;
   }
 
-  public async deleteTransaction(id: string): Promise<void> {
+  public async deleteTransaction(id: string, userId: string): Promise<void> {
     await prisma.transaction.delete({
-      where: { id },
+      where: { id, userId },
     });
   }
 

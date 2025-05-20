@@ -9,8 +9,8 @@ class SummaryService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
     }
-    async getTodaySummary() {
-        const transactions = await this.getTodayTransactions();
+    async getTodaySummary(userId) {
+        const transactions = await this.getTodayTransactions(userId);
         const summary = this.buildSummary(transactions);
         const aiSummary = await this.getFunnyAiSummary(transactions);
         return { summary, aiSummary };
@@ -22,7 +22,7 @@ class SummaryService {
         end.setDate(end.getDate() + 1);
         return { start, end };
     }
-    async getTodayTransactions() {
+    async getTodayTransactions(userId) {
         const { start, end } = this.getTodayDateRange();
         return transactionRepository_1.default.getTransactions({
             startDate: start,
@@ -30,6 +30,7 @@ class SummaryService {
             page: 1,
             perPage: 100,
             status: 'APPROVED',
+            userId,
         });
     }
     buildSummary(transactions) {

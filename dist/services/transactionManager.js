@@ -7,6 +7,8 @@ exports.transactionManager = exports.UserStatus = void 0;
 const transactionService_1 = __importDefault(require("./transactionService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionUtils_1 = require("../utils/transactionUtils");
+//TODO: implement logic to get userId from chatId
+const userId = 'dummy-user-id';
 var UserStatus;
 (function (UserStatus) {
     UserStatus["AWAITING_TYPE"] = "AWAITING_TYPE";
@@ -129,10 +131,9 @@ class TransactionManager {
             description: inProcessTransaction.description,
             categoryId: null,
             date,
+            userId,
         });
-        const transaction = await transactionService_1.default.getTransactionItem({
-            id: createdTransaction,
-        });
+        const transaction = await transactionService_1.default.getTransactionItem(createdTransaction, userId);
         if (!transaction) {
             return {
                 message: 'Transaction created, but failed to retrieve details.',

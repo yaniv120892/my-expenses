@@ -12,16 +12,20 @@ class TransactionHandler {
     return telegramService.sendMessage(chatId, message);
   }
 
-  async handleList(chatId: number, args: string[]) {
-    const days = args.length ? parseInt(args[0]) || 5 : 5;
+  async handleList(chatId: number, userId: string | null, days?: number) {
+    if (!userId) {
+      return telegramService.sendMessage(chatId, 'Please provide a user ID');
+    }
+
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - (days || 5));
 
     const transactions = await transactionService.getTransactions({
       startDate,
       transactionType: 'EXPENSE',
       page: 1,
       perPage: 10,
+      userId: userId,
     });
 
     if (transactions.length === 0) {
@@ -35,13 +39,16 @@ class TransactionHandler {
     await telegramService.sendMessage(chatId, transactionList);
   }
 
-  async handleSummary(chatId: number, args: string[]) {
-    const days = args.length ? parseInt(args[0]) : 30;
+  async handleSummary(chatId: number, userId: string | null, days?: number) {
+    if (!userId) {
+      return telegramService.sendMessage(chatId, 'Please provide a user ID');
+    }
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - (days || 30));
 
     const summary = await transactionService.getTransactionsSummary({
       startDate,
+      userId,
     });
     await telegramService.sendMessage(
       chatId,
@@ -49,23 +56,31 @@ class TransactionHandler {
     );
   }
 
-  async handleSearch(chatId: number, args: string[]) {
-    if (args.length === 0) {
+  async handleSearch(
+    chatId: number,
+    userId: string | null,
+    searchTerm: string,
+  ) {
+    if (!searchTerm) {
       return telegramService.sendMessage(
         chatId,
         'Please provide a search term.',
       );
     }
+    if (!userId) {
+      return telegramService.sendMessage(chatId, 'Please provide a user ID');
+    }
 
     const transactions = await transactionService.getTransactions({
-      searchTerm: args.join(' '),
+      searchTerm: searchTerm,
       page: 1,
       perPage: 10,
+      userId,
     });
     if (transactions.length === 0) {
       return telegramService.sendMessage(
         chatId,
-        `No transactions found for "${args.join(' ')}".`,
+        `No transactions found for "${searchTerm}".`,
       );
     }
 
@@ -75,7 +90,7 @@ class TransactionHandler {
 
     await telegramService.sendMessage(
       chatId,
-      `🔍 *Search results for:* "${args.join(' ')}"\n\n${transactionList}`,
+      `🔍 *Search results for:* "${searchTerm}"\n\n${transactionList}`,
     );
   }
 }

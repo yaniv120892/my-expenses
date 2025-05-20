@@ -8,11 +8,17 @@ class SummaryController {
   private aiProvider = AIServiceFactory.getAIService();
 
   public async sendTodaySummary() {
-    const fullSummaryMessage = await this.getSummaryMessage();
-    await this.transactionNotifier.sendDailySummary(fullSummaryMessage);
+    const users = await this.getUsersRequiredSummary();
+    for (const userId of users) {
+      const fullSummaryMessage = await this.getSummaryMessage(userId);
+      await this.transactionNotifier.sendDailySummary(
+        fullSummaryMessage,
+        userId,
+      );
+    }
   }
 
-  private async getAllTodayTransactions() {
+  private async getAllTodayTransactions(userId: string) {
     const now = new Date();
     const startOfToday = new Date(
       now.getFullYear(),
@@ -28,6 +34,7 @@ class SummaryController {
     const transactionsToday = await transactionService.getAllTransactions({
       startDate: startOfToday,
       endDate: endOfToday,
+      userId,
     });
 
     return transactionsToday;
@@ -71,8 +78,8 @@ class SummaryController {
     ].join('\n');
   }
 
-  private async getSummaryMessage() {
-    const transactions = await this.getAllTodayTransactions();
+  private async getSummaryMessage(userId: string) {
+    const transactions = await this.getAllTodayTransactions(userId);
     if (transactions.length === 0) {
       return 'לא נוספו הוצאות היום.';
     }
@@ -88,6 +95,11 @@ class SummaryController {
     );
     const total = transactions.reduce((sum, t) => sum + t.value, 0);
     return this.formatSummaryMessage(transactions, total, aiInsights);
+  }
+
+  private async getUsersRequiredSummary() {
+    //TODO: Implement logic to get users who require summary
+    return ['f9c8bf03-3085-4431-a35d-ee388470d0eb'];
   }
 }
 

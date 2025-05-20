@@ -17,6 +17,7 @@ class ScheduledTransactionService {
                 type: scheduled.type,
                 date,
                 status: 'PENDING_APPROVAL',
+                userId: scheduled.userId,
             });
             const nextRunDate = this.calculateNextRunDate(scheduled.scheduleType, scheduled.interval, date, scheduled.dayOfWeek, scheduled.dayOfMonth);
             await scheduledTransactionRepository_1.default.updateLastRunAndNextRun(scheduled.id, date, nextRunDate);
@@ -61,16 +62,16 @@ class ScheduledTransactionService {
         const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, new Date(), data.dayOfWeek, data.dayOfMonth);
         return scheduledTransactionRepository_1.default.createScheduledTransaction(data, nextRunDate);
     }
-    async updateScheduledTransaction(id, data) {
-        const oldScheduledTransaction = await scheduledTransactionRepository_1.default.getScheduledTransactionById(id);
+    async updateScheduledTransaction(id, data, userId) {
+        const oldScheduledTransaction = await scheduledTransactionRepository_1.default.getScheduledTransactionById(id, userId);
         const nextRunDate = this.calculateNextRunDate(data.scheduleType, data.interval, (oldScheduledTransaction === null || oldScheduledTransaction === void 0 ? void 0 : oldScheduledTransaction.lastRunDate) || new Date(), data.dayOfWeek, data.dayOfMonth);
-        return scheduledTransactionRepository_1.default.updateScheduledTransaction(id, data, nextRunDate);
+        return scheduledTransactionRepository_1.default.updateScheduledTransaction(id, data, userId, nextRunDate);
     }
-    async listScheduledTransactions() {
-        return scheduledTransactionRepository_1.default.getAllScheduledTransactions();
+    async listScheduledTransactions(userId) {
+        return scheduledTransactionRepository_1.default.getAllScheduledTransactions(userId);
     }
-    async deleteScheduledTransaction(id) {
-        return scheduledTransactionRepository_1.default.deleteScheduledTransaction(id);
+    async deleteScheduledTransaction(id, userId) {
+        return scheduledTransactionRepository_1.default.deleteScheduledTransaction(id, userId);
     }
 }
 exports.default = new ScheduledTransactionService();

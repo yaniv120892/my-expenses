@@ -13,6 +13,7 @@ import {
   ValidationArguments,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+//TODO: remove this import and create an enum for schedule types that is not depending on Prisma
 import { ScheduleType } from '@prisma/client';
 
 function IsValidScheduledCombination(validationOptions?: ValidationOptions) {
@@ -170,6 +171,9 @@ export class CreateScheduledTransactionRequest {
   @Type(() => Number)
   value: number;
 
+  @IsString()
+  type: TransactionType;
+
   @IsUUID()
   categoryId: string;
 
@@ -212,6 +216,9 @@ export class UpdateScheduledTransactionRequest {
 
   @IsUUID()
   categoryId: string;
+
+  @IsString()
+  type: TransactionType;
 
   @IsEnum(ScheduleType)
   scheduleType: ScheduleType;

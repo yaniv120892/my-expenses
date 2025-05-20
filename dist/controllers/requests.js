@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
+//TODO: remove this import and create an enum for schedule types that is not depending on Prisma
 const client_1 = require("@prisma/client");
 function IsValidScheduledCombination(validationOptions) {
     return function (object, propertyName) {
@@ -210,6 +211,10 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateScheduledTransactionRequest.prototype, "value", void 0);
 __decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateScheduledTransactionRequest.prototype, "type", void 0);
+__decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateScheduledTransactionRequest.prototype, "categoryId", void 0);
@@ -263,6 +268,10 @@ __decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], UpdateScheduledTransactionRequest.prototype, "categoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateScheduledTransactionRequest.prototype, "type", void 0);
 __decorate([
     (0, class_validator_1.IsEnum)(client_1.ScheduleType),
     __metadata("design:type", String)

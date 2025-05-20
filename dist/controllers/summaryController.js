@@ -12,16 +12,20 @@ class SummaryController {
         this.aiProvider = aiServiceFactory_1.default.getAIService();
     }
     async sendTodaySummary() {
-        const fullSummaryMessage = await this.getSummaryMessage();
-        await this.transactionNotifier.sendDailySummary(fullSummaryMessage);
+        const users = await this.getUsersRequiredSummary();
+        for (const userId of users) {
+            const fullSummaryMessage = await this.getSummaryMessage(userId);
+            await this.transactionNotifier.sendDailySummary(fullSummaryMessage, userId);
+        }
     }
-    async getAllTodayTransactions() {
+    async getAllTodayTransactions(userId) {
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         const transactionsToday = await transactionService_1.default.getAllTransactions({
             startDate: startOfToday,
             endDate: endOfToday,
+            userId,
         });
         return transactionsToday;
     }
@@ -55,8 +59,8 @@ class SummaryController {
             aiInsightsSection,
         ].join('\n');
     }
-    async getSummaryMessage() {
-        const transactions = await this.getAllTodayTransactions();
+    async getSummaryMessage(userId) {
+        const transactions = await this.getAllTodayTransactions(userId);
         if (transactions.length === 0) {
             return 'לא נוספו הוצאות היום.';
         }
@@ -66,6 +70,10 @@ class SummaryController {
         const aiInsights = await this.aiProvider.analyzeExpenses(transactionsTextForAiAnalyzer, 'add a funny summary based on my expenses at the end');
         const total = transactions.reduce((sum, t) => sum + t.value, 0);
         return this.formatSummaryMessage(transactions, total, aiInsights);
+    }
+    async getUsersRequiredSummary() {
+        //TODO: Implement logic to get users who require summary
+        return ['f9c8bf03-3085-4431-a35d-ee388470d0eb'];
     }
 }
 exports.default = new SummaryController();

@@ -1,6 +1,6 @@
 import express, { Request } from 'express';
-import { handleRequest } from '..//utils/handleRequest';
-import categoryController from '..//controllers/categoryController';
+import { handleRequest } from '../utils/handleRequest';
+import categoryController from '../controllers/categoryController';
 
 const router = express.Router();
 

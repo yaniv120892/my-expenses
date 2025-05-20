@@ -1,4 +1,5 @@
 import { TransactionType } from './transaction';
+//TODO: remove this import and create an enum for schedule types that is not depending on Prisma
 import { ScheduleType } from '@prisma/client';
 
 export interface CreateScheduledTransaction {
@@ -11,6 +12,7 @@ export interface CreateScheduledTransaction {
   dayOfWeek?: number;
   dayOfMonth?: number;
   monthOfYear?: number;
+  userId: string;
 }
 
 export interface UpdateScheduledTransaction {
@@ -38,4 +40,5 @@ export interface ScheduledTransactionDomain {
   monthOfYear?: number;
   lastRunDate?: Date;
   nextRunDate?: Date;
+  userId: string;
 }

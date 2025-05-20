@@ -7,6 +7,7 @@ export interface CreateTransaction {
   type: TransactionType;
   date: Date | null;
   status?: TransactionStatus;
+  userId: string;
 }
 
 export interface TransactionSummaryFilters {
@@ -16,6 +17,7 @@ export interface TransactionSummaryFilters {
   transactionType?: TransactionType;
   searchTerm?: string;
   status?: TransactionStatus;
+  userId: string;
 }
 
 export interface TransactionFilters extends TransactionSummaryFilters {
@@ -45,4 +47,5 @@ export interface TransactionSummary {
   totalExpense: number;
 }
 
+//TODO: remove this type and use enum instead
 export type TransactionType = 'INCOME' | 'EXPENSE';

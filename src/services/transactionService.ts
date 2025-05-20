@@ -31,12 +31,16 @@ class TransactionService {
       categoryId: createTransaction.categoryId as string,
       type: createTransaction.type,
       status: createTransaction.status || 'APPROVED',
+      userId: createTransaction.userId,
     };
     const transactionId = await transactionRepository.createTransaction(
       CreateTransactionDbModel,
     );
 
-    await this.notifyTransactionCreatedSafe(transactionId);
+    await this.notifyTransactionCreatedSafe(
+      transactionId,
+      createTransaction.userId,
+    );
 
     return transactionId;
   }
@@ -74,29 +78,32 @@ class TransactionService {
     return transactions;
   }
 
-  public async getPendingTransactions(): Promise<Transaction[]> {
-    return transactionRepository.getPendingTransactions();
+  public async getPendingTransactions(userId: string): Promise<Transaction[]> {
+    return transactionRepository.getPendingTransactions(userId);
   }
 
   public async updateTransactionStatus(
     id: string,
     status: TransactionStatus,
+    userId: string,
   ): Promise<string> {
     const transactionId = await transactionRepository.updateTransactionStatus(
       id,
       status,
+      userId,
     );
     if (status === 'APPROVED') {
-      await this.notifyTransactionCreatedSafe(transactionId);
+      await this.notifyTransactionCreatedSafe(transactionId, userId);
     }
 
     return transactionId;
   }
 
   public async getTransactionItem(
-    data: TransactionItem,
+    transactionId: string,
+    userId: string,
   ): Promise<Transaction | null> {
-    return transactionRepository.getTransactionItem(data);
+    return transactionRepository.getTransactionItem(transactionId, userId);
   }
 
   public async getTransactionsSummary(
@@ -111,12 +118,13 @@ class TransactionService {
   public async updateTransaction(
     id: string,
     data: CreateTransactionRequest,
+    userId: string,
   ): Promise<void> {
-    await transactionRepository.updateTransaction(id, data);
+    await transactionRepository.updateTransaction(id, data, userId);
   }
 
-  public async deleteTransaction(id: string): Promise<void> {
-    return transactionRepository.deleteTransaction(id);
+  public async deleteTransaction(id: string, userId: string): Promise<void> {
+    return transactionRepository.deleteTransaction(id, userId);
   }
 
   private async updateCategory(
@@ -184,9 +192,12 @@ class TransactionService {
     return response.data.category;
   }
 
-  private async notifyTransactionCreatedSafe(transactionId: string) {
+  private async notifyTransactionCreatedSafe(
+    transactionId: string,
+    userId: string,
+  ) {
     try {
-      const transaction = await this.getTransactionItem({ id: transactionId });
+      const transaction = await this.getTransactionItem(transactionId, userId);
       if (!transaction) {
         logger.warn(
           `skipped notification for transaction ${transactionId} - transaction not found`,

@@ -9,7 +9,10 @@ class InsightsHandler {
     this.aiService = aiServiceFactory.getAIService();
   }
 
-  async handleInsights(chatId: number) {
+  async handleInsights(chatId: number, userId: string | null) {
+    if (!userId) {
+      return telegramService.sendMessage(chatId, 'Please provide a user ID');
+    }
     await telegramService.sendMessage(chatId, '🔄 Analyzing your expenses...');
 
     const transactions = await transactionService.getTransactions({
@@ -17,6 +20,7 @@ class InsightsHandler {
       transactionType: 'EXPENSE',
       page: 1,
       perPage: 100,
+      userId,
     });
 
     if (transactions.length === 0) {

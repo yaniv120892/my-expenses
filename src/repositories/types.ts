@@ -8,6 +8,7 @@ export interface CreateTransactionDbModel {
   type: TransactionType;
   date: Date;
   status?: TransactionStatus;
+  userId: string;
 }
 
 export interface UpdateTransactionDbModel {

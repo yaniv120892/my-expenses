@@ -4,8 +4,8 @@ import aiServiceFactory from './ai/aiServiceFactory';
 class SummaryService {
   private aiService = aiServiceFactory.getAIService();
 
-  public async getTodaySummary() {
-    const transactions = await this.getTodayTransactions();
+  public async getTodaySummary(userId: string) {
+    const transactions = await this.getTodayTransactions(userId);
     const summary = this.buildSummary(transactions);
     const aiSummary = await this.getFunnyAiSummary(transactions);
     return { summary, aiSummary };
@@ -19,7 +19,7 @@ class SummaryService {
     return { start, end };
   }
 
-  private async getTodayTransactions() {
+  private async getTodayTransactions(userId: string) {
     const { start, end } = this.getTodayDateRange();
     return transactionRepository.getTransactions({
       startDate: start,
@@ -27,6 +27,7 @@ class SummaryService {
       page: 1,
       perPage: 100,
       status: 'APPROVED',
+      userId,
     });
   }
 

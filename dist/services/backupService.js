@@ -11,9 +11,10 @@ class BackupService {
     constructor() {
         this.storageProvider = backupStorageProviderFactory_1.default.getProvider();
     }
-    async backupTransactionsToCsvAndUpload() {
+    async backupTransactionsToCsvAndUpload(userId) {
         const transactions = await transactionService_1.default.getAllTransactions({
             status: 'APPROVED',
+            userId,
         });
         const csvRows = transactions.map((t) => ({
             date: t.date,
@@ -25,7 +26,7 @@ class BackupService {
         const csv = (0, json2csv_1.parse)(csvRows, {
             fields: ['date', 'description', 'value', 'type', 'categoryName'],
         });
-        const fileName = `transactions-backup-${new Date().toISOString().slice(0, 10)}.csv`;
+        const fileName = `transactions-backup_${userId}-${new Date().toISOString().slice(0, 10)}.csv`;
         const fileBuffer = Buffer.from(csv, 'utf8');
         const mimeType = 'text/csv';
         logger_1.default.debug(`Uploading backup file: ${fileName}`);

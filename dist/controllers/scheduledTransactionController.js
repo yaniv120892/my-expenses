@@ -6,22 +6,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = __importDefault(require("../utils/logger"));
 const scheduledTransactionService_1 = __importDefault(require("../services/scheduledTransactionService"));
 class ScheduledTransactionController {
-    async create(reqBody) {
+    async create(request, userId) {
         try {
-            logger_1.default.debug('Start create scheduled transaction', reqBody);
-            const result = await scheduledTransactionService_1.default.createScheduledTransaction(reqBody);
+            logger_1.default.debug('Start create scheduled transaction', request);
+            const result = await scheduledTransactionService_1.default.createScheduledTransaction(Object.assign(Object.assign({}, request), { userId }));
             logger_1.default.debug('Done create scheduled transaction', result);
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to create scheduled transaction, ${JSON.stringify(reqBody)}, ${error.message}`);
+            logger_1.default.error(`Failed to create scheduled transaction, ${JSON.stringify(request)}, ${error.message}`);
             throw error;
         }
     }
-    async update(id, reqBody) {
+    async update(id, request, userId) {
         try {
-            logger_1.default.debug('Start update scheduled transaction', { id, reqBody });
-            const result = await scheduledTransactionService_1.default.updateScheduledTransaction(id, reqBody);
+            logger_1.default.debug('Start update scheduled transaction', { id, reqBody: request });
+            const result = await scheduledTransactionService_1.default.updateScheduledTransaction(id, request, userId);
             logger_1.default.debug('Done update scheduled transaction', result);
             return result;
         }
@@ -30,10 +30,10 @@ class ScheduledTransactionController {
             throw error;
         }
     }
-    async list() {
+    async list(userId) {
         try {
-            logger_1.default.debug('Start list scheduled transactions');
-            const result = await scheduledTransactionService_1.default.listScheduledTransactions();
+            logger_1.default.debug('Start list scheduled transactions', { userId });
+            const result = await scheduledTransactionService_1.default.listScheduledTransactions(userId);
             logger_1.default.debug('Done list scheduled transactions', result);
             return result;
         }
@@ -42,10 +42,10 @@ class ScheduledTransactionController {
             throw error;
         }
     }
-    async delete(id) {
+    async delete(id, userId) {
         try {
             logger_1.default.debug('Start delete scheduled transaction', id);
-            const result = await scheduledTransactionService_1.default.deleteScheduledTransaction(id);
+            const result = await scheduledTransactionService_1.default.deleteScheduledTransaction(id, userId);
             logger_1.default.debug('Done delete scheduled transaction', id);
             return result;
         }
