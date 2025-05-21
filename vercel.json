@@ -17,14 +17,6 @@
     {
       "path": "/api/scheduled-transactions/process",
       "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/summary/today",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/backup/transactions",
-      "schedule": "0 12 * * 0"
     }
   ]
 }

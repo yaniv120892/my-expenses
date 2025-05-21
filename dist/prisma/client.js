@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-// import { PrismaClient } from '@prisma/client/edge';
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient({
+const edge_1 = require("@prisma/client/edge");
+const extension_accelerate_1 = require("@prisma/extension-accelerate");
+const prisma = new edge_1.PrismaClient({
     log: ['warn', 'error'],
-});
+}).$extends((0, extension_accelerate_1.withAccelerate)());
 exports.default = prisma;
