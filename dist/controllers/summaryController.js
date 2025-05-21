@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const transactionNotifierFactory_1 = __importDefault(require("../services/transactionNotification/transactionNotifierFactory"));
 const aiServiceFactory_1 = __importDefault(require("../services/ai/aiServiceFactory"));
 const transactionService_1 = __importDefault(require("../services/transactionService"));
+const userSettingsService_1 = __importDefault(require("../services/userSettingsService"));
 class SummaryController {
     constructor() {
         this.transactionNotifier = transactionNotifierFactory_1.default.getNotifier();
@@ -72,8 +73,8 @@ class SummaryController {
         return this.formatSummaryMessage(transactions, total, aiInsights);
     }
     async getUsersRequiredSummary() {
-        //TODO: Implement logic to get users who require summary
-        return ['f9c8bf03-3085-4431-a35d-ee388470d0eb'];
+        const usersId = await userSettingsService_1.default.getUsersRequiredDailySummary();
+        return usersId;
     }
 }
 exports.default = new SummaryController();

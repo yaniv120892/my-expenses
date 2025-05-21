@@ -13,6 +13,7 @@ import {
   ValidationArguments,
   IsEmail,
   IsNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 //TODO: remove this import and create an enum for schedule types that is not depending on Prisma
@@ -279,4 +280,37 @@ export class SignupRequest {
   @IsString()
   @IsNotEmpty()
   password: string;
+}
+
+export class UserSettingsInfoDto {
+  @IsEmail()
+  email: string;
+}
+
+export class UserSettingsNotificationsDto {
+  @IsBoolean()
+  createTransaction: boolean;
+
+  @IsBoolean()
+  dailySummary: boolean;
+}
+
+export class UserSettingsResponse {
+  @ValidateNested()
+  @Type(() => UserSettingsInfoDto)
+  info: UserSettingsInfoDto;
+
+  @ValidateNested()
+  @Type(() => UserSettingsNotificationsDto)
+  notifications: UserSettingsNotificationsDto;
+}
+
+export class UpdateUserSettingsRequest {
+  @ValidateNested()
+  @Type(() => UserSettingsInfoDto)
+  info: UserSettingsInfoDto;
+
+  @ValidateNested()
+  @Type(() => UserSettingsNotificationsDto)
+  notifications: UserSettingsNotificationsDto;
 }

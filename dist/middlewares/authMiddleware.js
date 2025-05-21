@@ -37,7 +37,11 @@ const authenticateRequest = async (req, res, next) => {
             return;
         }
         const user = await userRepository_1.default.findById(userId);
-        if (!user || !user.verified) {
+        if (!user) {
+            res.status(401).json({ error: 'User not found' });
+            return;
+        }
+        if (!user.verified) {
             res.status(401).json({ error: 'User not verified' });
             return;
         }

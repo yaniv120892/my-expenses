@@ -16,6 +16,14 @@ model User {
   verified    Boolean  @default(false)
   transactions Transaction[]
   scheduledTransactions ScheduledTransaction[]
+  userNotifications UserNotificationPreference?
+}
+
+model UserNotificationPreference {
+  userId      String   @db.Uuid @id 
+  user        User     @relation(fields: [userId], references: [id])
+  createTransaction Boolean @default(false)
+  dailySummary Boolean @default(false)
 }
 
 model Transaction {
