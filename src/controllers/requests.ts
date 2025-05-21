@@ -14,6 +14,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsBoolean,
+  MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 //TODO: remove this import and create an enum for schedule types that is not depending on Prisma
@@ -259,6 +260,7 @@ export class LoginRequest {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(8)
   password: string;
 }
 
@@ -279,6 +281,7 @@ export class SignupRequest {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(8)
   password: string;
 }
 

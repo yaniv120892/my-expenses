@@ -317,6 +317,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], LoginRequest.prototype, "password", void 0);
 class VerifyLoginCodeRequest {
@@ -343,6 +344,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], SignupRequest.prototype, "password", void 0);
 class UserSettingsInfoDto {
