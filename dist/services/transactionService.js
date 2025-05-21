@@ -129,7 +129,7 @@ class TransactionService {
                 logger_1.default.debug(`skipped notification for transaction ${transactionId} - notification not enabled for user ${userId}`);
                 return;
             }
-            await this.transactionNotifier.notifyTransactionCreated(transaction);
+            await this.transactionNotifier.notifyTransactionCreated(transaction, userId);
         }
         catch (error) {
             logger_1.default.error(`Failed to notify transaction created: ${transactionId} - ${error}`);

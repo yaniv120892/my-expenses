@@ -7,13 +7,14 @@ import logger from '../../utils/logger';
 export class TelegramTransactionNotifier implements TransactionNotifier {
   public async notifyTransactionCreated(
     transaction: Transaction,
+    userId: string,
   ): Promise<void> {
     try {
       logger.debug(
         'Start sending transaction notification to Telegram for transaction:',
         JSON.stringify(transaction),
       );
-      const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+      const chatId = this.getChatId(userId);
       if (!chatId) {
         logger.warn(
           'skipping transaction notification. Telegram chat ID is not set.',
