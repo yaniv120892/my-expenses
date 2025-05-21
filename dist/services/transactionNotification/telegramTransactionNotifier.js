@@ -8,10 +8,10 @@ const telegramService_1 = require("../telegramService");
 const transactionUtils_1 = require("../../utils/transactionUtils");
 const logger_1 = __importDefault(require("../../utils/logger"));
 class TelegramTransactionNotifier {
-    async notifyTransactionCreated(transaction) {
+    async notifyTransactionCreated(transaction, userId) {
         try {
             logger_1.default.debug('Start sending transaction notification to Telegram for transaction:', JSON.stringify(transaction));
-            const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
+            const chatId = this.getChatId(userId);
             if (!chatId) {
                 logger_1.default.warn('skipping transaction notification. Telegram chat ID is not set.');
                 return;

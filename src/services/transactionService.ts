@@ -224,7 +224,10 @@ class TransactionService {
         return;
       }
 
-      await this.transactionNotifier.notifyTransactionCreated(transaction);
+      await this.transactionNotifier.notifyTransactionCreated(
+        transaction,
+        userId,
+      );
     } catch (error) {
       logger.error(
         `Failed to notify transaction created: ${transactionId} - ${error}`,
