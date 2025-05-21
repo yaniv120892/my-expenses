@@ -213,7 +213,11 @@ class TransactionService {
         return;
       }
 
-      if (!userSettingsService.isCreateTransactionNotificationEnabled(userId)) {
+      const isNotificationEnabled =
+        await userSettingsService.isCreateTransactionNotificationEnabled(
+          userId,
+        );
+      if (!isNotificationEnabled) {
         logger.debug(
           `skipped notification for transaction ${transactionId} - notification not enabled for user ${userId}`,
         );
