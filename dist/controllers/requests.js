@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignupRequest = exports.VerifyLoginCodeRequest = exports.LoginRequest = exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
+exports.UpdateUserSettingsRequest = exports.UserSettingsResponse = exports.UserSettingsNotificationsDto = exports.UserSettingsInfoDto = exports.SignupRequest = exports.VerifyLoginCodeRequest = exports.LoginRequest = exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 //TODO: remove this import and create an enum for schedule types that is not depending on Prisma
@@ -345,3 +345,47 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], SignupRequest.prototype, "password", void 0);
+class UserSettingsInfoDto {
+}
+exports.UserSettingsInfoDto = UserSettingsInfoDto;
+__decorate([
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], UserSettingsInfoDto.prototype, "email", void 0);
+class UserSettingsNotificationsDto {
+}
+exports.UserSettingsNotificationsDto = UserSettingsNotificationsDto;
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UserSettingsNotificationsDto.prototype, "createTransaction", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UserSettingsNotificationsDto.prototype, "dailySummary", void 0);
+class UserSettingsResponse {
+}
+exports.UserSettingsResponse = UserSettingsResponse;
+__decorate([
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => UserSettingsInfoDto),
+    __metadata("design:type", UserSettingsInfoDto)
+], UserSettingsResponse.prototype, "info", void 0);
+__decorate([
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => UserSettingsNotificationsDto),
+    __metadata("design:type", UserSettingsNotificationsDto)
+], UserSettingsResponse.prototype, "notifications", void 0);
+class UpdateUserSettingsRequest {
+}
+exports.UpdateUserSettingsRequest = UpdateUserSettingsRequest;
+__decorate([
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => UserSettingsInfoDto),
+    __metadata("design:type", UserSettingsInfoDto)
+], UpdateUserSettingsRequest.prototype, "info", void 0);
+__decorate([
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => UserSettingsNotificationsDto),
+    __metadata("design:type", UserSettingsNotificationsDto)
+], UpdateUserSettingsRequest.prototype, "notifications", void 0);

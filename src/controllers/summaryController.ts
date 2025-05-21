@@ -2,6 +2,7 @@ import TransactionNotifierFactory from '../services/transactionNotification/tran
 import AIServiceFactory from '../services/ai/aiServiceFactory';
 import transactionService from '../services/transactionService';
 import { Transaction } from 'types/transaction';
+import userSettingsService from '../services/userSettingsService';
 
 class SummaryController {
   private transactionNotifier = TransactionNotifierFactory.getNotifier();
@@ -98,8 +99,8 @@ class SummaryController {
   }
 
   private async getUsersRequiredSummary() {
-    //TODO: Implement logic to get users who require summary
-    return ['f9c8bf03-3085-4431-a35d-ee388470d0eb'];
+    const usersId = await userSettingsService.getUsersRequiredDailySummary();
+    return usersId;
   }
 }
 

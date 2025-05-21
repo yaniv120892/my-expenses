@@ -10,6 +10,7 @@ const categoryRepository_1 = __importDefault(require("../repositories/categoryRe
 const axios_1 = __importDefault(require("axios"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionNotifierFactory_1 = __importDefault(require("./transactionNotification/transactionNotifierFactory"));
+const userSettingsService_1 = __importDefault(require("../services/userSettingsService"));
 class TransactionService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
@@ -120,7 +121,11 @@ class TransactionService {
                 return;
             }
             if (transaction.status !== 'APPROVED') {
-                logger_1.default.warn(`skipped notification for transaction ${transactionId} - transaction not approved`);
+                logger_1.default.debug(`skipped notification for transaction ${transactionId} - transaction not approved`);
+                return;
+            }
+            if (!userSettingsService_1.default.isCreateTransactionNotificationEnabled(userId)) {
+                logger_1.default.debug(`skipped notification for transaction ${transactionId} - notification not enabled for user ${userId}`);
                 return;
             }
             await this.transactionNotifier.notifyTransactionCreated(transaction);

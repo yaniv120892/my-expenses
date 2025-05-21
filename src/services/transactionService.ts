@@ -16,6 +16,7 @@ import axios from 'axios';
 import logger from '../utils/logger';
 import { Category } from '../types/category';
 import TransactionNotifierFactory from './transactionNotification/transactionNotifierFactory';
+import userSettingsService from '../services/userSettingsService';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
@@ -206,8 +207,15 @@ class TransactionService {
       }
 
       if (transaction.status !== 'APPROVED') {
-        logger.warn(
+        logger.debug(
           `skipped notification for transaction ${transactionId} - transaction not approved`,
+        );
+        return;
+      }
+
+      if (!userSettingsService.isCreateTransactionNotificationEnabled(userId)) {
+        logger.debug(
+          `skipped notification for transaction ${transactionId} - notification not enabled for user ${userId}`,
         );
         return;
       }
