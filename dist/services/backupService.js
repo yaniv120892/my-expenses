@@ -7,7 +7,7 @@ const transactionService_1 = __importDefault(require("../services/transactionSer
 const json2csv_1 = require("json2csv");
 const logger_1 = __importDefault(require("../utils/logger"));
 const backupStorageProviderFactory_1 = __importDefault(require("../services/backup/backupStorageProviderFactory"));
-const userRepository_1 = __importDefault(require("repositories/userRepository"));
+const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 class BackupService {
     constructor() {
         this.storageProvider = backupStorageProviderFactory_1.default.getProvider();
