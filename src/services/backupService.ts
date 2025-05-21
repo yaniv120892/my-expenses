@@ -3,7 +3,7 @@ import { Transaction } from '../types/transaction';
 import { parse } from 'json2csv';
 import logger from '../utils/logger';
 import BackupStorageProviderFactory from '../services/backup/backupStorageProviderFactory';
-import userRepository from 'repositories/userRepository';
+import userRepository from '../repositories/userRepository';
 
 class BackupService {
   private storageProvider = BackupStorageProviderFactory.getProvider();
