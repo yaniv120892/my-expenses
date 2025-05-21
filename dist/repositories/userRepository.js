@@ -80,5 +80,18 @@ class UserRepository {
             },
         });
     }
+    async list(query) {
+        const users = await client_1.default.user.findMany({
+            where: {
+                verified: query.isVerified ? true : undefined,
+            },
+        });
+        return users.map((user) => ({
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            verified: user.verified,
+        }));
+    }
 }
 exports.default = new UserRepository();

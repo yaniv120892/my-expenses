@@ -7,9 +7,16 @@ const transactionService_1 = __importDefault(require("../services/transactionSer
 const json2csv_1 = require("json2csv");
 const logger_1 = __importDefault(require("../utils/logger"));
 const backupStorageProviderFactory_1 = __importDefault(require("../services/backup/backupStorageProviderFactory"));
+const userRepository_1 = __importDefault(require("repositories/userRepository"));
 class BackupService {
     constructor() {
         this.storageProvider = backupStorageProviderFactory_1.default.getProvider();
+    }
+    async getUsersRequiredBackup() {
+        const users = await userRepository_1.default.list({
+            isVerified: true,
+        });
+        return users;
     }
     async backupTransactionsToCsvAndUpload(userId) {
         const transactions = await transactionService_1.default.getAllTransactions({

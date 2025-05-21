@@ -23,8 +23,13 @@ class BackupController {
   }
 
   private async getUsersRequiredBackup() {
-    //TODO: Implement logic to get users who require backup
-    return ['f9c8bf03-3085-4431-a35d-ee388470d0eb'];
+    const users = await backupService.getUsersRequiredBackup();
+    if (!users || users.length === 0) {
+      logger.info('No users require backup');
+      return [];
+    }
+    logger.info(`Found ${users.length} users requiring backup`);
+    return users.map((user) => user.id);
   }
 }
 
