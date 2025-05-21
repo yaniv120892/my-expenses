@@ -1,5 +1,6 @@
 import { User } from '@prisma/client';
 import prisma from '../prisma/client';
+import { UserQuery } from './types';
 
 class UserRepository {
   public async getUsersRequiredDailySummary() {
@@ -95,6 +96,21 @@ class UserRepository {
         dailySummary: notifications.dailySummary,
       },
     });
+  }
+
+  public async list(query: UserQuery) {
+    const users = await prisma.user.findMany({
+      where: {
+        verified: query.isVerified ? true : undefined,
+      },
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      verified: user.verified,
+    }));
   }
 }
 

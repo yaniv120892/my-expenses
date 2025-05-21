@@ -3,13 +3,20 @@ import { Transaction } from '../types/transaction';
 import { parse } from 'json2csv';
 import logger from '../utils/logger';
 import BackupStorageProviderFactory from '../services/backup/backupStorageProviderFactory';
+import userRepository from 'repositories/userRepository';
 
 class BackupService {
   private storageProvider = BackupStorageProviderFactory.getProvider();
 
-  constructor() {}
+  public async getUsersRequiredBackup() {
+    const users = await userRepository.list({
+      isVerified: true,
+    });
 
-  async backupTransactionsToCsvAndUpload(userId: string) {
+    return users;
+  }
+
+  public async backupTransactionsToCsvAndUpload(userId: string) {
     const transactions = await transactionService.getAllTransactions({
       status: 'APPROVED',
       userId,

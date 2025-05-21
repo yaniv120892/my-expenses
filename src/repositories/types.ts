@@ -46,3 +46,7 @@ export interface ScheduledTransaction {
   lastRunDate?: Date;
   nextRunDate?: Date;
 }
+
+export interface UserQuery {
+  isVerified?: boolean;
+}
