@@ -124,7 +124,8 @@ class TransactionService {
                 logger_1.default.debug(`skipped notification for transaction ${transactionId} - transaction not approved`);
                 return;
             }
-            if (!userSettingsService_1.default.isCreateTransactionNotificationEnabled(userId)) {
+            const isNotificationEnabled = await userSettingsService_1.default.isCreateTransactionNotificationEnabled(userId);
+            if (!isNotificationEnabled) {
                 logger_1.default.debug(`skipped notification for transaction ${transactionId} - notification not enabled for user ${userId}`);
                 return;
             }
