@@ -50,7 +50,7 @@ class UserSettingsController {
     }
   }
 
-  public async testTelegram(chatId: number) {
+  public async testTelegram(chatId: string) {
     try {
       logger.debug('Start sending test telegram message', { chatId });
       await telegramService.sendMessage(chatId, 'test my expenses connection');

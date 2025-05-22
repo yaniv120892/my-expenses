@@ -21,10 +21,10 @@ type UserState = {
 };
 
 class TransactionManager {
-  private chatIdToUserStateMapping: Map<number, UserState> = new Map();
+  private chatIdToUserStateMapping: Map<string, UserState> = new Map();
 
   public async handleUserState(
-    chatId: number,
+    chatId: string,
     text: string,
   ): Promise<{ message: string; nextStep: UserStatus }> {
     logger.debug(`Handling user state for chatId: ${chatId}`, {
@@ -92,12 +92,12 @@ class TransactionManager {
     return response;
   }
 
-  public resetUserState(chatId: number) {
+  public resetUserState(chatId: string) {
     this.chatIdToUserStateMapping.delete(chatId);
   }
 
   private async awaitingType(
-    chatId: number,
+    chatId: string,
     sanitizedText: string,
     inProcessTransaction: Partial<CreateTransaction>,
   ) {
@@ -124,7 +124,7 @@ class TransactionManager {
   }
 
   private async awaitingAmount(
-    chatId: number,
+    chatId: string,
     sanitizedText: string,
     inProcessTransaction: Partial<CreateTransaction>,
   ) {
@@ -148,7 +148,7 @@ class TransactionManager {
   }
 
   private async awaitingDescription(
-    chatId: number,
+    chatId: string,
     sanitizedText: string,
     inProcessTransaction: Partial<CreateTransaction>,
   ) {
@@ -165,7 +165,7 @@ class TransactionManager {
   }
 
   private async awaitingDate(
-    chatId: number,
+    chatId: string,
     sanitizedText: string,
     inProcessTransaction: Partial<CreateTransaction>,
   ) {

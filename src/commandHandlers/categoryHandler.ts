@@ -2,7 +2,7 @@ import categoryService from '../services/categoryService';
 import { telegramService } from '../services/telegramService';
 
 class CategoryHandler {
-  async handleList(chatId: number) {
+  async handleList(chatId: string) {
     const categories = await categoryService.list();
 
     if (!categories.length) {

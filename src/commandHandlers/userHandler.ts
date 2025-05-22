@@ -4,7 +4,7 @@ import { transactionManager } from '../services/transactionManager';
 export class UserHandler {
   constructor() {}
 
-  async handleStart(chatId: number) {
+  async handleStart(chatId: string) {
     transactionManager.resetUserState(chatId);
     return telegramService.sendMessage(
       chatId,
@@ -12,7 +12,7 @@ export class UserHandler {
     );
   }
 
-  async handleHelp(chatId: number) {
+  async handleHelp(chatId: string) {
     transactionManager.resetUserState(chatId);
     return telegramService.sendMessage(
       chatId,
@@ -26,12 +26,12 @@ export class UserHandler {
     );
   }
 
-  async handleReset(chatId: number) {
+  async handleReset(chatId: string) {
     transactionManager.resetUserState(chatId);
     return telegramService.sendMessage(chatId, '🔄 State has been reset.');
   }
 
-  async handleUserState(chatId: number, text: string) {
+  async handleUserState(chatId: string, text: string) {
     const { message, nextStep } = await transactionManager.handleUserState(
       chatId,
       text,

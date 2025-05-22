@@ -9,7 +9,7 @@ class WebhookController {
 
     if (!text) {
       return telegramService.sendMessage(
-        chatId,
+        chatId.toString(),
         'Please enter a valid command.',
       );
     }
@@ -17,10 +17,13 @@ class WebhookController {
     const [command, ...args] = text.split(' ');
 
     try {
-      await commandHandler.executeCommand(command, chatId, args);
+      await commandHandler.executeCommand(command, chatId.toString(), args);
     } catch (error) {
       console.error('Webhook Error:', error);
-      return telegramService.sendMessage(chatId, '❌ An error occurred.');
+      return telegramService.sendMessage(
+        chatId.toString(),
+        '❌ An error occurred.',
+      );
     }
   }
 }

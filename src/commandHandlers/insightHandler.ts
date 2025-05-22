@@ -9,7 +9,7 @@ class InsightsHandler {
     this.aiService = aiServiceFactory.getAIService();
   }
 
-  async handleInsights(chatId: number, userId: string | null) {
+  async handleInsights(chatId: string, userId: string | null) {
     if (!userId) {
       return telegramService.sendMessage(chatId, 'Please provide a user ID');
     }
