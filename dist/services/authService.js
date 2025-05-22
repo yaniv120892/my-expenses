@@ -6,11 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const bcryptjs_1 = require("bcryptjs");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
-const node_cache_1 = __importDefault(require("node-cache"));
+const redisProvider_1 = require("../common/redisProvider");
 const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 const emailService_1 = __importDefault(require("./emailService"));
 const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret';
-const loginCodeCache = new node_cache_1.default({ stdTTL: 600 });
 class AuthService {
     async signupUser(email, username, password) {
         const existingUser = await userRepository_1.default.findByEmailOrUsername(email, username);
@@ -20,7 +19,7 @@ class AuthService {
         const hashedPassword = await (0, bcryptjs_1.hash)(password, 10);
         await userRepository_1.default.createUser(email, username, hashedPassword);
         const code = this.generateCode();
-        loginCodeCache.set(email, code);
+        await (0, redisProvider_1.setValue)(`loginCode:${email}`, code, 600);
         await this.sendCodeByEmail(email, code);
         return {
             message: 'Verification code sent to email. Code is valid for 10 minutes.',
@@ -44,7 +43,7 @@ class AuthService {
         return { token };
     }
     async verifyLoginCode(email, code) {
-        const cachedCode = loginCodeCache.get(email);
+        const cachedCode = await (0, redisProvider_1.getValue)(`loginCode:${email}`);
         if (!cachedCode || cachedCode !== code) {
             return { error: 'Invalid or expired code' };
         }
@@ -54,7 +53,7 @@ class AuthService {
         }
         await userRepository_1.default.verifyUser(email);
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
-        loginCodeCache.del(email);
+        await (0, redisProvider_1.deleteValue)(`loginCode:${email}`);
         return { token };
     }
     generateCode() {
