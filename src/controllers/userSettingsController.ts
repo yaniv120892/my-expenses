@@ -1,7 +1,8 @@
-import { Request } from 'express';
 import userSettingsService from '../services/userSettingsService';
 import { UserSettingsResponse, UpdateUserSettingsRequest } from './requests';
 import logger from '../utils/logger';
+import { telegramService } from '../services/telegramService';
+import { log } from 'winston';
 
 class UserSettingsController {
   public async getUserSettings(userId: string): Promise<UserSettingsResponse> {
@@ -15,6 +16,8 @@ class UserSettingsController {
         notifications: {
           createTransaction: userSettings.notifications.createTransaction,
           dailySummary: userSettings.notifications.dailySummary,
+          telegramChatId: userSettings.provider.telegramChatId || undefined,
+          enabled: userSettings.provider.enabled,
         },
       };
     } catch (error) {
@@ -28,9 +31,30 @@ class UserSettingsController {
     settings: UpdateUserSettingsRequest,
   ) {
     try {
-      await userSettingsService.updateUserSettings(userId, settings);
+      await userSettingsService.updateUserSettings(userId, {
+        info: { email: settings.info.email },
+        notifications: {
+          createTransaction: settings.notifications.createTransaction,
+          dailySummary: settings.notifications.dailySummary,
+        },
+        provider: {
+          enabled: settings.notifications.enabled,
+          chatId: settings.notifications.telegramChatId || '',
+        },
+      });
     } catch (error) {
       logger.error('Failed to update user settings', { userId, error });
+      throw error;
+    }
+  }
+
+  public async testTelegram(chatId: number) {
+    try {
+      logger.debug('Start sending test telegram message', { chatId });
+      await telegramService.sendMessage(chatId, 'test my expenses connection');
+      logger.debug('Done sending test telegram message', { chatId });
+    } catch (error) {
+      logger.error('Failed to send test telegram message', { chatId, error });
       throw error;
     }
   }

@@ -16,7 +16,8 @@ model User {
   verified    Boolean  @default(false)
   transactions Transaction[]
   scheduledTransactions ScheduledTransaction[]
-  userNotifications UserNotificationPreference?
+  userNotification UserNotificationPreference?
+  userNotificationProviders UserNotificationProvider[]
 }
 
 model UserNotificationPreference {
@@ -24,6 +25,16 @@ model UserNotificationPreference {
   user        User     @relation(fields: [userId], references: [id])
   createTransaction Boolean @default(false)
   dailySummary Boolean @default(false)
+}
+
+model UserNotificationProvider {
+  userId      String   @db.Uuid 
+  user        User     @relation(fields: [userId], references: [id])
+  provider    NotificationProvider
+  data       Json
+  enabled    Boolean @default(true)
+
+  @@id([userId, provider])
 }
 
 model Transaction {
@@ -57,6 +68,10 @@ enum TransactionType {
 enum TransactionStatus {
   APPROVED
   PENDING_APPROVAL
+}
+
+enum NotificationProvider {
+  TELEGRAM
 }
 
 model ScheduledTransaction {

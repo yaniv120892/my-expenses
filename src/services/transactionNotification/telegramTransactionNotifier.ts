@@ -3,6 +3,7 @@ import { Transaction } from '../../types/transaction';
 import { telegramService } from '../telegramService';
 import { formatTransaction } from '../../utils/transactionUtils';
 import logger from '../../utils/logger';
+import userSettingsService from '../userSettingsService';
 
 export class TelegramTransactionNotifier implements TransactionNotifier {
   public async notifyTransactionCreated(
@@ -11,27 +12,36 @@ export class TelegramTransactionNotifier implements TransactionNotifier {
   ): Promise<void> {
     try {
       logger.debug(
-        'Start sending transaction notification to Telegram for transaction:',
-        JSON.stringify(transaction),
+        'Start sending transaction notification to Telegram',
+        userId,
+        transaction.id,
       );
-      const chatId = this.getChatId(userId);
+      const chatId = await this.getChatId(userId);
       if (!chatId) {
         logger.warn(
-          'skipping transaction notification. Telegram chat ID is not set.',
+          'skipping transaction notification. Telegram chat ID is not set or user has disabled notifications',
+          userId,
+          transaction.id,
         );
         return;
       }
       const message = `Transaction Created\n${formatTransaction(transaction)}`;
       await telegramService.sendMessage(Number(chatId), message);
       logger.debug(
-        `Done sending transaction notification to Telegram, message: ${message}`,
+        'Done sending transaction notification to Telegram',
+        userId,
+        transaction.id,
       );
     } catch (error) {
       logger.error(
-        `Failed to send transaction notification: ${JSON.stringify(transaction)}, error: ${JSON.stringify(error)}`,
+        'Failed to send transaction notification',
+        userId,
+        transaction.id,
       );
       throw new Error(
-        `Failed to send transaction notification, ${JSON.stringify(transaction)}, error: ${JSON.stringify(error)}`,
+        `Failed to send transaction notification, userId: ${userId} transactionId: ${transaction.id} error: ${JSON.stringify(
+          error,
+        )}`,
       );
     }
   }
@@ -41,35 +51,29 @@ export class TelegramTransactionNotifier implements TransactionNotifier {
     userId: string,
   ): Promise<void> {
     try {
-      logger.debug(
-        'Start sending daily summary to Telegram, message:',
-        dailySummary,
-      );
-      const chatId = this.getChatId(userId);
+      logger.debug('Start sending daily summary to Telegram', userId);
+      const chatId = await this.getChatId(userId);
       if (!chatId) {
-        logger.warn('Telegram chat ID is not set. Skipping daily summary.');
+        logger.warn(
+          'Skip sending daily summary, Telegram chat ID is not set or user has disabled notifications',
+          userId,
+        );
         return;
       }
       await telegramService.sendMessage(Number(chatId), dailySummary);
-      logger.debug(
-        `Done sending daily summary to Telegram, message: ${dailySummary}`,
-      );
+      logger.debug('Done sending daily summary to Telegram', userId);
     } catch (error) {
-      logger.error(
-        `Failed to send daily summary: ${dailySummary}, error: ${JSON.stringify(error)}`,
-      );
+      logger.error('Failed to send daily summary', userId, error);
       throw new Error(
-        `Failed to send daily summary, ${dailySummary}, error: ${JSON.stringify(error)}`,
+        `Failed to send daily summary, userId: ${userId} error: ${JSON.stringify(error)}`,
       );
     }
   }
 
-  private getChatId(userId: string): string {
-    // TODO: Implement logic to get chat ID from user ID
-    const chatId = process.env.TELEGRAM_NOTIFIER_CHAT_ID;
-    if (!chatId) {
-      throw new Error('Telegram chat ID is not set');
-    }
-    return chatId;
+  private async getChatId(userId: string) {
+    const userChatId = await userSettingsService.getUserSettings(userId);
+    return userChatId?.provider?.enabled
+      ? userChatId.provider.telegramChatId
+      : null;
   }
 }
