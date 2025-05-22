@@ -55,10 +55,30 @@ class UserSettingsController {
       logger.debug('Start sending test telegram message', { chatId });
       await telegramService.sendMessage(chatId, 'test my expenses connection');
       logger.debug('Done sending test telegram message', { chatId });
+      return {
+        success: true,
+        message: 'Test telegram message sent successfully',
+      };
     } catch (error) {
       logger.error('Failed to send test telegram message', { chatId, error });
-      throw error;
+      const errorMessage = this.extractTestTelegramFailureMessage(error);
+      return {
+        success: false,
+        message: `Failed to send test telegram message, ${errorMessage}`,
+      };
     }
+  }
+
+  private extractTestTelegramFailureMessage(
+    error: unknown,
+  ): string | undefined {
+    if (error instanceof Error) {
+      const message = error.message;
+      if (message.includes('chat not found')) {
+        return 'Chat not found. Please check your chat ID.';
+      }
+    }
+    return 'Unknown error. Please check your chat ID.';
   }
 }
 
