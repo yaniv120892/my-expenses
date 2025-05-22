@@ -11,6 +11,15 @@ import { authenticateRequest } from '../middlewares/authMiddleware';
 const router = express.Router();
 router.use(authenticateRequest);
 
+router.post(
+  '/test-telegram',
+  validateRequest(TestTelegramRequest),
+  handleRequest(
+    (req: Request) => userSettingsController.testTelegram(req.body.chatId),
+    200,
+  ),
+);
+
 router.get(
   '/',
   handleRequest(
@@ -25,15 +34,6 @@ router.put(
   handleRequest(
     (req: Request) =>
       userSettingsController.updateUserSettings(req.userId ?? '', req.body),
-    200,
-  ),
-);
-
-router.post(
-  '/testTelegram',
-  validateRequest(TestTelegramRequest),
-  handleRequest(
-    (req: Request) => userSettingsController.testTelegram(req.body.chatId),
     200,
   ),
 );

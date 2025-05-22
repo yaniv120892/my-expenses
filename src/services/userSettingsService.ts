@@ -39,7 +39,7 @@ class UserSettingsService {
       notifications: { createTransaction: boolean; dailySummary: boolean };
       provider: {
         enabled: boolean;
-        chatId: string;
+        chatId: string | null;
       };
     },
   ) {
@@ -47,9 +47,9 @@ class UserSettingsService {
       {
         provider: 'TELEGRAM' as const,
         enabled: settings.provider.enabled,
-        data: {
-          chatId: settings.provider.chatId,
-        },
+        data: settings.provider.chatId
+          ? { chatId: settings.provider.chatId }
+          : {},
       },
     ];
     await userRepository.updateUserSettings(

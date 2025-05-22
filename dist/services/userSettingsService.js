@@ -36,9 +36,9 @@ class UserSettingsService {
             {
                 provider: 'TELEGRAM',
                 enabled: settings.provider.enabled,
-                data: {
-                    chatId: settings.provider.chatId,
-                },
+                data: settings.provider.chatId
+                    ? { chatId: settings.provider.chatId }
+                    : {},
             },
         ];
         await userRepository_1.default.updateUserSettings(userId, settings.notifications, providers);
