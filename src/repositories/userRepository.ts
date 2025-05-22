@@ -1,4 +1,4 @@
-import { User } from '@prisma/client';
+import { NotificationProvider, User } from '@prisma/client';
 import prisma from '../prisma/client';
 import { UserQuery } from './types';
 
@@ -65,7 +65,8 @@ class UserRepository {
       where: { id: userId },
       select: {
         email: true,
-        userNotifications: true,
+        userNotification: true,
+        userNotificationProviders: true,
       },
     });
     if (!user) {
@@ -74,15 +75,21 @@ class UserRepository {
     return {
       info: { email: user.email },
       notifications: {
-        createTransaction: user.userNotifications?.createTransaction ?? false,
-        dailySummary: user.userNotifications?.dailySummary ?? false,
+        createTransaction: user.userNotification?.createTransaction ?? false,
+        dailySummary: user.userNotification?.dailySummary ?? false,
       },
+      providers: user.userNotificationProviders || [],
     };
   }
 
   public async updateUserSettings(
     userId: string,
     notifications: { createTransaction: boolean; dailySummary: boolean },
+    providers: {
+      provider: NotificationProvider;
+      enabled: boolean;
+      data: object;
+    }[],
   ) {
     await prisma.userNotificationPreference.upsert({
       where: { userId: userId },
@@ -96,6 +103,22 @@ class UserRepository {
         dailySummary: notifications.dailySummary,
       },
     });
+
+    for (const provider of providers) {
+      await prisma.userNotificationProvider.upsert({
+        where: { userId_provider: { userId, provider: provider.provider } },
+        update: {
+          enabled: provider.enabled,
+          data: provider.data,
+        },
+        create: {
+          userId: userId,
+          provider: provider.provider,
+          enabled: provider.enabled,
+          data: provider.data,
+        },
+      });
+    }
   }
 
   public async list(query: UserQuery) {

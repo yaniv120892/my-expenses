@@ -1,7 +1,10 @@
 import express, { Request } from 'express';
 import userSettingsController from '../controllers/userSettingsController';
 import { validateRequest } from '../middlewares/validation';
-import { UpdateUserSettingsRequest } from '../controllers/requests';
+import {
+  UpdateUserSettingsRequest,
+  TestTelegramRequest,
+} from '../controllers/requests';
 import { handleRequest } from '../utils/handleRequest';
 import { authenticateRequest } from '../middlewares/authMiddleware';
 
@@ -22,6 +25,15 @@ router.put(
   handleRequest(
     (req: Request) =>
       userSettingsController.updateUserSettings(req.userId ?? '', req.body),
+    200,
+  ),
+);
+
+router.post(
+  '/testTelegram',
+  validateRequest(TestTelegramRequest),
+  handleRequest(
+    (req: Request) => userSettingsController.testTelegram(req.body.chatId),
     200,
   ),
 );

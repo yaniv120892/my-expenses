@@ -52,7 +52,8 @@ class UserRepository {
             where: { id: userId },
             select: {
                 email: true,
-                userNotifications: true,
+                userNotification: true,
+                userNotificationProviders: true,
             },
         });
         if (!user) {
@@ -61,12 +62,13 @@ class UserRepository {
         return {
             info: { email: user.email },
             notifications: {
-                createTransaction: (_b = (_a = user.userNotifications) === null || _a === void 0 ? void 0 : _a.createTransaction) !== null && _b !== void 0 ? _b : false,
-                dailySummary: (_d = (_c = user.userNotifications) === null || _c === void 0 ? void 0 : _c.dailySummary) !== null && _d !== void 0 ? _d : false,
+                createTransaction: (_b = (_a = user.userNotification) === null || _a === void 0 ? void 0 : _a.createTransaction) !== null && _b !== void 0 ? _b : false,
+                dailySummary: (_d = (_c = user.userNotification) === null || _c === void 0 ? void 0 : _c.dailySummary) !== null && _d !== void 0 ? _d : false,
             },
+            providers: user.userNotificationProviders || [],
         };
     }
-    async updateUserSettings(userId, notifications) {
+    async updateUserSettings(userId, notifications, providers) {
         await client_1.default.userNotificationPreference.upsert({
             where: { userId: userId },
             update: {
@@ -79,6 +81,21 @@ class UserRepository {
                 dailySummary: notifications.dailySummary,
             },
         });
+        for (const provider of providers) {
+            await client_1.default.userNotificationProvider.upsert({
+                where: { userId_provider: { userId, provider: provider.provider } },
+                update: {
+                    enabled: provider.enabled,
+                    data: provider.data,
+                },
+                create: {
+                    userId: userId,
+                    provider: provider.provider,
+                    enabled: provider.enabled,
+                    data: provider.data,
+                },
+            });
+        }
     }
     async list(query) {
         const users = await client_1.default.user.findMany({

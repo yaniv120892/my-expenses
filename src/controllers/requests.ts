@@ -296,6 +296,13 @@ export class UserSettingsNotificationsDto {
 
   @IsBoolean()
   dailySummary: boolean;
+
+  @IsOptional()
+  @IsString()
+  telegramChatId?: string;
+
+  @IsBoolean()
+  enabled: boolean;
 }
 
 export class UserSettingsResponse {
@@ -316,4 +323,10 @@ export class UpdateUserSettingsRequest {
   @ValidateNested()
   @Type(() => UserSettingsNotificationsDto)
   notifications: UserSettingsNotificationsDto;
+}
+
+export class TestTelegramRequest {
+  @IsString()
+  @IsNotEmpty()
+  chatId: string;
 }
