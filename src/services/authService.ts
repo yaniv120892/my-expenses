@@ -1,12 +1,11 @@
 import { hash, compare } from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import NodeCache from 'node-cache';
+import { setValue, getValue, deleteValue } from '../common/redisProvider';
 import userRepository from '../repositories/userRepository';
 import emailService from './emailService';
 
 const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret';
-const loginCodeCache = new NodeCache({ stdTTL: 600 });
 
 class AuthService {
   async signupUser(email: string, username: string, password: string) {
@@ -20,7 +19,7 @@ class AuthService {
     const hashedPassword = await hash(password, 10);
     await userRepository.createUser(email, username, hashedPassword);
     const code = this.generateCode();
-    loginCodeCache.set(email, code);
+    await setValue(`loginCode:${email}`, code, 600);
     await this.sendCodeByEmail(email, code);
     return {
       message: 'Verification code sent to email. Code is valid for 10 minutes.',
@@ -46,7 +45,7 @@ class AuthService {
   }
 
   async verifyLoginCode(email: string, code: string) {
-    const cachedCode = loginCodeCache.get(email);
+    const cachedCode = await getValue(`loginCode:${email}`);
     if (!cachedCode || cachedCode !== code) {
       return { error: 'Invalid or expired code' };
     }
@@ -56,7 +55,7 @@ class AuthService {
     }
     await userRepository.verifyUser(email);
     const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
-    loginCodeCache.del(email);
+    await deleteValue(`loginCode:${email}`);
     return { token };
   }
 
