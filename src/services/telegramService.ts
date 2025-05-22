@@ -8,11 +8,11 @@ class TelegramService {
     this.bot = new TelegramBot(token);
   }
 
-  async sendMessage(chatId: number, message: string) {
+  async sendMessage(chatId: string, message: string) {
     return this.bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
   }
 
-  async editMessage(chatId: number, messageId: number, newText: string) {
+  async editMessage(chatId: string, messageId: number, newText: string) {
     return this.bot.editMessageText(newText, {
       chat_id: chatId,
       message_id: messageId,

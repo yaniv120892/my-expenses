@@ -4,7 +4,7 @@ import { insightsHandler } from './insightHandler';
 import { categoryHandler } from './categoryHandler';
 
 class CommandHandler {
-  async executeCommand(command: string, chatId: number, args: string[]) {
+  async executeCommand(command: string, chatId: string, args: string[]) {
     switch (command) {
       case '/start':
         return userHandler.handleStart(chatId);

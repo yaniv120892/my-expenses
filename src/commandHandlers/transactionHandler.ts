@@ -4,7 +4,7 @@ import { telegramService } from '../services/telegramService';
 import { formatTransaction } from '../utils/transactionUtils';
 
 class TransactionHandler {
-  async handleCreate(chatId: number) {
+  async handleCreate(chatId: string) {
     const { message } = await transactionManager.handleUserState(
       chatId,
       '/create',
@@ -12,7 +12,7 @@ class TransactionHandler {
     return telegramService.sendMessage(chatId, message);
   }
 
-  async handleList(chatId: number, userId: string | null, days?: number) {
+  async handleList(chatId: string, userId: string | null, days?: number) {
     if (!userId) {
       return telegramService.sendMessage(chatId, 'Please provide a user ID');
     }
@@ -39,7 +39,7 @@ class TransactionHandler {
     await telegramService.sendMessage(chatId, transactionList);
   }
 
-  async handleSummary(chatId: number, userId: string | null, days?: number) {
+  async handleSummary(chatId: string, userId: string | null, days?: number) {
     if (!userId) {
       return telegramService.sendMessage(chatId, 'Please provide a user ID');
     }
@@ -57,7 +57,7 @@ class TransactionHandler {
   }
 
   async handleSearch(
-    chatId: number,
+    chatId: string,
     userId: string | null,
     searchTerm: string,
   ) {

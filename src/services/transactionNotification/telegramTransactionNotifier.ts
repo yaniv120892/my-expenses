@@ -26,7 +26,7 @@ export class TelegramTransactionNotifier implements TransactionNotifier {
         return;
       }
       const message = `Transaction Created\n${formatTransaction(transaction)}`;
-      await telegramService.sendMessage(Number(chatId), message);
+      await telegramService.sendMessage(chatId, message);
       logger.debug(
         'Done sending transaction notification to Telegram',
         userId,
@@ -60,7 +60,7 @@ export class TelegramTransactionNotifier implements TransactionNotifier {
         );
         return;
       }
-      await telegramService.sendMessage(Number(chatId), dailySummary);
+      await telegramService.sendMessage(chatId, dailySummary);
       logger.debug('Done sending daily summary to Telegram', userId);
     } catch (error) {
       logger.error('Failed to send daily summary', userId, error);

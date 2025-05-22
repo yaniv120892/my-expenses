@@ -18,7 +18,7 @@ class TelegramTransactionNotifier {
                 return;
             }
             const message = `Transaction Created\n${(0, transactionUtils_1.formatTransaction)(transaction)}`;
-            await telegramService_1.telegramService.sendMessage(Number(chatId), message);
+            await telegramService_1.telegramService.sendMessage(chatId, message);
             logger_1.default.debug('Done sending transaction notification to Telegram', userId, transaction.id);
         }
         catch (error) {
@@ -34,7 +34,7 @@ class TelegramTransactionNotifier {
                 logger_1.default.warn('Skip sending daily summary, Telegram chat ID is not set or user has disabled notifications', userId);
                 return;
             }
-            await telegramService_1.telegramService.sendMessage(Number(chatId), dailySummary);
+            await telegramService_1.telegramService.sendMessage(chatId, dailySummary);
             logger_1.default.debug('Done sending daily summary to Telegram', userId);
         }
         catch (error) {
