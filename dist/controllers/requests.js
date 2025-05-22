@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TestTelegramRequest = exports.UpdateUserSettingsRequest = exports.UserSettingsResponse = exports.UserSettingsNotificationsDto = exports.UserSettingsInfoDto = exports.SignupRequest = exports.VerifyLoginCodeRequest = exports.LoginRequest = exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
+exports.TestTelegramRequest = exports.UpdateUserSettingsRequest = exports.UserSettingsResponse = exports.NotificationProviderDto = exports.UserSettingsNotificationsDto = exports.UserSettingsInfoDto = exports.SignupRequest = exports.VerifyLoginCodeRequest = exports.LoginRequest = exports.UpdateScheduledTransactionRequest = exports.CreateScheduledTransactionRequest = exports.WebhookRequest = exports.WebhookMessage = exports.WebhookChat = exports.GetTransactionsRequest = exports.GetTransactionsSummaryRequest = exports.UpdateTransactionStatusRequest = exports.UpdateTransactionRequest = exports.CreateTransactionRequest = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 //TODO: remove this import and create an enum for schedule types that is not depending on Prisma
@@ -365,15 +365,17 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], UserSettingsNotificationsDto.prototype, "dailySummary", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], UserSettingsNotificationsDto.prototype, "telegramChatId", void 0);
+class NotificationProviderDto {
+}
+exports.NotificationProviderDto = NotificationProviderDto;
 __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
-], UserSettingsNotificationsDto.prototype, "enabled", void 0);
+], NotificationProviderDto.prototype, "enabled", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", Object)
+], NotificationProviderDto.prototype, "telegramChatId", void 0);
 class UserSettingsResponse {
 }
 exports.UserSettingsResponse = UserSettingsResponse;
@@ -387,6 +389,11 @@ __decorate([
     (0, class_transformer_1.Type)(() => UserSettingsNotificationsDto),
     __metadata("design:type", UserSettingsNotificationsDto)
 ], UserSettingsResponse.prototype, "notifications", void 0);
+__decorate([
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => NotificationProviderDto),
+    __metadata("design:type", NotificationProviderDto)
+], UserSettingsResponse.prototype, "provider", void 0);
 class UpdateUserSettingsRequest {
 }
 exports.UpdateUserSettingsRequest = UpdateUserSettingsRequest;
@@ -400,6 +407,11 @@ __decorate([
     (0, class_transformer_1.Type)(() => UserSettingsNotificationsDto),
     __metadata("design:type", UserSettingsNotificationsDto)
 ], UpdateUserSettingsRequest.prototype, "notifications", void 0);
+__decorate([
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => NotificationProviderDto),
+    __metadata("design:type", NotificationProviderDto)
+], UpdateUserSettingsRequest.prototype, "provider", void 0);
 class TestTelegramRequest {
 }
 exports.TestTelegramRequest = TestTelegramRequest;

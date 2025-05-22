@@ -18,8 +18,10 @@ class UserSettingsController {
                 notifications: {
                     createTransaction: userSettings.notifications.createTransaction,
                     dailySummary: userSettings.notifications.dailySummary,
-                    telegramChatId: userSettings.provider.telegramChatId || undefined,
+                },
+                provider: {
                     enabled: userSettings.provider.enabled,
+                    telegramChatId: userSettings.provider.telegramChatId,
                 },
             };
         }
@@ -37,8 +39,8 @@ class UserSettingsController {
                     dailySummary: settings.notifications.dailySummary,
                 },
                 provider: {
-                    enabled: settings.notifications.enabled,
-                    chatId: settings.notifications.telegramChatId || '',
+                    enabled: settings.provider.enabled,
+                    chatId: settings.provider.telegramChatId || null,
                 },
             });
         }
