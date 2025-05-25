@@ -1,41 +1,63 @@
 import { Category } from '..//types/category';
-import NodeCache from 'node-cache';
 import prisma from '../prisma/client';
+import { setValue, getValue } from '../common/redisProvider';
 
 const oneDayInSeconds = 24 * 60 * 60;
-const categoryCache = new NodeCache({
-  stdTTL: oneDayInSeconds,
-  checkperiod: 120,
-});
 
 function getCacheKeyForAllCategories() {
   return 'allCategories';
 }
 
 function getCacheKeyForCategoryById(id: string | null) {
-  return `categoryById:${id}`;
+  return `category:${id}`;
+}
+
+function getCacheKeyForTopLevelCategories() {
+  return 'topLevelCategories';
 }
 
 export class CategoryRepository {
   public async getAllCategories(): Promise<Category[]> {
     const cacheKey = getCacheKeyForAllCategories();
-    const cached = categoryCache.get(cacheKey);
-    if (cached) return cached as Category[];
+    const cached = await getValue(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const categories = await prisma.category.findMany({
-      select: { id: true, name: true },
+      select: { id: true, name: true, parentId: true },
     });
-    categoryCache.set(cacheKey, categories);
+    await setValue(cacheKey, JSON.stringify(categories), oneDayInSeconds);
     return categories;
   }
 
   public async getCategoryById(id: string | null): Promise<Category | null> {
     const cacheKey = getCacheKeyForCategoryById(id);
-    const cached = categoryCache.get(cacheKey);
-    if (cached) return cached as Category | null;
+    const cached = await getValue(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     if (!id) return null;
     const category = await prisma.category.findUnique({ where: { id } });
-    categoryCache.set(cacheKey, category);
+    await setValue(cacheKey, JSON.stringify(category), oneDayInSeconds);
     return category;
+  }
+
+  public async getTopLevelCategories(): Promise<Category[]> {
+    const cacheKey = getCacheKeyForTopLevelCategories();
+    const cached = await getValue(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const categories = await prisma.category.findMany({
+      where: { parentId: null },
+      select: { id: true, name: true },
+    });
+
+    await setValue(cacheKey, JSON.stringify(categories), oneDayInSeconds);
+    return categories;
   }
 }
 

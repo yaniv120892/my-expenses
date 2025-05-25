@@ -7,13 +7,17 @@ const redisClient = new Redis({
   token: redisToken,
 });
 
-async function setValue(key: string, value: string, ttlSeconds: number) {
+async function setValue(key: string, value: any, ttlSeconds: number) {
   await redisClient.set(key, value, { ex: ttlSeconds });
 }
 
-async function getValue(key: string): Promise<string | null> {
-  const value = await redisClient.get<string>(key);
-  return value !== null ? String(value) : null;
+async function getValue(key: string): Promise<any> {
+  const value = await redisClient.get(key);
+  if (value === null) {
+    return null;
+  }
+
+  return value;
 }
 
 async function deleteValue(key: string) {

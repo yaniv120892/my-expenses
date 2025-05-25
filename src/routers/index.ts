@@ -1,22 +1,25 @@
 import express from 'express';
-import transactionRouter from '../routers/transactionRouter';
-import categoryRouter from '../routers/categoryRouter';
-import webhookRouter from '../routers/webhookRouter';
-import scheduledTransactionRouter from '../routers/scheduledTransactionRouter';
-import summaryRouter from '../routers/summaryRouter';
-import backupRouter from '../routers/backupRouter';
-import authRouter from '../routers/authRouter';
-import userSettingsRouter from '../routers/userSettingsRouter';
+import authRouter from './authRouter';
+import transactionRouter from './transactionRouter';
+import categoryRouter from './categoryRouter';
+import summaryRouter from './summaryRouter';
+import webhookRouter from './webhookRouter';
+import userSettingsRouter from './userSettingsRouter';
+import backupRouter from './backupRouter';
+import scheduledTransactionRouter from './scheduledTransactionRouter';
+import trendRouter from './trendRouter';
 
 const router = express.Router();
-router.use('/webhook', webhookRouter);
+
+router.use('/api/auth', authRouter);
 router.use('/api/transactions', transactionRouter);
-router.use('/api/scheduled-transactions', scheduledTransactionRouter);
 router.use('/api/categories', categoryRouter);
 router.use('/api/summary', summaryRouter);
-router.use('/api/backup', backupRouter);
-router.use('/api/auth', authRouter);
+router.use('/api/webhook', webhookRouter);
 router.use('/api/user/settings', userSettingsRouter);
+router.use('/api/backup', backupRouter);
+router.use('/api/scheduled-transactions', scheduledTransactionRouter);
+router.use('/api/trends', trendRouter);
 
 router.get('/', (req, res) => {
   res.send('ok');

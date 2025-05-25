@@ -15,7 +15,10 @@ async function setValue(key, value, ttlSeconds) {
 }
 async function getValue(key) {
     const value = await redisClient.get(key);
-    return value !== null ? String(value) : null;
+    if (value === null) {
+        return null;
+    }
+    return value;
 }
 async function deleteValue(key) {
     await redisClient.del(key);
