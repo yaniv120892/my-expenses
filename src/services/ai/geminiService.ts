@@ -31,8 +31,9 @@ export class GeminiService implements AIProvider {
         ],
       });
 
-      const analysis =
-        response.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const analysis = this.cleanGeminiResponse(
+        response.response?.candidates?.[0]?.content?.parts?.[0]?.text,
+      );
       logger.debug(`Done analyzing expenses: ${analysis}`);
 
       return analysis || 'No expense analysis available.';
@@ -67,8 +68,9 @@ export class GeminiService implements AIProvider {
         ],
       });
 
-      const aiSuggestedCategory =
-        response.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+      const aiSuggestedCategory = this.cleanGeminiResponse(
+        response.response?.candidates?.[0]?.content?.parts?.[0]?.text,
+      );
 
       const categoryId = categoryOptions.find(
         (category) => category.name === aiSuggestedCategory,
@@ -82,5 +84,14 @@ export class GeminiService implements AIProvider {
       console.error('Gemini API Error:', error);
       return 'I encountered an issue suggesting a category.';
     }
+  }
+
+  private cleanGeminiResponse(response: string | undefined): string {
+    if (!response) return '';
+    return response
+      .trim()
+      .replace(/^["']|["']$/g, '')
+      .replace(/\n+/g, '\n')
+      .trim();
   }
 }

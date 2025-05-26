@@ -28,7 +28,7 @@ class GeminiService {
                     },
                 ],
             });
-            const analysis = (_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text;
+            const analysis = this.cleanGeminiResponse((_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text);
             logger_1.default.debug(`Done analyzing expenses: ${analysis}`);
             return analysis || 'No expense analysis available.';
         }
@@ -54,7 +54,7 @@ class GeminiService {
                     },
                 ],
             });
-            const aiSuggestedCategory = (_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text;
+            const aiSuggestedCategory = this.cleanGeminiResponse((_f = (_e = (_d = (_c = (_b = (_a = response.response) === null || _a === void 0 ? void 0 : _a.candidates) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.parts) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.text);
             const categoryId = (_g = categoryOptions.find((category) => category.name === aiSuggestedCategory)) === null || _g === void 0 ? void 0 : _g.id;
             logger_1.default.debug(`Done suggesting category for expense: ${expenseDescription} - ${aiSuggestedCategory}`);
             return categoryId || 'No category found.';
@@ -63,6 +63,15 @@ class GeminiService {
             console.error('Gemini API Error:', error);
             return 'I encountered an issue suggesting a category.';
         }
+    }
+    cleanGeminiResponse(response) {
+        if (!response)
+            return '';
+        return response
+            .trim()
+            .replace(/^["']|["']$/g, '')
+            .replace(/\n+/g, '\n')
+            .trim();
     }
 }
 exports.GeminiService = GeminiService;
