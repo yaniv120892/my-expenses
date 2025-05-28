@@ -1,7 +1,15 @@
-import { IsString, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsDate,
+} from 'class-validator';
 import { ImportFileType } from '@prisma/client';
 import { importService } from '../services/importService';
 import logger from '../utils/logger';
+import { TransactionType } from '../types/transaction';
+import { Type } from 'class-transformer';
 
 export class ProcessImportRequest {
   @IsString()
@@ -18,12 +26,44 @@ export class GetImportedTransactionsRequest {
 
 export class ApproveImportedTransactionRequest {
   @IsString()
-  transactionId: string;
+  description: string;
+
+  @IsNumber()
+  value: number;
+
+  @Type(() => Date)
+  @IsDate()
+  date: Date;
+
+  @IsString()
+  type: TransactionType;
+
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
 }
 
 export class RejectImportedTransactionRequest {
   @IsString()
   transactionId: string;
+}
+
+export class MergeImportedTransactionRequest {
+  @IsString()
+  description: string;
+
+  @IsNumber()
+  value: number;
+
+  @Type(() => Date)
+  @IsDate()
+  date: Date;
+
+  @IsString()
+  type: TransactionType;
+
+  @IsString()
+  categoryId: string;
 }
 
 class ImportController {
@@ -89,16 +129,25 @@ class ImportController {
   async approveImportedTransaction(
     importedTransactionId: string,
     userId: string,
+    data: ApproveImportedTransactionRequest,
   ) {
     try {
       logger.debug('Start approve imported transaction', {
         importedTransactionId,
         userId,
+        data,
       });
 
       await importService.approveImportedTransaction(
         importedTransactionId,
         userId,
+        {
+          description: data.description,
+          value: data.value,
+          date: data.date,
+          type: data.type,
+          categoryId: data.categoryId ?? null,
+        },
       );
       logger.debug('Done approve imported transaction');
       return { success: true };
@@ -115,15 +164,18 @@ class ImportController {
   async mergeImportedTransaction(
     importedTransactionId: string,
     userId: string,
+    data: MergeImportedTransactionRequest,
   ) {
     try {
       logger.debug('Start merge imported transaction', {
         importedTransactionId,
         userId,
+        data,
       });
       await importService.mergeImportedTransaction(
         importedTransactionId,
         userId,
+        data,
       );
       logger.debug('Done merge imported transaction');
       return { success: true };

@@ -16,6 +16,7 @@ import { importRepository } from '../repositories/importRepository';
 import { importedTransactionRepository } from '../repositories/importedTransactionRepository';
 import transactionRepository from '../repositories/transactionRepository';
 import transactionService from './transactionService';
+import AIServiceFactory from '../services/ai/aiServiceFactory';
 
 const startProcessingRow = {
   [ImportFileType.CAL_CREDIT]: 5,
@@ -72,7 +73,25 @@ interface ParsedTransaction {
   rawData: Record<string, string | number>;
 }
 
+interface ApproveImportedTransactionData {
+  description: string;
+  value: number;
+  date: Date;
+  type: TransactionType;
+  categoryId: string | null;
+}
+
+interface MergeImportedTransactionData {
+  description: string;
+  value: number;
+  date: Date;
+  type: TransactionType;
+  categoryId: string;
+}
+
 class ImportService {
+  private aiProvider = AIServiceFactory.getAIService();
+
   public async processImport(
     fileUrl: string,
     importType: ImportFileType,
@@ -361,14 +380,12 @@ class ImportService {
 
         let matchingTransactionId = null;
         if (matches.length > 0) {
-          const closestMatch = matches.reduce((closest, current) => {
-            return Math.abs(
-              current.date.getTime() - transaction.date.getTime(),
-            ) < Math.abs(closest.date.getTime() - transaction.date.getTime())
-              ? current
-              : closest;
-          }, matches[0]);
-          matchingTransactionId = closestMatch.id;
+          const bestMatchId = await this.aiProvider.findMatchingTransaction(
+            transaction.description,
+            matches,
+          );
+
+          matchingTransactionId = bestMatchId ?? matches[0]?.id ?? null;
         }
 
         return {
@@ -407,6 +424,7 @@ class ImportService {
   public async approveImportedTransaction(
     importedTransactionId: string,
     userId: string,
+    transactionData: ApproveImportedTransactionData,
   ) {
     const importedTransaction = await importedTransactionRepository.findById(
       importedTransactionId,
@@ -422,13 +440,13 @@ class ImportService {
     }
 
     await transactionService.createTransaction({
-      description: importedTransaction.description,
-      value: importedTransaction.value,
-      date: importedTransaction.date,
-      type: importedTransaction.type,
+      description: transactionData.description,
+      value: transactionData.value,
+      date: transactionData.date,
+      type: transactionData.type,
       userId: importedTransaction.userId,
       status: TransactionStatus.APPROVED,
-      categoryId: null,
+      categoryId: transactionData.categoryId,
     });
 
     await importedTransactionRepository.updateStatus(
@@ -441,6 +459,7 @@ class ImportService {
   public async mergeImportedTransaction(
     importedTransactionId: string,
     userId: string,
+    transactionData: MergeImportedTransactionData,
   ) {
     const importedTransaction = await importedTransactionRepository.findById(
       importedTransactionId,
@@ -481,10 +500,11 @@ class ImportService {
     await transactionService.updateTransaction(
       importedTransaction.matchingTransactionId,
       {
-        description: matchingTransaction.description,
-        type: matchingTransaction.type,
-        value: Math.ceil(importedTransaction.value),
-        date: importedTransaction.date,
+        description: transactionData.description,
+        type: transactionData.type,
+        value: transactionData.value,
+        date: transactionData.date,
+        categoryId: transactionData.categoryId,
       },
       userId,
     );

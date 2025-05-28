@@ -182,7 +182,7 @@ class TransactionRepository {
     userId: string,
     date: Date,
     value: number,
-    tolerance: number = 5,
+    tolerance: number = 1,
     dayRange: number = 1,
   ): Promise<Transaction[]> {
     const startDate = new Date(date);
@@ -194,7 +194,8 @@ class TransactionRepository {
       where: {
         userId,
         date: {
-          equals: date,
+          gte: startDate,
+          lte: endDate,
         },
         value: {
           gte: value - tolerance,

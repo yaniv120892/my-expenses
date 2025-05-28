@@ -1,6 +1,10 @@
 import express from 'express';
 import { handleRequest } from '../utils/handleRequest';
-import { importController } from '../controllers/importController';
+import {
+  ApproveImportedTransactionRequest,
+  importController,
+  MergeImportedTransactionRequest,
+} from '../controllers/importController';
 import { validateRequest } from '../middlewares/validation';
 import { ProcessImportRequest } from '../controllers/importController';
 import { authenticateRequest } from '../middlewares/authMiddleware';
@@ -37,11 +41,13 @@ router.get(
 
 router.post(
   '/transactions/:importedTransactionId/approve',
+  validateRequest(ApproveImportedTransactionRequest),
   handleRequest(
     (req) =>
       importController.approveImportedTransaction(
         req.params.importedTransactionId,
         req.userId ?? '',
+        req.body,
       ),
     200,
   ),
@@ -49,11 +55,13 @@ router.post(
 
 router.post(
   '/transactions/:importedTransactionId/merge',
+  validateRequest(MergeImportedTransactionRequest),
   handleRequest(
     (req) =>
       importController.mergeImportedTransaction(
         req.params.importedTransactionId,
         req.userId ?? '',
+        req.body,
       ),
     200,
   ),
