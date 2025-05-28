@@ -1,5 +1,5 @@
 import { TransactionType, TransactionStatus } from '@prisma/client';
-import prisma from '..//prisma/client';
+import prisma from '../prisma/client';
 import {
   TransactionFilters,
   Transaction,
@@ -176,6 +176,36 @@ class TransactionRepository {
       : undefined;
     let normalizedEndDate = endDate ? endOfDay(new Date(endDate)) : undefined;
     return { startDate: normalizedStartDate, endDate: normalizedEndDate };
+  }
+
+  public async findPotentialMatches(
+    userId: string,
+    date: Date,
+    value: number,
+    tolerance: number = 5,
+    dayRange: number = 1,
+  ): Promise<Transaction[]> {
+    const startDate = new Date(date);
+    startDate.setDate(startDate.getDate() - dayRange);
+    const endDate = new Date(date);
+    endDate.setDate(endDate.getDate() + dayRange);
+
+    const potentialTransactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        date: {
+          equals: date,
+        },
+        value: {
+          gte: value - tolerance,
+          lte: value + tolerance,
+        },
+        status: TransactionStatus.APPROVED,
+      },
+      include: { category: true },
+    });
+
+    return potentialTransactions.map(this.mapToDomain);
   }
 }
 
