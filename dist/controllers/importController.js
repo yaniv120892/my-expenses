@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.importController = exports.MergeImportedTransactionRequest = exports.RejectImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
+exports.importController = exports.MergeImportedTransactionRequest = exports.IgnoreImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 const importService_1 = require("../services/importService");
@@ -61,13 +61,13 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], ApproveImportedTransactionRequest.prototype, "categoryId", void 0);
-class RejectImportedTransactionRequest {
+class IgnoreImportedTransactionRequest {
 }
-exports.RejectImportedTransactionRequest = RejectImportedTransactionRequest;
+exports.IgnoreImportedTransactionRequest = IgnoreImportedTransactionRequest;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], RejectImportedTransactionRequest.prototype, "transactionId", void 0);
+], IgnoreImportedTransactionRequest.prototype, "transactionId", void 0);
 class MergeImportedTransactionRequest {
 }
 exports.MergeImportedTransactionRequest = MergeImportedTransactionRequest;
@@ -189,18 +189,18 @@ class ImportController {
             throw error;
         }
     }
-    async rejectImportedTransaction(importedTransactionId, userId) {
+    async ignoreImportedTransaction(importedTransactionId, userId) {
         try {
-            logger_1.default.debug('Start reject imported transaction', {
+            logger_1.default.debug('Start ignore imported transaction', {
                 importedTransactionId,
                 userId,
             });
-            await importService_1.importService.rejectImportedTransaction(importedTransactionId, userId);
-            logger_1.default.debug('Done reject imported transaction');
+            await importService_1.importService.ignoreImportedTransaction(importedTransactionId, userId);
+            logger_1.default.debug('Done ignore imported transaction');
             return { success: true };
         }
         catch (error) {
-            logger_1.default.error(`Failed to reject imported transaction`, {
+            logger_1.default.error(`Failed to ignore imported transaction`, {
                 importedTransactionId,
                 userId,
                 error,

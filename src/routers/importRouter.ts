@@ -68,10 +68,10 @@ router.post(
 );
 
 router.post(
-  '/transactions/:importedTransactionId/reject',
+  '/transactions/:importedTransactionId/ignore',
   handleRequest(
     (req) =>
-      importController.rejectImportedTransaction(
+      importController.ignoreImportedTransaction(
         req.params.importedTransactionId,
         req.userId ?? '',
       ),
