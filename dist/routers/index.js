@@ -13,6 +13,7 @@ const userSettingsRouter_1 = __importDefault(require("./userSettingsRouter"));
 const backupRouter_1 = __importDefault(require("./backupRouter"));
 const scheduledTransactionRouter_1 = __importDefault(require("./scheduledTransactionRouter"));
 const trendRouter_1 = __importDefault(require("./trendRouter"));
+const importRouter_1 = __importDefault(require("./importRouter"));
 const router = express_1.default.Router();
 router.use('/api/auth', authRouter_1.default);
 router.use('/api/transactions', transactionRouter_1.default);
@@ -23,6 +24,7 @@ router.use('/api/user/settings', userSettingsRouter_1.default);
 router.use('/api/backup', backupRouter_1.default);
 router.use('/api/scheduled-transactions', scheduledTransactionRouter_1.default);
 router.use('/api/trends', trendRouter_1.default);
+router.use('/api/imports', importRouter_1.default);
 router.get('/', (req, res) => {
     res.send('ok');
 });
