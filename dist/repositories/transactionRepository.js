@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
-const client_2 = __importDefault(require("..//prisma/client"));
+const client_2 = __importDefault(require("../prisma/client"));
 const date_fns_1 = require("date-fns");
 class TransactionRepository {
     async getTransactionsSummary(filters) {
@@ -124,6 +124,27 @@ class TransactionRepository {
             : undefined;
         let normalizedEndDate = endDate ? (0, date_fns_1.endOfDay)(new Date(endDate)) : undefined;
         return { startDate: normalizedStartDate, endDate: normalizedEndDate };
+    }
+    async findPotentialMatches(userId, date, value, tolerance = 5, dayRange = 1) {
+        const startDate = new Date(date);
+        startDate.setDate(startDate.getDate() - dayRange);
+        const endDate = new Date(date);
+        endDate.setDate(endDate.getDate() + dayRange);
+        const potentialTransactions = await client_2.default.transaction.findMany({
+            where: {
+                userId,
+                date: {
+                    equals: date,
+                },
+                value: {
+                    gte: value - tolerance,
+                    lte: value + tolerance,
+                },
+                status: client_1.TransactionStatus.APPROVED,
+            },
+            include: { category: true },
+        });
+        return potentialTransactions.map(this.mapToDomain);
     }
 }
 exports.default = new TransactionRepository();
