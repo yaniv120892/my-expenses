@@ -4,6 +4,7 @@ import prisma from '../prisma/client';
 export class ImportRepository {
   async create(data: {
     fileUrl: string;
+    originalFileName: string;
     importType: ImportFileType;
     userId: string;
   }): Promise<Import> {
@@ -11,6 +12,7 @@ export class ImportRepository {
       data: {
         ...data,
         status: ImportStatus.PROCESSING,
+        originalFileName: data.originalFileName,
       },
     });
   }

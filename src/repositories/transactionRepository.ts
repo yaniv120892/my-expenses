@@ -182,8 +182,8 @@ class TransactionRepository {
     userId: string,
     date: Date,
     value: number,
-    tolerance: number = 1,
-    dayRange: number = 1,
+    tolerance: number = 2,
+    dayRange: number = 2,
   ): Promise<Transaction[]> {
     const startDate = new Date(date);
     startDate.setDate(startDate.getDate() - dayRange);

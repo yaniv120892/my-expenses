@@ -29,6 +29,10 @@ __decorate([
     (0, class_validator_1.IsEnum)(client_1.ImportFileType),
     __metadata("design:type", String)
 ], ProcessImportRequest.prototype, "importType", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ProcessImportRequest.prototype, "originalFileName", void 0);
 class GetImportedTransactionsRequest {
 }
 exports.GetImportedTransactionsRequest = GetImportedTransactionsRequest;
@@ -94,10 +98,10 @@ __decorate([
 ], MergeImportedTransactionRequest.prototype, "categoryId", void 0);
 class ImportController {
     async processImport(req, userId) {
-        const { fileUrl, importType } = req;
+        const { fileUrl, importType, originalFileName } = req;
         try {
             logger_1.default.debug('Start process import', { fileUrl, importType, userId });
-            const result = await importService_1.importService.processImport(fileUrl, importType, userId);
+            const result = await importService_1.importService.processImport(fileUrl, importType, userId, originalFileName);
             logger_1.default.debug('Done process import', { result });
             return result;
         }

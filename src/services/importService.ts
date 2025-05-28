@@ -96,10 +96,12 @@ class ImportService {
     fileUrl: string,
     importType: ImportFileType,
     userId: string,
+    originalFileName: string,
   ) {
     try {
       const importRecord = await importRepository.create({
         fileUrl,
+        originalFileName,
         importType,
         userId,
       });
@@ -286,7 +288,7 @@ class ImportService {
         return date;
       }
 
-      // If it's a string date in DD/MM/YY format
+      // If it's a string date in DD/MM/YYYY format
       const date = this.parseDate(dateValue);
       if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
         throw new Error(
@@ -350,7 +352,7 @@ class ImportService {
   private parseDate(dateStr: string): Date {
     try {
       const [day, month, year] = String(dateStr).split('/').map(Number);
-      const date = new Date(2000 + year, month - 1, day);
+      const date = new Date(year, month - 1, day);
 
       // Additional validation for the resulting date
       if (isNaN(date.getTime())) {
