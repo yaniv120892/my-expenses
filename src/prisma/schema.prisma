@@ -8,58 +8,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id          String   @id @default(uuid()) @db.Uuid
-  username    String   @unique
-  email       String   @unique
-  password    String
-  verified    Boolean  @default(false)
-  transactions Transaction[]
-  scheduledTransactions ScheduledTransaction[]
-  userNotification UserNotificationPreference?
-  userNotificationProviders UserNotificationProvider[]
-}
-
-model UserNotificationPreference {
-  userId      String   @db.Uuid @id 
-  user        User     @relation(fields: [userId], references: [id])
-  createTransaction Boolean @default(false)
-  dailySummary Boolean @default(false)
-}
-
-model UserNotificationProvider {
-  userId      String   @db.Uuid 
-  user        User     @relation(fields: [userId], references: [id])
-  provider    NotificationProvider
-  data       Json
-  enabled    Boolean @default(true)
-
-  @@id([userId, provider])
-}
-
-model Transaction {
-  id          String   @id @default(uuid()) @db.Uuid
-  description String
-  value       Float    
-  date        DateTime
-  categoryId  String   @db.Uuid
-  category    Category @relation(fields: [categoryId], references: [id])
-  type        TransactionType
-  status      TransactionStatus @default(APPROVED)
-  userId      String   @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-}
-
-model Category {
-  id        String     @id @default(uuid()) @db.Uuid
-  name      String     @unique
-  parentId  String?    @db.Uuid
-  parent    Category?  @relation("CategoryToCategory", fields: [parentId], references: [id])
-  children  Category[] @relation("CategoryToCategory")
-  transactions Transaction[]
-  scheduledTransactions ScheduledTransaction[]
-}
-
 enum TransactionType {
   INCOME
   EXPENSE
@@ -74,28 +22,142 @@ enum NotificationProvider {
   TELEGRAM
 }
 
-model ScheduledTransaction {
-  id          String   @id @default(uuid()) @db.Uuid
-  description String
-  value       Float
-  type        TransactionType
-  categoryId  String   @db.Uuid
-  category    Category @relation(fields: [categoryId], references: [id])
-  scheduleType ScheduleType
-  interval     Int?
-  dayOfWeek    Int?
-  dayOfMonth   Int?
-  monthOfYear  Int?
-  lastRunDate  DateTime?
-  nextRunDate  DateTime?
-  userId      String   @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-}
-
 enum ScheduleType {
   DAILY
   WEEKLY
   MONTHLY
   YEARLY
   CUSTOM
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ImportFileType {
+  CAL_CREDIT
+  AMERICAN_EXPRESS_CREDIT
+  ISRACARD_CREDIT
+}
+
+enum ImportedTransactionStatus {
+  PENDING
+  APPROVED
+  MERGED
+  IGNORED
+}
+
+model User {
+  id                        String                @id @default(uuid()) @db.Uuid
+  username                  String                @unique
+  email                     String                @unique
+  password                  String
+  verified                  Boolean               @default(false)
+  transactions              Transaction[]
+  scheduledTransactions     ScheduledTransaction[]
+  userNotification          UserNotificationPreference?
+  userNotificationProviders UserNotificationProvider[]
+  imports                   Import[]
+  importedTransactions      ImportedTransaction[]
+}
+
+model UserNotificationPreference {
+  userId             String   @id @db.Uuid
+  user               User     @relation(fields: [userId], references: [id])
+  createTransaction  Boolean  @default(false)
+  dailySummary       Boolean  @default(false)
+}
+
+model UserNotificationProvider {
+  userId    String              @db.Uuid
+  user      User               @relation(fields: [userId], references: [id])
+  provider  NotificationProvider
+  data      Json
+  enabled   Boolean            @default(true)
+
+  @@id([userId, provider])
+}
+
+model Transaction {
+  id                    String               @id @default(uuid()) @db.Uuid
+  description           String
+  value                Float
+  date                 DateTime
+  categoryId           String               @db.Uuid
+  category             Category             @relation(fields: [categoryId], references: [id])
+  type                 TransactionType
+  status               TransactionStatus    @default(APPROVED)
+  userId               String               @db.Uuid
+  user                 User                 @relation(fields: [userId], references: [id])
+  importedTransactions ImportedTransaction[]
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+model Import {
+  id            String               @id @default(uuid()) @db.Uuid
+  userId        String               @db.Uuid
+  fileUrl       String
+  importType    ImportFileType
+  status        ImportStatus         @default(PENDING)
+  error         String?
+  createdAt     DateTime            @default(now())
+  completedAt   DateTime?
+  transactions  ImportedTransaction[]
+  user          User                @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model ImportedTransaction {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  importId             String                   @db.Uuid
+  description          String
+  value                Float
+  date                 DateTime
+  type                 TransactionType
+  status               ImportedTransactionStatus @default(PENDING)
+  matchingTransactionId String?                 @db.Uuid
+  rawData              Json
+  userId               String                   @db.Uuid
+  deleted              Boolean                  @default(false)
+  import               Import                   @relation(fields: [importId], references: [id])
+  user                 User                     @relation(fields: [userId], references: [id])
+  matchingTransaction  Transaction?             @relation(fields: [matchingTransactionId], references: [id])
+
+  @@index([importId])
+  @@index([userId])
+  @@index([matchingTransactionId])
+}
+
+model Category {
+  id                    String                @id @default(uuid()) @db.Uuid
+  name                  String                @unique
+  parentId              String?              @db.Uuid
+  parent                Category?            @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children              Category[]           @relation("CategoryToCategory")
+  transactions          Transaction[]
+  scheduledTransactions ScheduledTransaction[]
+}
+
+model ScheduledTransaction {
+  id            String          @id @default(uuid()) @db.Uuid
+  description   String
+  value         Float
+  type          TransactionType
+  categoryId    String          @db.Uuid
+  category      Category        @relation(fields: [categoryId], references: [id])
+  scheduleType  ScheduleType
+  interval      Int?
+  dayOfWeek     Int?
+  dayOfMonth    Int?
+  monthOfYear   Int?
+  lastRunDate   DateTime?
+  nextRunDate   DateTime?
+  userId        String          @db.Uuid
+  user          User            @relation(fields: [userId], references: [id])
 }

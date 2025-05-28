@@ -8,6 +8,7 @@ import userSettingsRouter from './userSettingsRouter';
 import backupRouter from './backupRouter';
 import scheduledTransactionRouter from './scheduledTransactionRouter';
 import trendRouter from './trendRouter';
+import importRouter from './importRouter';
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.use('/api/user/settings', userSettingsRouter);
 router.use('/api/backup', backupRouter);
 router.use('/api/scheduled-transactions', scheduledTransactionRouter);
 router.use('/api/trends', trendRouter);
+router.use('/api/imports', importRouter);
 
 router.get('/', (req, res) => {
   res.send('ok');
