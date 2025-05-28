@@ -12,11 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.importController = exports.RejectImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
+exports.importController = exports.MergeImportedTransactionRequest = exports.RejectImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
 const importService_1 = require("../services/importService");
 const logger_1 = __importDefault(require("../utils/logger"));
+const class_transformer_1 = require("class-transformer");
 class ProcessImportRequest {
 }
 exports.ProcessImportRequest = ProcessImportRequest;
@@ -41,7 +42,25 @@ exports.ApproveImportedTransactionRequest = ApproveImportedTransactionRequest;
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], ApproveImportedTransactionRequest.prototype, "transactionId", void 0);
+], ApproveImportedTransactionRequest.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], ApproveImportedTransactionRequest.prototype, "value", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Date),
+    (0, class_validator_1.IsDate)(),
+    __metadata("design:type", Date)
+], ApproveImportedTransactionRequest.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ApproveImportedTransactionRequest.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ApproveImportedTransactionRequest.prototype, "categoryId", void 0);
 class RejectImportedTransactionRequest {
 }
 exports.RejectImportedTransactionRequest = RejectImportedTransactionRequest;
@@ -49,6 +68,30 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RejectImportedTransactionRequest.prototype, "transactionId", void 0);
+class MergeImportedTransactionRequest {
+}
+exports.MergeImportedTransactionRequest = MergeImportedTransactionRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MergeImportedTransactionRequest.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], MergeImportedTransactionRequest.prototype, "value", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Date),
+    (0, class_validator_1.IsDate)(),
+    __metadata("design:type", Date)
+], MergeImportedTransactionRequest.prototype, "date", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MergeImportedTransactionRequest.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], MergeImportedTransactionRequest.prototype, "categoryId", void 0);
 class ImportController {
     async processImport(req, userId) {
         const { fileUrl, importType } = req;
@@ -99,13 +142,21 @@ class ImportController {
             throw error;
         }
     }
-    async approveImportedTransaction(importedTransactionId, userId) {
+    async approveImportedTransaction(importedTransactionId, userId, data) {
+        var _a;
         try {
             logger_1.default.debug('Start approve imported transaction', {
                 importedTransactionId,
                 userId,
+                data,
             });
-            await importService_1.importService.approveImportedTransaction(importedTransactionId, userId);
+            await importService_1.importService.approveImportedTransaction(importedTransactionId, userId, {
+                description: data.description,
+                value: data.value,
+                date: data.date,
+                type: data.type,
+                categoryId: (_a = data.categoryId) !== null && _a !== void 0 ? _a : null,
+            });
             logger_1.default.debug('Done approve imported transaction');
             return { success: true };
         }
@@ -118,13 +169,14 @@ class ImportController {
             throw error;
         }
     }
-    async mergeImportedTransaction(importedTransactionId, userId) {
+    async mergeImportedTransaction(importedTransactionId, userId, data) {
         try {
             logger_1.default.debug('Start merge imported transaction', {
                 importedTransactionId,
                 userId,
+                data,
             });
-            await importService_1.importService.mergeImportedTransaction(importedTransactionId, userId);
+            await importService_1.importService.mergeImportedTransaction(importedTransactionId, userId, data);
             logger_1.default.debug('Done merge imported transaction');
             return { success: true };
         }

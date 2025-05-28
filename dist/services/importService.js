@@ -35,6 +35,7 @@ const importRepository_1 = require("../repositories/importRepository");
 const importedTransactionRepository_1 = require("../repositories/importedTransactionRepository");
 const transactionRepository_1 = __importDefault(require("../repositories/transactionRepository"));
 const transactionService_1 = __importDefault(require("./transactionService"));
+const aiServiceFactory_1 = __importDefault(require("../services/ai/aiServiceFactory"));
 const startProcessingRow = {
     [client_1.ImportFileType.CAL_CREDIT]: 5,
     [client_1.ImportFileType.AMERICAN_EXPRESS_CREDIT]: 6,
@@ -75,6 +76,9 @@ const s3Client = new client_s3_1.S3Client({
     region: process.env.IMPORTS_S3_REGION,
 });
 class ImportService {
+    constructor() {
+        this.aiProvider = aiServiceFactory_1.default.getAIService();
+    }
     async processImport(fileUrl, importType, userId) {
         try {
             const importRecord = await importRepository_1.importRepository.create({
@@ -251,15 +255,12 @@ class ImportService {
     }
     async findPotentialMatches(transactions, userId) {
         return Promise.all(transactions.map(async (transaction) => {
+            var _a, _b;
             const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
             let matchingTransactionId = null;
             if (matches.length > 0) {
-                const closestMatch = matches.reduce((closest, current) => {
-                    return Math.abs(current.date.getTime() - transaction.date.getTime()) < Math.abs(closest.date.getTime() - transaction.date.getTime())
-                        ? current
-                        : closest;
-                }, matches[0]);
-                matchingTransactionId = closestMatch.id;
+                const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, matches);
+                matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = matches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
             }
             return Object.assign(Object.assign({}, transaction), { matchingTransactionId });
         }));
@@ -283,7 +284,7 @@ class ImportService {
     async getImportedTransactions(importId, userId) {
         return importedTransactionRepository_1.importedTransactionRepository.findByUserIdAndImportId(userId, importId);
     }
-    async approveImportedTransaction(importedTransactionId, userId) {
+    async approveImportedTransaction(importedTransactionId, userId, transactionData) {
         const importedTransaction = await importedTransactionRepository_1.importedTransactionRepository.findById(importedTransactionId);
         if (!importedTransaction || importedTransaction.userId !== userId) {
             throw new Error('Imported transaction not found with id: ' +
@@ -292,17 +293,17 @@ class ImportService {
                 userId);
         }
         await transactionService_1.default.createTransaction({
-            description: importedTransaction.description,
-            value: importedTransaction.value,
-            date: importedTransaction.date,
-            type: importedTransaction.type,
+            description: transactionData.description,
+            value: transactionData.value,
+            date: transactionData.date,
+            type: transactionData.type,
             userId: importedTransaction.userId,
             status: client_1.TransactionStatus.APPROVED,
-            categoryId: null,
+            categoryId: transactionData.categoryId,
         });
         await importedTransactionRepository_1.importedTransactionRepository.updateStatus(importedTransactionId, userId, client_1.ImportedTransactionStatus.APPROVED);
     }
-    async mergeImportedTransaction(importedTransactionId, userId) {
+    async mergeImportedTransaction(importedTransactionId, userId, transactionData) {
         const importedTransaction = await importedTransactionRepository_1.importedTransactionRepository.findById(importedTransactionId);
         if (!importedTransaction || importedTransaction.userId !== userId) {
             throw new Error('Imported transaction not found with id: ' +
@@ -324,10 +325,11 @@ class ImportService {
                 userId);
         }
         await transactionService_1.default.updateTransaction(importedTransaction.matchingTransactionId, {
-            description: matchingTransaction.description,
-            type: matchingTransaction.type,
-            value: Math.ceil(importedTransaction.value),
-            date: importedTransaction.date,
+            description: transactionData.description,
+            type: transactionData.type,
+            value: transactionData.value,
+            date: transactionData.date,
+            categoryId: transactionData.categoryId,
         }, userId);
         await importedTransactionRepository_1.importedTransactionRepository.updateStatus(importedTransactionId, userId, client_1.ImportedTransactionStatus.MERGED);
     }

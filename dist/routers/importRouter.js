@@ -17,13 +17,13 @@ router.get('/:importId/transactions', (0, handleRequest_1.handleRequest)((req) =
     var _a;
     return importController_1.importController.getImportedTransactions({ importId: req.params.importId }, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
 }, 200));
-router.post('/transactions/:importedTransactionId/approve', (0, handleRequest_1.handleRequest)((req) => {
+router.post('/transactions/:importedTransactionId/approve', (0, validation_1.validateRequest)(importController_1.ApproveImportedTransactionRequest), (0, handleRequest_1.handleRequest)((req) => {
     var _a;
-    return importController_1.importController.approveImportedTransaction(req.params.importedTransactionId, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
+    return importController_1.importController.approveImportedTransaction(req.params.importedTransactionId, (_a = req.userId) !== null && _a !== void 0 ? _a : '', req.body);
 }, 200));
-router.post('/transactions/:importedTransactionId/merge', (0, handleRequest_1.handleRequest)((req) => {
+router.post('/transactions/:importedTransactionId/merge', (0, validation_1.validateRequest)(importController_1.MergeImportedTransactionRequest), (0, handleRequest_1.handleRequest)((req) => {
     var _a;
-    return importController_1.importController.mergeImportedTransaction(req.params.importedTransactionId, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
+    return importController_1.importController.mergeImportedTransaction(req.params.importedTransactionId, (_a = req.userId) !== null && _a !== void 0 ? _a : '', req.body);
 }, 200));
 router.post('/transactions/:importedTransactionId/reject', (0, handleRequest_1.handleRequest)((req) => {
     var _a;

@@ -61,5 +61,37 @@ class ChatGPTService {
             return 'I encountered an issue suggesting a category.';
         }
     }
+    async findMatchingTransaction(importedDescription, potentialMatches) {
+        var _a, _b;
+        try {
+            if (!potentialMatches.length)
+                return null;
+            const response = await this.openai.chat.completions.create({
+                model: 'gpt-4-turbo',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a helpful assistant that matches similar transaction descriptions. Respond only with the ID of the best matching transaction or "none" if no good match is found.',
+                    },
+                    {
+                        role: 'user',
+                        content: `Given an imported transaction with description "${importedDescription}", find the best matching transaction from the following list based on semantic similarity:
+
+${potentialMatches.map((t) => `- "${t.description}" (ID: ${t.id})`).join('\n')}
+
+Return only the ID of the best matching transaction, or "none" if none of them match well.`,
+                    },
+                ],
+                temperature: 0.3,
+                max_tokens: 50,
+            });
+            const result = (_b = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b.trim();
+            return result === 'none' ? null : result || null;
+        }
+        catch (error) {
+            console.error('ChatGPT API Error:', error);
+            return null;
+        }
+    }
 }
 exports.ChatGPTService = ChatGPTService;

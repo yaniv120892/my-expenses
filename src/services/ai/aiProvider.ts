@@ -1,4 +1,5 @@
 import { Category } from '../../types/category';
+import { Transaction } from '../../types/transaction';
 
 export interface AIProvider {
   analyzeExpenses(
@@ -9,4 +10,8 @@ export interface AIProvider {
     expenseDescription: string,
     categoryOptions: Category[],
   ): Promise<string>;
+  findMatchingTransaction(
+    importedDescription: string,
+    potentialMatches: Transaction[],
+  ): Promise<string | null>;
 }
