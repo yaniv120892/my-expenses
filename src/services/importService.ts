@@ -516,7 +516,7 @@ class ImportService {
     );
   }
 
-  public async rejectImportedTransaction(
+  public async ignoreImportedTransaction(
     importedTransactionId: string,
     userId: string,
   ) {

@@ -333,7 +333,7 @@ class ImportService {
         }, userId);
         await importedTransactionRepository_1.importedTransactionRepository.updateStatus(importedTransactionId, userId, client_1.ImportedTransactionStatus.MERGED);
     }
-    async rejectImportedTransaction(importedTransactionId, userId) {
+    async ignoreImportedTransaction(importedTransactionId, userId) {
         await importedTransactionRepository_1.importedTransactionRepository.updateStatus(importedTransactionId, userId, client_1.ImportedTransactionStatus.IGNORED);
     }
     async deleteImportedTransaction(importedTransactionId, userId) {

@@ -43,7 +43,7 @@ export class ApproveImportedTransactionRequest {
   categoryId?: string;
 }
 
-export class RejectImportedTransactionRequest {
+export class IgnoreImportedTransactionRequest {
   @IsString()
   transactionId: string;
 }
@@ -189,24 +189,24 @@ class ImportController {
     }
   }
 
-  async rejectImportedTransaction(
+  async ignoreImportedTransaction(
     importedTransactionId: string,
     userId: string,
   ) {
     try {
-      logger.debug('Start reject imported transaction', {
+      logger.debug('Start ignore imported transaction', {
         importedTransactionId,
         userId,
       });
 
-      await importService.rejectImportedTransaction(
+      await importService.ignoreImportedTransaction(
         importedTransactionId,
         userId,
       );
-      logger.debug('Done reject imported transaction');
+      logger.debug('Done ignore imported transaction');
       return { success: true };
     } catch (error) {
-      logger.error(`Failed to reject imported transaction`, {
+      logger.error(`Failed to ignore imported transaction`, {
         importedTransactionId,
         userId,
         error,
