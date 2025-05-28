@@ -125,7 +125,7 @@ class TransactionRepository {
         let normalizedEndDate = endDate ? (0, date_fns_1.endOfDay)(new Date(endDate)) : undefined;
         return { startDate: normalizedStartDate, endDate: normalizedEndDate };
     }
-    async findPotentialMatches(userId, date, value, tolerance = 1, dayRange = 1) {
+    async findPotentialMatches(userId, date, value, tolerance = 2, dayRange = 2) {
         const startDate = new Date(date);
         startDate.setDate(startDate.getDate() - dayRange);
         const endDate = new Date(date);

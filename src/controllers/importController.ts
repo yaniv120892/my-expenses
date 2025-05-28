@@ -17,6 +17,9 @@ export class ProcessImportRequest {
 
   @IsEnum(ImportFileType)
   importType: ImportFileType;
+
+  @IsString()
+  originalFileName: string;
 }
 
 export class GetImportedTransactionsRequest {
@@ -68,13 +71,14 @@ export class MergeImportedTransactionRequest {
 
 class ImportController {
   async processImport(req: ProcessImportRequest, userId: string) {
-    const { fileUrl, importType } = req;
+    const { fileUrl, importType, originalFileName } = req;
     try {
       logger.debug('Start process import', { fileUrl, importType, userId });
       const result = await importService.processImport(
         fileUrl,
         importType,
         userId,
+        originalFileName,
       );
       logger.debug('Done process import', { result });
       return result;
