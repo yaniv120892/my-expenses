@@ -10,6 +10,7 @@ const redisProvider_1 = require("../common/redisProvider");
 const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 const emailService_1 = __importDefault(require("./emailService"));
 const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret';
+const SESSION_TTL = 7 * 24 * 60 * 60;
 class AuthService {
     async signupUser(email, username, password) {
         const existingUser = await userRepository_1.default.findByEmailOrUsername(email, username);
@@ -28,9 +29,7 @@ class AuthService {
     async loginUser(email, username, password) {
         const user = await userRepository_1.default.findByEmailOrUsername(email, username);
         if (!user) {
-            return {
-                error: 'Invalid credentials',
-            };
+            return { error: 'Invalid credentials' };
         }
         const valid = await (0, bcryptjs_1.compare)(password, user.password);
         if (!valid) {
@@ -39,7 +38,10 @@ class AuthService {
         if (user.verified === false) {
             return { error: 'User not verified' };
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, jwtSecret, {
+            expiresIn: '7d',
+        });
+        await this.storeSession(user.id, token);
         return { token };
     }
     async verifyLoginCode(email, code) {
@@ -54,7 +56,23 @@ class AuthService {
         await userRepository_1.default.verifyUser(email);
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
         await (0, redisProvider_1.deleteValue)(`loginCode:${email}`);
+        await this.storeSession(user.id, token);
         return { token };
+    }
+    async logoutUser(userId) {
+        await this.invalidateSession(userId);
+    }
+    async invalidateSession(userId) {
+        const sessionKey = `session:${userId}`;
+        await (0, redisProvider_1.deleteValue)(sessionKey);
+    }
+    async validateSession(userId, token) {
+        const sessionKey = `session:${userId}`;
+        const storedToken = await (0, redisProvider_1.getValue)(sessionKey);
+        if (!storedToken) {
+            return false;
+        }
+        return storedToken === token;
     }
     generateCode() {
         return crypto_1.default.randomInt(100000, 999999).toString();
@@ -107,6 +125,10 @@ class AuthService {
             text,
             html,
         });
+    }
+    async storeSession(userId, token) {
+        const sessionKey = `session:${userId}`;
+        await (0, redisProvider_1.setValue)(sessionKey, token, SESSION_TTL);
     }
 }
 exports.default = new AuthService();
