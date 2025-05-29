@@ -5,52 +5,60 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateRequest = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-require("express");
-const userRepository_1 = __importDefault(require("../repositories/userRepository"));
 const logger_1 = __importDefault(require("../utils/logger"));
-const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret';
+const authService_1 = __importDefault(require("../services/authService"));
+const jwtSecret = process.env.JWT_SECRET || 'defaultSecret';
 const authenticateRequest = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.status(401).json({
+            error: 'Authentication required',
+            code: 'AUTH_HEADER_MISSING',
+        });
+        return;
+    }
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+        res.status(401).json({
+            error: 'Invalid token format',
+            code: 'INVALID_TOKEN_FORMAT',
+        });
+        return;
+    }
     try {
-        if (!req.headers.authorization) {
-            res.status(401).json({ error: 'Authentication required' });
+        const decoded = jsonwebtoken_1.default.verify(token, jwtSecret);
+        const isValidSession = await authService_1.default.validateSession(decoded.userId, token);
+        if (!isValidSession) {
+            res.status(401).json({
+                error: 'Session expired',
+                code: 'SESSION_EXPIRED',
+            });
             return;
         }
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            res.status(401).json({ error: 'Authentication required' });
-            return;
-        }
-        const token = authHeader.split(' ')[1];
-        let payload;
-        try {
-            payload = jsonwebtoken_1.default.verify(token, jwtSecret);
-        }
-        catch (_a) {
-            res.status(401).json({ error: 'Invalid token' });
-            return;
-        }
-        const userId = typeof payload === 'object' && 'userId' in payload
-            ? payload.userId
-            : undefined;
-        if (!userId) {
-            res.status(401).json({ error: 'Invalid token' });
-            return;
-        }
-        const user = await userRepository_1.default.findById(userId);
-        if (!user) {
-            res.status(401).json({ error: 'User not found' });
-            return;
-        }
-        if (!user.verified) {
-            res.status(401).json({ error: 'User not verified' });
-            return;
-        }
-        req.userId = user.id;
+        req.userId = decoded.userId;
         next();
     }
     catch (error) {
-        logger_1.default.error('Failed to authenticate request', error, req.headers);
-        res.status(500).json({ error: 'Internal server error' });
+        if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
+            res.status(401).json({
+                error: 'Token expired',
+                code: 'TOKEN_EXPIRED',
+            });
+            return;
+        }
+        if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
+            res.status(401).json({
+                error: 'Invalid token',
+                code: 'INVALID_TOKEN',
+            });
+            return;
+        }
+        logger_1.default.error('Authentication error', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            code: 'INTERNAL_ERROR',
+        });
+        return;
     }
 };
 exports.authenticateRequest = authenticateRequest;

@@ -6,9 +6,10 @@ import userRepository from '../repositories/userRepository';
 import emailService from './emailService';
 
 const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret';
+const SESSION_TTL = 7 * 24 * 60 * 60;
 
 class AuthService {
-  async signupUser(email: string, username: string, password: string) {
+  public async signupUser(email: string, username: string, password: string) {
     const existingUser = await userRepository.findByEmailOrUsername(
       email,
       username,
@@ -26,12 +27,10 @@ class AuthService {
     };
   }
 
-  async loginUser(email: string, username: string, password: string) {
+  public async loginUser(email: string, username: string, password: string) {
     const user = await userRepository.findByEmailOrUsername(email, username);
     if (!user) {
-      return {
-        error: 'Invalid credentials',
-      };
+      return { error: 'Invalid credentials' };
     }
     const valid = await compare(password, user.password);
     if (!valid) {
@@ -40,11 +39,14 @@ class AuthService {
     if (user.verified === false) {
       return { error: 'User not verified' };
     }
-    const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id }, jwtSecret, {
+      expiresIn: '7d',
+    });
+    await this.storeSession(user.id, token);
     return { token };
   }
 
-  async verifyLoginCode(email: string, code: string) {
+  public async verifyLoginCode(email: string, code: string) {
     const cachedCode = await getValue(`loginCode:${email}`);
     if (!cachedCode || cachedCode !== code) {
       return { error: 'Invalid or expired code' };
@@ -56,14 +58,36 @@ class AuthService {
     await userRepository.verifyUser(email);
     const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
     await deleteValue(`loginCode:${email}`);
+    await this.storeSession(user.id, token);
     return { token };
   }
 
-  generateCode() {
+  public async logoutUser(userId: string) {
+    await this.invalidateSession(userId);
+  }
+
+  public async invalidateSession(userId: string): Promise<void> {
+    const sessionKey = `session:${userId}`;
+    await deleteValue(sessionKey);
+  }
+
+  public async validateSession(
+    userId: string,
+    token: string,
+  ): Promise<boolean> {
+    const sessionKey = `session:${userId}`;
+    const storedToken = await getValue(sessionKey);
+    if (!storedToken) {
+      return false;
+    }
+    return storedToken === token;
+  }
+
+  private generateCode() {
     return crypto.randomInt(100000, 999999).toString();
   }
 
-  generateVerificationEmailText(code: string, email: string) {
+  private generateVerificationEmailText(code: string, email: string) {
     const websiteUrl = process.env.WEBSITE_URL;
     return [
       'Hello,',
@@ -85,7 +109,7 @@ class AuthService {
     ].join('\n');
   }
 
-  generateVerificationEmailHtml(code: string, email: string) {
+  private generateVerificationEmailHtml(code: string, email: string) {
     const websiteUrl = process.env.WEBSITE_URL;
     return `
       <div style="font-family: Arial, sans-serif; color: #222; max-width: 480px; margin: 0 auto;">
@@ -103,7 +127,7 @@ class AuthService {
     `;
   }
 
-  async sendCodeByEmail(email: string, code: string) {
+  private async sendCodeByEmail(email: string, code: string) {
     const subject = 'Your Verification Code';
     const text = this.generateVerificationEmailText(code, email);
     const html = this.generateVerificationEmailHtml(code, email);
@@ -113,6 +137,11 @@ class AuthService {
       text,
       html,
     });
+  }
+
+  private async storeSession(userId: string, token: string): Promise<void> {
+    const sessionKey = `session:${userId}`;
+    await setValue(sessionKey, token, SESSION_TTL);
   }
 }
 
