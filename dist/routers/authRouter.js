@@ -42,7 +42,7 @@ const logoutHandler = async (req, res) => {
         return;
     }
     try {
-        await authService_1.default.logoutUser(req.userId);
+        await authService_1.default.logoutUser(req.userId, req.token || '');
         res.json({ success: true });
     }
     catch (error) {

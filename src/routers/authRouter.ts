@@ -47,7 +47,7 @@ const logoutHandler: RequestHandler = async (req, res) => {
   }
 
   try {
-    await authService.logoutUser(req.userId);
+    await authService.logoutUser(req.userId, req.token || '');
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to logout' });
