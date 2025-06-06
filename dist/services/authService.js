@@ -41,7 +41,12 @@ class AuthService {
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, jwtSecret, {
             expiresIn: '7d',
         });
-        await this.storeSession(user.id, token);
+        const decoded = jsonwebtoken_1.default.decode(token);
+        let ttl = SESSION_TTL;
+        if (decoded && typeof decoded === 'object' && decoded.exp) {
+            ttl = Math.max(1, decoded.exp - Math.floor(Date.now() / 1000));
+        }
+        await this.storeSession(user.id, token, ttl);
         return { token };
     }
     async verifyLoginCode(email, code) {
@@ -55,24 +60,35 @@ class AuthService {
         }
         await userRepository_1.default.verifyUser(email);
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
+        const decoded = jsonwebtoken_1.default.decode(token);
+        let ttl = SESSION_TTL;
+        if (decoded && typeof decoded === 'object' && decoded.exp) {
+            ttl = Math.max(1, decoded.exp - Math.floor(Date.now() / 1000));
+        }
         await (0, redisProvider_1.deleteValue)(`loginCode:${email}`);
-        await this.storeSession(user.id, token);
+        await this.storeSession(user.id, token, ttl);
         return { token };
     }
-    async logoutUser(userId) {
-        await this.invalidateSession(userId);
+    async logoutUser(userId, token) {
+        await this.invalidateSession(userId, token);
     }
-    async invalidateSession(userId) {
-        const sessionKey = `session:${userId}`;
+    async invalidateSession(userId, token) {
+        const sessionKey = `session:${userId}:${token}`;
         await (0, redisProvider_1.deleteValue)(sessionKey);
     }
     async validateSession(userId, token) {
-        const sessionKey = `session:${userId}`;
-        const storedToken = await (0, redisProvider_1.getValue)(sessionKey);
-        if (!storedToken) {
+        const sessionKey = `session:${userId}:${token}`;
+        const exists = await (0, redisProvider_1.getValue)(sessionKey);
+        if (!exists) {
             return false;
         }
-        return storedToken === token;
+        try {
+            jsonwebtoken_1.default.verify(token, jwtSecret);
+            return true;
+        }
+        catch (_a) {
+            return false;
+        }
     }
     generateCode() {
         return crypto_1.default.randomInt(100000, 999999).toString();
@@ -126,9 +142,9 @@ class AuthService {
             html,
         });
     }
-    async storeSession(userId, token) {
-        const sessionKey = `session:${userId}`;
-        await (0, redisProvider_1.setValue)(sessionKey, token, SESSION_TTL);
+    async storeSession(userId, token, ttl) {
+        const sessionKey = `session:${userId}:${token}`;
+        await (0, redisProvider_1.setValue)(sessionKey, '1', ttl);
     }
 }
 exports.default = new AuthService();

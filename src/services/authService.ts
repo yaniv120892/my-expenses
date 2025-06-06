@@ -42,7 +42,12 @@ class AuthService {
     const token = jwt.sign({ userId: user.id }, jwtSecret, {
       expiresIn: '7d',
     });
-    await this.storeSession(user.id, token);
+    const decoded = jwt.decode(token);
+    let ttl = SESSION_TTL;
+    if (decoded && typeof decoded === 'object' && decoded.exp) {
+      ttl = Math.max(1, decoded.exp - Math.floor(Date.now() / 1000));
+    }
+    await this.storeSession(user.id, token, ttl);
     return { token };
   }
 
@@ -57,17 +62,22 @@ class AuthService {
     }
     await userRepository.verifyUser(email);
     const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: '7d' });
+    const decoded = jwt.decode(token);
+    let ttl = SESSION_TTL;
+    if (decoded && typeof decoded === 'object' && decoded.exp) {
+      ttl = Math.max(1, decoded.exp - Math.floor(Date.now() / 1000));
+    }
     await deleteValue(`loginCode:${email}`);
-    await this.storeSession(user.id, token);
+    await this.storeSession(user.id, token, ttl);
     return { token };
   }
 
-  public async logoutUser(userId: string) {
-    await this.invalidateSession(userId);
+  public async logoutUser(userId: string, token: string) {
+    await this.invalidateSession(userId, token);
   }
 
-  public async invalidateSession(userId: string): Promise<void> {
-    const sessionKey = `session:${userId}`;
+  public async invalidateSession(userId: string, token: string): Promise<void> {
+    const sessionKey = `session:${userId}:${token}`;
     await deleteValue(sessionKey);
   }
 
@@ -75,12 +85,17 @@ class AuthService {
     userId: string,
     token: string,
   ): Promise<boolean> {
-    const sessionKey = `session:${userId}`;
-    const storedToken = await getValue(sessionKey);
-    if (!storedToken) {
+    const sessionKey = `session:${userId}:${token}`;
+    const exists = await getValue(sessionKey);
+    if (!exists) {
       return false;
     }
-    return storedToken === token;
+    try {
+      jwt.verify(token, jwtSecret);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private generateCode() {
@@ -139,9 +154,13 @@ class AuthService {
     });
   }
 
-  private async storeSession(userId: string, token: string): Promise<void> {
-    const sessionKey = `session:${userId}`;
-    await setValue(sessionKey, token, SESSION_TTL);
+  private async storeSession(
+    userId: string,
+    token: string,
+    ttl: number,
+  ): Promise<void> {
+    const sessionKey = `session:${userId}:${token}`;
+    await setValue(sessionKey, '1', ttl);
   }
 }
 
