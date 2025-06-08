@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.importController = exports.MergeImportedTransactionRequest = exports.IgnoreImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
 const class_validator_1 = require("class-validator");
-const client_1 = require("@prisma/client");
 const importService_1 = require("../services/importService");
 const logger_1 = __importDefault(require("../utils/logger"));
 const class_transformer_1 = require("class-transformer");
@@ -26,13 +25,14 @@ __decorate([
     __metadata("design:type", String)
 ], ProcessImportRequest.prototype, "fileUrl", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(client_1.ImportFileType),
-    __metadata("design:type", String)
-], ProcessImportRequest.prototype, "importType", void 0);
-__decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ProcessImportRequest.prototype, "originalFileName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ProcessImportRequest.prototype, "paymentMonth", void 0);
 class GetImportedTransactionsRequest {
 }
 exports.GetImportedTransactionsRequest = GetImportedTransactionsRequest;
@@ -98,17 +98,23 @@ __decorate([
 ], MergeImportedTransactionRequest.prototype, "categoryId", void 0);
 class ImportController {
     async processImport(req, userId) {
-        const { fileUrl, importType, originalFileName } = req;
+        const { fileUrl, originalFileName, paymentMonth } = req;
         try {
-            logger_1.default.debug('Start process import', { fileUrl, importType, userId });
-            const result = await importService_1.importService.processImport(fileUrl, importType, userId, originalFileName);
+            logger_1.default.debug('Start process import', {
+                fileUrl,
+                originalFileName,
+                paymentMonth,
+                userId,
+            });
+            const result = await importService_1.importService.processImport(fileUrl, userId, originalFileName, paymentMonth);
             logger_1.default.debug('Done process import', { result });
             return result;
         }
         catch (error) {
             logger_1.default.error(`Failed to process import`, {
                 fileUrl,
-                importType,
+                originalFileName,
+                paymentMonth,
                 userId,
                 error,
             });
