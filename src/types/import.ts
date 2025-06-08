@@ -1,7 +1,8 @@
 import { TransactionStatus, TransactionType } from './transaction';
 
 export enum ImportFileType {
-  CAL_CREDIT = 'CAL_CREDIT',
+  VISA_CREDIT = 'VISA_CREDIT',
+  MASTERCARD_CREDIT = 'MASTERCARD_CREDIT',
   AMERICAN_EXPRESS_CREDIT = 'AMERICAN_EXPRESS_CREDIT',
 }
 

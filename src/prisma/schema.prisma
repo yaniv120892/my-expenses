@@ -38,9 +38,9 @@ enum ImportStatus {
 }
 
 enum ImportFileType {
-  CAL_CREDIT
+  VISA_CREDIT
+  MASTERCARD_CREDIT
   AMERICAN_EXPRESS_CREDIT
-  ISRACARD_CREDIT
 }
 
 enum ImportedTransactionStatus {
@@ -109,7 +109,10 @@ model Import {
   createdAt     DateTime            @default(now())
   completedAt   DateTime?
   transactions  ImportedTransaction[]
-  user          User                @relation(fields: [userId], references: [id])
+  
+  creditCardLastFourDigits String? /// @encrypted
+  paymentMonth             String? // Format: MM/YYYY
+  user                     User    @relation(fields: [userId], references: [id])
 
   @@index([userId])
 }

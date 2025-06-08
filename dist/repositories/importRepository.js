@@ -9,7 +9,7 @@ const client_2 = __importDefault(require("../prisma/client"));
 class ImportRepository {
     async create(data) {
         return client_2.default.import.create({
-            data: Object.assign(Object.assign({}, data), { status: client_1.ImportStatus.PROCESSING, originalFileName: data.originalFileName }),
+            data: Object.assign(Object.assign({}, data), { status: client_1.ImportStatus.PROCESSING }),
         });
     }
     async findById(id) {

@@ -7,12 +7,13 @@ export class ImportRepository {
     originalFileName: string;
     importType: ImportFileType;
     userId: string;
+    creditCardLastFourDigits: string;
+    paymentMonth: string;
   }): Promise<Import> {
     return prisma.import.create({
       data: {
         ...data,
         status: ImportStatus.PROCESSING,
-        originalFileName: data.originalFileName,
       },
     });
   }

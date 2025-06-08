@@ -1,4 +1,5 @@
 import {
+  Import,
   ImportStatus,
   ImportFileType,
   TransactionType,
@@ -19,28 +20,28 @@ import transactionService from './transactionService';
 import AIServiceFactory from '../services/ai/aiServiceFactory';
 
 const startProcessingRow = {
-  [ImportFileType.CAL_CREDIT]: 5,
+  [ImportFileType.VISA_CREDIT]: 5,
   [ImportFileType.AMERICAN_EXPRESS_CREDIT]: 6,
-  [ImportFileType.ISRACARD_CREDIT]: 6,
+  [ImportFileType.MASTERCARD_CREDIT]: 6,
 };
 
 const skipLastRows = {
-  [ImportFileType.CAL_CREDIT]: 3,
+  [ImportFileType.VISA_CREDIT]: 3,
   [ImportFileType.AMERICAN_EXPRESS_CREDIT]: 1,
-  [ImportFileType.ISRACARD_CREDIT]: 1,
+  [ImportFileType.MASTERCARD_CREDIT]: 1,
 };
 
 const headerRow = {
-  [ImportFileType.CAL_CREDIT]:
-    startProcessingRow[ImportFileType.CAL_CREDIT] - 1,
+  [ImportFileType.VISA_CREDIT]:
+    startProcessingRow[ImportFileType.VISA_CREDIT] - 1,
   [ImportFileType.AMERICAN_EXPRESS_CREDIT]:
     startProcessingRow[ImportFileType.AMERICAN_EXPRESS_CREDIT] - 1,
-  [ImportFileType.ISRACARD_CREDIT]:
-    startProcessingRow[ImportFileType.ISRACARD_CREDIT] - 1,
+  [ImportFileType.MASTERCARD_CREDIT]:
+    startProcessingRow[ImportFileType.MASTERCARD_CREDIT] - 1,
 };
 
 const ParsedTransactionFieldToColumnMap = {
-  [ImportFileType.CAL_CREDIT]: {
+  [ImportFileType.VISA_CREDIT]: {
     date: 0,
     description: 1,
     value: 2,
@@ -50,7 +51,7 @@ const ParsedTransactionFieldToColumnMap = {
     description: 2,
     value: 3,
   },
-  [ImportFileType.ISRACARD_CREDIT]: {
+  [ImportFileType.MASTERCARD_CREDIT]: {
     date: 0,
     description: 2,
     value: 3,
@@ -94,24 +95,41 @@ class ImportService {
 
   public async processImport(
     fileUrl: string,
-    importType: ImportFileType,
     userId: string,
     originalFileName: string,
+    paymentMonthFromRequest?: string,
   ) {
+    let importRecord: Import | undefined;
+    const s3Key = this.getS3KeyFromUrl(fileUrl);
     try {
-      const importRecord = await importRepository.create({
+      const workbook = await this.downloadAndParseFile(s3Key);
+      const firstSheetName = workbook.SheetNames[0];
+      const firstSheet = workbook.Sheets[firstSheetName];
+
+      const inferredImportType = await this.inferImportFileType(firstSheet, originalFileName);
+      const creditCardLastFour = await this.extractCreditCardLastFour(firstSheet, originalFileName);
+      const paymentMonth = paymentMonthFromRequest || this.determinePaymentMonth(firstSheet, originalFileName);
+
+      logger.debug('Inferred import details', { inferredImportType, creditCardLastFour, paymentMonth });
+
+      importRecord = await importRepository.create({
         fileUrl,
         originalFileName,
-        importType,
+        importType: inferredImportType,
         userId,
+        creditCardLastFourDigits: creditCardLastFour,
+        paymentMonth: paymentMonth,
       });
 
-      const s3Key = this.getS3KeyFromUrl(fileUrl);
+      if (!importRecord) {
+        logger.error('Import record was not created successfully before processing transactions.');
+        throw new Error('Failed to create import record.');
+      }
 
       try {
-        const workbook = await this.downloadAndParseFile(s3Key);
+        const transactions = await this.processWorkbook(workbook, inferredImportType);
 
-        const transactions = await this.processWorkbook(workbook, importType);
+        const currentImportId = importRecord.id;
 
         const transactionsWithMatches = await this.findPotentialMatches(
           transactions,
@@ -121,13 +139,13 @@ class ImportService {
         await importedTransactionRepository.createMany(
           transactionsWithMatches.map((transaction) => ({
             ...transaction,
-            importId: importRecord.id,
+            importId: currentImportId,
             userId,
           })),
         );
 
         await importRepository.updateStatus(
-          importRecord.id,
+          currentImportId,
           ImportStatus.COMPLETED,
         );
 
@@ -135,11 +153,13 @@ class ImportService {
 
         return importRecord;
       } catch (error) {
-        await importRepository.updateStatus(
-          importRecord.id,
-          ImportStatus.FAILED,
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        );
+        if (importRecord && importRecord.id) {
+          await importRepository.updateStatus(
+            importRecord.id,
+            ImportStatus.FAILED,
+            error instanceof Error ? error.message : 'Unknown error occurred',
+          );
+        }
         throw error;
       }
     } catch (error) {
@@ -579,6 +599,126 @@ class ImportService {
     });
 
     return rawData;
+  }
+
+  private creditCardPatterns = [
+    /ב-(\d{4})/,
+    /- (\d{4})/,
+    /כרטיס \*(\d{4})/,
+    /\*(\d{4})$/,
+    /(\d{4})$/,
+  ];
+
+  private paymentMonthFileNamePattern = /^(\d{4})_(\d{2})_(\d{4})(\.\w+)?$/;
+  private creditCardLastFourFileNamePattern = /^(\d{4})_(\d{2})_(\d{4})(\.\w+)?$/;
+
+  private async extractCreditCardLastFour(firstSheet: XLSX.WorkSheet, originalFileName: string): Promise<string> {
+    try {
+      const creditCardLastFour = this.determineCreditCardLastFour(originalFileName);
+      if (creditCardLastFour) {
+        return creditCardLastFour;
+      }
+
+      if (!firstSheet) {
+        throw new Error('First sheet not found');
+      }
+    const cellA1Ref = XLSX.utils.encode_cell({ r: 0, c: 0 });
+    const cellA1 = firstSheet[cellA1Ref];
+    const cellA1Value = cellA1 && cellA1.v ? String(cellA1.v) : null;
+
+    if (cellA1Value) {
+      for (const pattern of this.creditCardPatterns) {
+        const match = cellA1Value.match(pattern);
+        if (match && match[1]) {
+          return match[1];
+        }
+      }
+    }
+    throw new Error('Credit card last four digits not found');
+    } catch (error) {
+      logger.error('Failed to extract credit card last four digits', { error });
+      throw error;
+    }
+  }
+
+  private determinePaymentMonth(firstSheet: XLSX.WorkSheet, originalFileName: string): string {
+    try {
+      const fileNameMatch = originalFileName.match(this.paymentMonthFileNamePattern);
+    if (fileNameMatch && fileNameMatch[2] && fileNameMatch[3]) {
+      return `${fileNameMatch[2]}/${fileNameMatch[3]}`;
+    }
+
+    const cellA3Ref = XLSX.utils.encode_cell({ r: 2, c: 0 });
+    const cellA3 = firstSheet[cellA3Ref];
+    const cellA3Value = cellA3 && cellA3.v ? String(cellA3.v) : null;
+    if (cellA3Value) {
+      const match = cellA3Value.match(/(\d{2})\/(\d{4})/);
+      if (match && match[1] && match[2]) {
+        return `${match[1]}/${match[2]}`;
+      }
+    }
+    throw new Error('Payment month not found');
+    } catch (error) {
+      logger.error('Failed to determine payment month', { error });
+      throw error;
+    }
+  }
+
+  private determineCreditCardLastFour(originalFileName: string): string | null {
+    try {
+    const fileNameMatch = originalFileName.match(this.creditCardLastFourFileNamePattern);
+    if (fileNameMatch && fileNameMatch[1]) {
+      return fileNameMatch[1];
+    }
+    return null;
+    } catch (error) {
+      logger.error('Failed to determine credit card last four digits', { error });
+      throw error;
+    }
+  }
+
+  private async inferImportFileType(
+    firstSheet: XLSX.WorkSheet,
+    originalFileName: string,
+  ): Promise<ImportFileType> {
+    const cellA4Ref = XLSX.utils.encode_cell({ r: 3, c: 0 });
+    const cellA4 = firstSheet ? firstSheet[cellA4Ref] : null;
+    const cellA4Value = cellA4 && cellA4.v ? String(cellA4.v).toLowerCase() : null;
+
+    const cellA1Ref = XLSX.utils.encode_cell({ r: 0, c: 0 });
+    const cellA1 = firstSheet ? firstSheet[cellA1Ref] : null;
+    const cellA1Value = cellA1 && cellA1.v ? String(cellA1.v).toLowerCase() : null;
+
+    if (cellA4Value) {
+        if (cellA4Value.includes('american express') || cellA4Value.includes('אמריקן אקספרס')) {
+            return ImportFileType.AMERICAN_EXPRESS_CREDIT;
+        }
+
+        if (cellA4Value.includes('mastercard') || cellA4Value.includes('מסטרקארד')) {
+            return ImportFileType.MASTERCARD_CREDIT;
+        }
+
+        if (cellA4Value.includes('cal') || cellA4Value.includes('כאל')) {
+          return ImportFileType.VISA_CREDIT;
+      }
+    }
+
+    if (cellA1Value) {
+        if (cellA1Value.includes('american express') || cellA1Value.includes('אמריקן אקספרס')) {
+            return ImportFileType.AMERICAN_EXPRESS_CREDIT;
+        }
+
+        if (cellA1Value.includes('mastercard') || cellA1Value.includes('מאסטרקארד')) {
+            return ImportFileType.MASTERCARD_CREDIT;
+        }
+
+        if (cellA1Value.includes('visa') || cellA1Value.includes('ויזה')) {
+            return ImportFileType.VISA_CREDIT;
+        }
+    }
+
+    logger.error(`Could not infer import file type for ${originalFileName}. Cell A1 or A4 content did not match known patterns.`);
+    throw new Error(`Unable to determine import file type for ${originalFileName}. Please ensure the file format is supported.`);
   }
 }
 

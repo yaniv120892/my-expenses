@@ -15,11 +15,12 @@ export class ProcessImportRequest {
   @IsString()
   fileUrl: string;
 
-  @IsEnum(ImportFileType)
-  importType: ImportFileType;
-
   @IsString()
   originalFileName: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMonth?: string;
 }
 
 export class GetImportedTransactionsRequest {
@@ -71,21 +72,27 @@ export class MergeImportedTransactionRequest {
 
 class ImportController {
   async processImport(req: ProcessImportRequest, userId: string) {
-    const { fileUrl, importType, originalFileName } = req;
+    const { fileUrl, originalFileName, paymentMonth } = req;
     try {
-      logger.debug('Start process import', { fileUrl, importType, userId });
+      logger.debug('Start process import', {
+        fileUrl,
+        originalFileName,
+        paymentMonth,
+        userId,
+      });
       const result = await importService.processImport(
         fileUrl,
-        importType,
         userId,
         originalFileName,
+        paymentMonth,
       );
       logger.debug('Done process import', { result });
       return result;
     } catch (error) {
       logger.error(`Failed to process import`, {
         fileUrl,
-        importType,
+        originalFileName,
+        paymentMonth,
         userId,
         error,
       });
