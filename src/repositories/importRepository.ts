@@ -32,6 +32,22 @@ export class ImportRepository {
     });
   }
 
+  async findExisting(
+    userId: string,
+    paymentMonth: string,
+    creditCardLastFourDigits: string,
+    bankSourceType: ImportBankSourceType,
+  ): Promise<Import | null> {
+    return prisma.import.findFirst({
+      where: {
+        userId,
+        paymentMonth,
+        creditCardLastFourDigits,
+        bankSourceType,
+      },
+    });
+  }
+
   async updateStatus(
     id: string,
     status: ImportStatus,

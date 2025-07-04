@@ -41,6 +41,16 @@ export class ImportedTransactionRepository {
     });
   }
 
+  async findByImportId(importId: string): Promise<ImportedTransaction[]> {
+    return prisma.importedTransaction.findMany({
+      where: {
+        importId,
+        deleted: false,
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
   async findById(id: string): Promise<ImportedTransaction | null> {
     return prisma.importedTransaction.findUnique({
       where: { id },
