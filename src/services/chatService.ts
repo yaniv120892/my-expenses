@@ -14,9 +14,11 @@ class ChatService {
 
   public async getChatResponse(message: string, userId: string): Promise<string> {
 
+    const currentDate = new Date().toISOString().split('T')[0];
     const prompt = `
       You are a financial assistant chatbot. Your task is to understand the user's request about their transactions and respond in a helpful, conversational way.
-      Analyze the following user message: "${message}"
+      The current date is ${currentDate}. Please use this as a reference for any relative date queries (e.g., 'last week', 'yesterday').
+      Analyze the following user message: "${message}" 
 
       Based on the message, determine the user's intent and extract relevant parameters. The primary intents are 'list_transactions' and 'get_transaction_summary'.
 
@@ -48,7 +50,7 @@ class ChatService {
       }
 
       const finalPrompt = `
-        You are a friendly financial assistant. The user asked: "${message}"
+        You are a friendly financial assistant. The current date is ${currentDate}. The user asked: "${message}"
         You have retrieved the following transaction data: ${JSON.stringify(transactions, null, 2)}
         
         Based on this data, provide a clear and concise answer to the user's question.
