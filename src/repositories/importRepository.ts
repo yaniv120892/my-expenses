@@ -38,14 +38,24 @@ export class ImportRepository {
     creditCardLastFourDigits: string,
     bankSourceType: ImportBankSourceType,
   ): Promise<Import | null> {
-    return prisma.import.findFirst({
+    const imports = await prisma.import.findMany({
       where: {
         userId,
         paymentMonth,
-        creditCardLastFourDigits,
         bankSourceType,
       },
+      orderBy: { createdAt: 'desc' },
     });
+
+    // The prisma-field-encryption middleware will automatically decrypt
+    // the creditCardLastFourDigits field when we access it.
+    for (const imp of imports) {
+      if (imp.creditCardLastFourDigits === creditCardLastFourDigits) {
+        return imp;
+      }
+    }
+
+    return null;
   }
 
   async updateStatus(
