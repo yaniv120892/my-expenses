@@ -24,14 +24,22 @@ class ImportRepository {
         });
     }
     async findExisting(userId, paymentMonth, creditCardLastFourDigits, bankSourceType) {
-        return client_2.default.import.findFirst({
+        const imports = await client_2.default.import.findMany({
             where: {
                 userId,
                 paymentMonth,
-                creditCardLastFourDigits,
                 bankSourceType,
             },
+            orderBy: { createdAt: 'desc' },
         });
+        // The prisma-field-encryption middleware will automatically decrypt
+        // the creditCardLastFourDigits field when we access it.
+        for (const imp of imports) {
+            if (imp.creditCardLastFourDigits === creditCardLastFourDigits) {
+                return imp;
+            }
+        }
+        return null;
     }
     async updateStatus(id, status, error) {
         const data = Object.assign(Object.assign({ status }, (status === client_1.ImportStatus.COMPLETED && { completedAt: new Date() })), (error && { error }));
