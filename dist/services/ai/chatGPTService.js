@@ -11,6 +11,26 @@ class ChatGPTService {
             apiKey: process.env.OPENAI_API_KEY,
         });
     }
+    async generateContent(prompt) {
+        var _a;
+        try {
+            const response = await this.openai.chat.completions.create({
+                model: 'gpt-4-turbo',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt,
+                    },
+                ],
+                max_tokens: 200,
+            });
+            return ((_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) || 'No insights available.';
+        }
+        catch (error) {
+            console.error('ChatGPT API Error:', error);
+            return 'I encountered an issue generating content.';
+        }
+    }
     async analyzeExpenses(expenseSummary, suffixPrompt) {
         var _a;
         try {

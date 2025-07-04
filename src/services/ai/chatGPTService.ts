@@ -12,6 +12,26 @@ export class ChatGPTService implements AIProvider {
     });
   }
 
+  async generateContent(prompt: string): Promise<string> {
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        max_tokens: 200,
+      });
+
+      return response.choices[0].message?.content || 'No insights available.';
+    } catch (error) {
+      console.error('ChatGPT API Error:', error);
+      return 'I encountered an issue generating content.';
+    }
+  }
+
   async analyzeExpenses(
     expenseSummary: string,
     suffixPrompt?: string,
