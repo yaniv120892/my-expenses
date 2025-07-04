@@ -37,32 +37,24 @@ const transactionRepository_1 = __importDefault(require("../repositories/transac
 const transactionService_1 = __importDefault(require("./transactionService"));
 const aiServiceFactory_1 = __importDefault(require("../services/ai/aiServiceFactory"));
 const startProcessingRow = {
-    [client_1.ImportFileType.VISA_CREDIT]: 5,
-    [client_1.ImportFileType.AMERICAN_EXPRESS_CREDIT]: 6,
-    [client_1.ImportFileType.MASTERCARD_CREDIT]: 6,
+    [client_1.ImportBankSourceType.BANK_CREDIT]: 5,
+    [client_1.ImportBankSourceType.NON_BANK_CREDIT]: 6,
 };
 const skipLastRows = {
-    [client_1.ImportFileType.VISA_CREDIT]: 3,
-    [client_1.ImportFileType.AMERICAN_EXPRESS_CREDIT]: 1,
-    [client_1.ImportFileType.MASTERCARD_CREDIT]: 1,
+    [client_1.ImportBankSourceType.BANK_CREDIT]: 3,
+    [client_1.ImportBankSourceType.NON_BANK_CREDIT]: 1,
 };
 const headerRow = {
-    [client_1.ImportFileType.VISA_CREDIT]: startProcessingRow[client_1.ImportFileType.VISA_CREDIT] - 1,
-    [client_1.ImportFileType.AMERICAN_EXPRESS_CREDIT]: startProcessingRow[client_1.ImportFileType.AMERICAN_EXPRESS_CREDIT] - 1,
-    [client_1.ImportFileType.MASTERCARD_CREDIT]: startProcessingRow[client_1.ImportFileType.MASTERCARD_CREDIT] - 1,
+    [client_1.ImportBankSourceType.BANK_CREDIT]: startProcessingRow[client_1.ImportBankSourceType.BANK_CREDIT] - 1,
+    [client_1.ImportBankSourceType.NON_BANK_CREDIT]: startProcessingRow[client_1.ImportBankSourceType.NON_BANK_CREDIT] - 1,
 };
 const ParsedTransactionFieldToColumnMap = {
-    [client_1.ImportFileType.VISA_CREDIT]: {
+    [client_1.ImportBankSourceType.BANK_CREDIT]: {
         date: 0,
         description: 1,
         value: 2,
     },
-    [client_1.ImportFileType.AMERICAN_EXPRESS_CREDIT]: {
-        date: 0,
-        description: 2,
-        value: 3,
-    },
-    [client_1.ImportFileType.MASTERCARD_CREDIT]: {
+    [client_1.ImportBankSourceType.NON_BANK_CREDIT]: {
         date: 0,
         description: 2,
         value: 3,
@@ -96,13 +88,15 @@ class ImportService {
             const firstSheetName = workbook.SheetNames[0];
             const firstSheet = workbook.Sheets[firstSheetName];
             const inferredImportType = await this.inferImportFileType(firstSheet, originalFileName);
+            const inferredBankSourceType = await this.inferBankSourceType(firstSheet, originalFileName);
             const creditCardLastFour = await this.extractCreditCardLastFour(firstSheet, originalFileName);
             const paymentMonth = paymentMonthFromRequest || this.determinePaymentMonth(firstSheet, originalFileName);
-            logger_1.default.debug('Inferred import details', { inferredImportType, creditCardLastFour, paymentMonth });
+            logger_1.default.debug('Inferred import details', { inferredImportType, inferredBankSourceType, creditCardLastFour, paymentMonth });
             importRecord = await importRepository_1.importRepository.create({
                 fileUrl,
                 originalFileName,
                 importType: inferredImportType,
+                bankSourceType: inferredBankSourceType,
                 userId,
                 creditCardLastFourDigits: creditCardLastFour,
                 paymentMonth: paymentMonth,
@@ -112,7 +106,7 @@ class ImportService {
                 throw new Error('Failed to create import record.');
             }
             try {
-                const transactions = await this.processWorkbook(workbook, inferredImportType);
+                const transactions = await this.processWorkbook(workbook, inferredBankSourceType);
                 const currentImportId = importRecord.id;
                 const transactionsWithMatches = await this.findPotentialMatches(transactions, userId);
                 await importedTransactionRepository_1.importedTransactionRepository.createMany(transactionsWithMatches.map((transaction) => (Object.assign(Object.assign({}, transaction), { importId: currentImportId, userId }))));
@@ -155,27 +149,27 @@ class ImportService {
             throw error;
         }
     }
-    async processWorkbook(workbook, importType) {
+    async processWorkbook(workbook, bankSourceType) {
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, {
             header: 1,
             raw: true,
         });
-        return this.processRows(rows, importType);
+        return this.processRows(rows, bankSourceType);
     }
-    processRows(rows, importType) {
+    processRows(rows, bankSourceType) {
         const transactions = [];
-        const startRow = startProcessingRow[importType];
-        const columnMap = ParsedTransactionFieldToColumnMap[importType];
-        const lastRowsToSkip = skipLastRows[importType];
-        const headers = this.extractHeaders(rows, headerRow[importType]);
+        const startRow = startProcessingRow[bankSourceType];
+        const columnMap = ParsedTransactionFieldToColumnMap[bankSourceType];
+        const lastRowsToSkip = skipLastRows[bankSourceType];
+        const headers = this.extractHeaders(rows, headerRow[bankSourceType]);
         for (let i = startRow; i < rows.length - lastRowsToSkip; i++) {
             try {
                 const currentRow = rows[i];
-                this.validateRow(currentRow, importType);
-                const date = this.validateAndParseDate(currentRow[columnMap.date], importType);
-                const description = this.validateAndParseDescription(currentRow[columnMap.description], importType);
-                const value = this.validateAndParseAmount(currentRow[columnMap.value], importType);
+                this.validateRow(currentRow, bankSourceType);
+                const date = this.validateAndParseDate(currentRow[columnMap.date], bankSourceType);
+                const description = this.validateAndParseDescription(currentRow[columnMap.description], bankSourceType);
+                const value = this.validateAndParseAmount(currentRow[columnMap.value], bankSourceType);
                 const transactionType = value > 0 ? client_1.TransactionType.EXPENSE : client_1.TransactionType.INCOME;
                 transactions.push({
                     date,
@@ -186,7 +180,7 @@ class ImportService {
                 });
             }
             catch (error) {
-                logger_1.default.error(`Error processing ${importType} row:`, {
+                logger_1.default.error(`Error processing ${bankSourceType} row:`, {
                     error,
                     row: rows[i],
                     rowIndex: i + 1,
@@ -196,24 +190,24 @@ class ImportService {
         }
         return transactions;
     }
-    validateRow(row, importType) {
+    validateRow(row, bankSourceType) {
         if (!row) {
-            throw new Error(`Invalid row: ${row}, importType: ${importType}`);
+            throw new Error(`Invalid row: ${row}, bankSourceType: ${bankSourceType}`);
         }
-        const columnMap = ParsedTransactionFieldToColumnMap[importType];
+        const columnMap = ParsedTransactionFieldToColumnMap[bankSourceType];
         if (!row[columnMap.date]) {
-            throw new Error(`Invalid row: ${row}, importType: ${importType}, missing date column`);
+            throw new Error(`Invalid row: ${row}, bankSourceType: ${bankSourceType}, missing date column`);
         }
         if (!row[columnMap.description]) {
-            throw new Error(`Invalid row: ${row}, importType: ${importType}, missing description column`);
+            throw new Error(`Invalid row: ${row}, bankSourceType: ${bankSourceType}, missing description column`);
         }
         if (!row[columnMap.value]) {
-            throw new Error(`Invalid row: ${row}, importType: ${importType}, missing value column`);
+            throw new Error(`Invalid row: ${row}, bankSourceType: ${bankSourceType}, missing value column`);
         }
     }
-    validateAndParseDate(dateValue, importType) {
+    validateAndParseDate(dateValue, bankSourceType) {
         if (!dateValue) {
-            throw new Error(`Invalid date value: ${dateValue}, importType: ${importType}`);
+            throw new Error(`Invalid date value: ${dateValue}, bankSourceType: ${bankSourceType}`);
         }
         try {
             // If the date is a number (Excel serial date)
@@ -230,38 +224,38 @@ class ImportService {
             // If it's a string date in DD/MM/YYYY format
             const date = this.parseDate(dateValue);
             if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-                throw new Error(`Invalid date format: ${dateValue}, importType: ${importType}`);
+                throw new Error(`Invalid date format: ${dateValue}, bankSourceType: ${bankSourceType}`);
             }
             return date;
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Failed to parse date: ${dateValue}, importType: ${importType}, error: ${errorMessage}`);
+            throw new Error(`Failed to parse date: ${dateValue}, bankSourceType: ${bankSourceType}, error: ${errorMessage}`);
         }
     }
-    validateAndParseDescription(description, importType) {
+    validateAndParseDescription(description, bankSourceType) {
         if (!description ||
             typeof description !== 'string' ||
             description.trim() === '') {
-            throw new Error(`Invalid description: ${description}, importType: ${importType}`);
+            throw new Error(`Invalid description: ${description}, bankSourceType: ${bankSourceType}`);
         }
         return description.trim();
     }
-    validateAndParseAmount(amount, importType) {
+    validateAndParseAmount(amount, bankSourceType) {
         if (!amount) {
-            throw new Error(`Invalid amount: ${amount}, importType: ${importType}`);
+            throw new Error(`Invalid amount: ${amount}, bankSourceType: ${bankSourceType}`);
         }
         try {
             const cleanAmount = String(amount).replace(/[^\d.-]/g, '');
             const parsedAmount = parseFloat(cleanAmount);
             if (isNaN(parsedAmount)) {
-                throw new Error(`Invalid amount format: ${amount}, importType: ${importType}`);
+                throw new Error(`Invalid amount format: ${amount}, bankSourceType: ${bankSourceType}`);
             }
             return Math.abs(parsedAmount);
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new Error(`Failed to parse amount: ${amount}, importType: ${importType}, error: ${errorMessage}`);
+            throw new Error(`Failed to parse amount: ${amount}, bankSourceType: ${bankSourceType}, error: ${errorMessage}`);
         }
     }
     parseDate(dateStr) {
@@ -485,6 +479,19 @@ class ImportService {
             if (cellA1Value.includes('visa') || cellA1Value.includes('ויזה')) {
                 return client_1.ImportFileType.VISA_CREDIT;
             }
+        }
+        logger_1.default.error(`Could not infer import file type for ${originalFileName}. Cell A1 or A4 content did not match known patterns.`);
+        throw new Error(`Unable to determine import file type for ${originalFileName}. Please ensure the file format is supported.`);
+    }
+    async inferBankSourceType(firstSheet, originalFileName) {
+        const cellA1Ref = XLSX.utils.encode_cell({ r: 0, c: 0 });
+        const cellA1 = firstSheet ? firstSheet[cellA1Ref] : null;
+        const cellA1Value = cellA1 && cellA1.v ? String(cellA1.v).toLowerCase() : null;
+        if (cellA1Value) {
+            if (cellA1Value.includes('פירוט עסקאות לחשבון')) {
+                return client_1.ImportBankSourceType.BANK_CREDIT;
+            }
+            return client_1.ImportBankSourceType.NON_BANK_CREDIT;
         }
         logger_1.default.error(`Could not infer import file type for ${originalFileName}. Cell A1 or A4 content did not match known patterns.`);
         throw new Error(`Unable to determine import file type for ${originalFileName}. Please ensure the file format is supported.`);

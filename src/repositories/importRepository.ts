@@ -1,4 +1,4 @@
-import { Import, ImportFileType, ImportStatus } from '@prisma/client';
+import { Import, ImportFileType, ImportStatus, ImportBankSourceType } from '@prisma/client';
 import prisma from '../prisma/client';
 
 export class ImportRepository {
@@ -6,6 +6,7 @@ export class ImportRepository {
     fileUrl: string;
     originalFileName: string;
     importType: ImportFileType;
+    bankSourceType: ImportBankSourceType;
     userId: string;
     creditCardLastFourDigits: string;
     paymentMonth: string;

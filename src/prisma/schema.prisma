@@ -43,6 +43,11 @@ enum ImportFileType {
   AMERICAN_EXPRESS_CREDIT
 }
 
+enum ImportBankSourceType {
+  NON_BANK_CREDIT
+  BANK_CREDIT
+}
+
 enum ImportedTransactionStatus {
   PENDING
   APPROVED
@@ -103,7 +108,8 @@ model Import {
   userId        String               @db.Uuid
   fileUrl       String
   originalFileName String
-  importType    ImportFileType
+  importType               ImportFileType
+  bankSourceType           ImportBankSourceType?
   status        ImportStatus         @default(PENDING)
   error         String?
   createdAt     DateTime            @default(now())
