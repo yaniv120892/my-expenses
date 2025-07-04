@@ -25,6 +25,15 @@ class ImportedTransactionRepository {
             orderBy: { date: 'desc' },
         });
     }
+    async findByImportId(importId) {
+        return client_1.default.importedTransaction.findMany({
+            where: {
+                importId,
+                deleted: false,
+            },
+            orderBy: { date: 'desc' },
+        });
+    }
     async findById(id) {
         return client_1.default.importedTransaction.findUnique({
             where: { id },

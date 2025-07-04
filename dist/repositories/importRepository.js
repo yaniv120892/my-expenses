@@ -23,6 +23,16 @@ class ImportRepository {
             orderBy: { createdAt: 'desc' },
         });
     }
+    async findExisting(userId, paymentMonth, creditCardLastFourDigits, bankSourceType) {
+        return client_2.default.import.findFirst({
+            where: {
+                userId,
+                paymentMonth,
+                creditCardLastFourDigits,
+                bankSourceType,
+            },
+        });
+    }
     async updateStatus(id, status, error) {
         const data = Object.assign(Object.assign({ status }, (status === client_1.ImportStatus.COMPLETED && { completedAt: new Date() })), (error && { error }));
         return client_2.default.import.update({

@@ -6,6 +6,7 @@ import {
   TransactionStatus,
   ImportedTransactionStatus,
   ImportBankSourceType,
+  ImportedTransaction,
 } from '@prisma/client';
 import {
   S3Client,
@@ -91,7 +92,6 @@ class ImportService {
     originalFileName: string,
     paymentMonthFromRequest?: string,
   ) {
-    let importRecord: Import | undefined;
     const s3Key = this.getS3KeyFromUrl(fileUrl);
     try {
       const workbook = await this.downloadAndParseFile(s3Key);
@@ -105,41 +105,30 @@ class ImportService {
 
       logger.debug('Inferred import details', { inferredImportType, inferredBankSourceType, creditCardLastFour, paymentMonth });
 
-      importRecord = await importRepository.create({
-        fileUrl,
-        originalFileName,
-        importType: inferredImportType,
-        bankSourceType: inferredBankSourceType,
-        userId,
-        creditCardLastFourDigits: creditCardLastFour,
-        paymentMonth: paymentMonth,
-      });
-
-      if (!importRecord) {
-        logger.error('Import record was not created successfully before processing transactions.');
-        throw new Error('Failed to create import record.');
-      }
+      const importRecord = await this.findOrCreateImport(userId, paymentMonth, creditCardLastFour, inferredBankSourceType, fileUrl, originalFileName, inferredImportType);
 
       try {
-        const transactions = await this.processWorkbook(workbook, inferredBankSourceType);
+        const newTransactions = await this.processWorkbook(workbook, inferredBankSourceType);
+        const existingTransactions = await importedTransactionRepository.findByImportId(importRecord.id);
+        const transactionsToSave = this.filterNewTransactions(newTransactions, existingTransactions);
 
-        const currentImportId = importRecord.id;
-
-        const transactionsWithMatches = await this.findPotentialMatches(
-          transactions,
-          userId,
-        );
-
-        await importedTransactionRepository.createMany(
-          transactionsWithMatches.map((transaction) => ({
-            ...transaction,
-            importId: currentImportId,
+        if (transactionsToSave.length > 0) {
+          const transactionsWithMatches = await this.findPotentialMatches(
+            transactionsToSave,
             userId,
-          })),
-        );
+          );
+
+          await importedTransactionRepository.createMany(
+            transactionsWithMatches.map((transaction) => ({
+              ...transaction,
+              importId: importRecord.id,
+              userId,
+            })),
+          );
+        }
 
         await importRepository.updateStatus(
-          currentImportId,
+          importRecord.id,
           ImportStatus.COMPLETED,
         );
 
@@ -147,13 +136,11 @@ class ImportService {
 
         return importRecord;
       } catch (error) {
-        if (importRecord && importRecord.id) {
-          await importRepository.updateStatus(
-            importRecord.id,
-            ImportStatus.FAILED,
-            error instanceof Error ? error.message : 'Unknown error occurred',
-          );
-        }
+        await importRepository.updateStatus(
+          importRecord.id,
+          ImportStatus.FAILED,
+          error instanceof Error ? error.message : 'Unknown error occurred',
+        );
         throw error;
       }
     } catch (error) {
@@ -165,6 +152,46 @@ class ImportService {
   private getS3KeyFromUrl(fileUrl: string): string {
     const url = new URL(fileUrl);
     return decodeURIComponent(url.pathname.slice(1));
+  }
+
+  private async findOrCreateImport(
+    userId: string,
+    paymentMonth: string,
+    creditCardLastFourDigits: string,
+    bankSourceType: ImportBankSourceType,
+    fileUrl: string,
+    originalFileName: string,
+    importType: ImportFileType
+  ): Promise<Import> {
+    let importRecord = await importRepository.findExisting(userId, paymentMonth, creditCardLastFourDigits, bankSourceType);
+
+    if (!importRecord) {
+      importRecord = await importRepository.create({
+        fileUrl,
+        originalFileName,
+        importType,
+        bankSourceType,
+        userId,
+        creditCardLastFourDigits,
+        paymentMonth,
+      });
+    }
+
+    return importRecord;
+  }
+
+  private filterNewTransactions(
+    newTransactions: ParsedTransaction[],
+    existingTransactions: ImportedTransaction[],
+  ): ParsedTransaction[] {
+    const existingTransactionKeys = new Set(
+      existingTransactions.map(t => `${t.description}_${t.value}_${t.date.toISOString()}`)
+    );
+
+    return newTransactions.filter(t => {
+      const key = `${t.description}_${t.value}_${t.date.toISOString()}`;
+      return !existingTransactionKeys.has(key);
+    });
   }
 
   private async downloadAndParseFile(s3Key: string) {
