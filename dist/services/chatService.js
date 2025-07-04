@@ -10,14 +10,18 @@ class ChatService {
         this.aiProvider = aiServiceFactory_1.default.getAIService();
         this.transactionRepository = transactionRepository_1.default;
     }
-    async getChatResponse(message, userId) {
+    async getChatResponse(messages, userId) {
+        var _a;
         const currentDate = new Date().toISOString().split('T')[0];
+        const conversation = messages.map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
+        const lastUserMessage = ((_a = [...messages].reverse().find(m => m.sender === 'user')) === null || _a === void 0 ? void 0 : _a.text) || '';
         const prompt = `
       You are a financial assistant chatbot. Your task is to understand the user's request about their transactions and respond in a helpful, conversational way.
       The current date is ${currentDate}. Please use this as a reference for any relative date queries (e.g., 'last week', 'yesterday').
-      Analyze the following user message: "${message}" 
+      Here is the conversation so far:\n${conversation}\n
+      Analyze the user's latest message: "${lastUserMessage}"
 
-      Based on the message, determine the user's intent and extract relevant parameters. The primary intents are 'list_transactions' and 'get_transaction_summary'.
+      Based on the conversation, determine the user's intent and extract relevant parameters. The primary intents are 'list_transactions' and 'get_transaction_summary'.
 
       Extract the following parameters if present:
       - category (e.g., 'groceries', 'rent')
@@ -39,7 +43,7 @@ class ChatService {
                 return "I'm sorry, I can only help with questions about your transactions. Please try asking something like, 'How much did I spend on groceries last week?'";
             }
             const finalPrompt = `
-        You are a friendly financial assistant. The current date is ${currentDate}. The user asked: "${message}"
+        You are a friendly financial assistant. The current date is ${currentDate}. The user asked: "${lastUserMessage}"
         You have retrieved the following transaction data: ${JSON.stringify(transactions, null, 2)}
         
         Based on this data, provide a clear and concise answer to the user's question.

@@ -6,7 +6,7 @@ import chatController from '../controllers/chatController';
 const router = Router();
 
 router.post('/', authenticateRequest, handleRequest(
-    (req) => chatController.handleChatMessage(req.body.message, req.userId ?? ''),
+    (req) => chatController.handleChatMessage(req.body.messages, req.userId ?? ''),
     200,
   ),
 );
