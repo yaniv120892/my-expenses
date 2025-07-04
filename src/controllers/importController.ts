@@ -1,11 +1,9 @@
 import {
   IsString,
-  IsEnum,
   IsOptional,
   IsNumber,
   IsDate,
 } from 'class-validator';
-import { ImportFileType } from '@prisma/client';
 import { importService } from '../services/importService';
 import logger from '../utils/logger';
 import { TransactionType } from '../types/transaction';

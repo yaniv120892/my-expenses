@@ -12,6 +12,31 @@ export class GeminiService implements AIProvider {
     this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
   }
 
+  async generateContent(prompt: string): Promise<string> {
+    try {
+      logger.debug(`Start generating content for prompt: ${prompt}`);
+      const model = this.gemini.getGenerativeModel({ model: this.modelName });
+      const response = await model.generateContent({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      });
+      const content = response.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+      logger.debug(`Done generating content for prompt: ${prompt}`);
+      return content || '';
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      return 'I encountered an issue generating content.';
+    }
+  }
+
   async analyzeExpenses(
     expenseSummary: string,
     suffixPrompt?: string,
