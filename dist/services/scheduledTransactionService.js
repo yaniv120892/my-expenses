@@ -31,7 +31,9 @@ class ScheduledTransactionService {
             case 'WEEKLY': {
                 const baseDate = (0, date_fns_1.addWeeks)(fromDate, intervalValue);
                 if (dayOfWeek !== undefined) {
-                    let next = (0, date_fns_1.setDay)(baseDate, dayOfWeek, { weekStartsOn: 1 });
+                    // Adjust dayOfWeek to account for Sunday as start of week (0-based)
+                    const adjustedDayOfWeek = dayOfWeek - 1;
+                    let next = (0, date_fns_1.setDay)(baseDate, adjustedDayOfWeek, { weekStartsOn: 0 });
                     if (!(0, date_fns_1.isAfter)(next, fromDate)) {
                         next = (0, date_fns_1.addWeeks)(next, 1);
                     }

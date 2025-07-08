@@ -21,9 +21,7 @@ import { ScheduleType } from '@prisma/client';
 class ScheduledTransactionService {
   public async processDueScheduledTransactions(date: Date) {
     const dueScheduledTransactions =
-      await scheduledTransactionRepository.getDueScheduledTransactions(
-        date,
-      );
+      await scheduledTransactionRepository.getDueScheduledTransactions(date);
     for (const scheduled of dueScheduledTransactions) {
       await transactionService.createTransaction({
         description: scheduled.description,
@@ -63,7 +61,9 @@ class ScheduledTransactionService {
       case 'WEEKLY': {
         const baseDate = addWeeks(fromDate, intervalValue);
         if (dayOfWeek !== undefined) {
-          let next = setDay(baseDate, dayOfWeek, { weekStartsOn: 1 });
+          // Adjust dayOfWeek to account for Sunday as start of week (0-based)
+          const adjustedDayOfWeek = dayOfWeek - 1;
+          let next = setDay(baseDate, adjustedDayOfWeek, { weekStartsOn: 0 });
           if (!isAfter(next, fromDate)) {
             next = addWeeks(next, 1);
           }
