@@ -1,5 +1,27 @@
 export type TransactionStatus = 'APPROVED' | 'PENDING_APPROVAL';
 
+export interface TransactionFile {
+  id: string;
+  transactionId: string;
+  fileName: string;
+  originalName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateTransactionFile {
+  fileName: string;
+  originalName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  mimeType: string;
+}
+
 export interface CreateTransaction {
   description: string;
   value: number;
@@ -8,6 +30,7 @@ export interface CreateTransaction {
   date: Date | null;
   status?: TransactionStatus;
   userId: string;
+  files?: CreateTransactionFile[];
 }
 
 export interface TransactionSummaryFilters {
@@ -40,6 +63,7 @@ export interface Transaction {
     id: string;
     name: string;
   };
+  files?: TransactionFile[];
 }
 
 export interface TransactionSummary {
