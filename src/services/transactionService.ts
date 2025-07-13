@@ -18,7 +18,10 @@ import logger from '../utils/logger';
 import { Category } from '../types/category';
 import TransactionNotifierFactory from './transactionNotification/transactionNotifierFactory';
 import userSettingsService from '../services/userSettingsService';
-import { transactionAttachmentFileUrlBuilder } from './transactionAttachmentFileUrlBuilder';
+import {
+  buildPreviewUrl,
+  buildDownloadUrl,
+} from './transactionAttachmentFileUrlBuilder';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
@@ -162,11 +165,16 @@ class TransactionService {
 
     return Promise.all(
       files.map(async (file) => {
-        const fileUrl = await transactionAttachmentFileUrlBuilder(file.fileKey);
+        const previewFileUrl = await buildPreviewUrl(file.fileKey);
+        const downloadableFileUrl = await buildDownloadUrl(
+          file.fileKey,
+          file.fileName,
+        );
         return {
           id: file.id,
           fileName: file.fileName,
-          fileUrl, // signed URL for frontend
+          previewFileUrl,
+          downloadableFileUrl,
           fileSize: file.fileSize,
           mimeType: file.mimeType,
         };

@@ -85,11 +85,13 @@ class TransactionService {
         await this.assertTransactionExists(transactionId, userId);
         const files = await transactionFileRepository_1.default.findByTransactionId(transactionId);
         return Promise.all(files.map(async (file) => {
-            const fileUrl = await (0, transactionAttachmentFileUrlBuilder_1.transactionAttachmentFileUrlBuilder)(file.fileKey);
+            const previewFileUrl = await (0, transactionAttachmentFileUrlBuilder_1.buildPreviewUrl)(file.fileKey);
+            const downloadableFileUrl = await (0, transactionAttachmentFileUrlBuilder_1.buildDownloadUrl)(file.fileKey, file.fileName);
             return {
                 id: file.id,
                 fileName: file.fileName,
-                fileUrl, // signed URL for frontend
+                previewFileUrl,
+                downloadableFileUrl,
                 fileSize: file.fileSize,
                 mimeType: file.mimeType,
             };
