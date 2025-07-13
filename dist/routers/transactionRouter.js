@@ -58,4 +58,8 @@ router.delete('/:id/attachments/:fileId', (0, handleRequest_1.handleRequest)((re
     var _a;
     return transactionFileController_1.transactionFileController.removeFile(req.params.id, req.params.fileId, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
 }, 200));
+router.post('/:id/attachments/presign-upload', (0, validation_1.validateRequest)(transactionFileController_1.GetPresignedUploadUrlRequest), (0, handleRequest_1.handleRequest)((req) => {
+    var _a;
+    return transactionFileController_1.transactionFileController.getPresignedUploadUrl(req.params.id, (_a = req.userId) !== null && _a !== void 0 ? _a : '', req.body);
+}));
 exports.default = router;

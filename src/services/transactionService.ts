@@ -21,7 +21,8 @@ import userSettingsService from '../services/userSettingsService';
 import {
   buildPreviewUrl,
   buildDownloadUrl,
-} from './transactionAttachmentFileUrlBuilder';
+  getPresignedUploadUrl,
+} from './transactionAttachmentFileUtils';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
@@ -194,6 +195,16 @@ class TransactionService {
     logger.debug(
       `File ${fileId} marked for deletion from transaction ${transactionId}`,
     );
+  }
+
+  public async getPresignedUploadUrl(
+    transactionId: string,
+    userId: string,
+    fileName: string,
+    mimeType: string,
+  ) {
+    await this.assertTransactionExists(transactionId, userId);
+    return getPresignedUploadUrl(transactionId, fileName, mimeType);
   }
 
   private async updateCategory(

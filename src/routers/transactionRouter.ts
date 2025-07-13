@@ -3,6 +3,7 @@ import transactionController from '../controllers/transactionController';
 import {
   transactionFileController,
   AttachFileRequest,
+  GetPresignedUploadUrlRequest,
 } from '../controllers/transactionFileController';
 import { validateRequest } from '../middlewares/validation';
 import {
@@ -143,6 +144,18 @@ router.delete(
         req.userId ?? '',
       ),
     200,
+  ),
+);
+
+router.post(
+  '/:id/attachments/presign-upload',
+  validateRequest(GetPresignedUploadUrlRequest),
+  handleRequest((req: Request) =>
+    transactionFileController.getPresignedUploadUrl(
+      req.params.id,
+      req.userId ?? '',
+      req.body,
+    ),
   ),
 );
 
