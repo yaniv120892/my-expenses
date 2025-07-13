@@ -55,6 +55,12 @@ enum ImportedTransactionStatus {
   IGNORED
 }
 
+enum TransactionFileStatus {
+  ACTIVE
+  MARKED_FOR_DELETION
+  DELETED
+}
+
 model User {
   id                        String                @id @default(uuid()) @db.Uuid
   username                  String                @unique
@@ -98,6 +104,7 @@ model Transaction {
   userId               String               @db.Uuid
   user                 User                 @relation(fields: [userId], references: [id])
   importedTransactions ImportedTransaction[]
+  files                TransactionFile[]
 
   @@index([userId])
   @@index([categoryId])
@@ -170,4 +177,20 @@ model ScheduledTransaction {
   nextRunDate   DateTime?
   userId        String          @db.Uuid
   user          User            @relation(fields: [userId], references: [id])
+}
+
+model TransactionFile {
+  id            String                @id @default(uuid()) @db.Uuid
+  transactionId String                @db.Uuid
+  fileName      String
+  fileKey       String
+  fileSize      Int
+  mimeType      String
+  status        TransactionFileStatus @default(ACTIVE)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  transaction   Transaction          @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@index([status])
 }

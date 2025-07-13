@@ -1,5 +1,22 @@
 export type TransactionStatus = 'APPROVED' | 'PENDING_APPROVAL';
 
+export type TransactionFileStatus =
+  | 'ACTIVE'
+  | 'MARKED_FOR_DELETION'
+  | 'DELETED';
+
+export interface TransactionFile {
+  id: string;
+  transactionId: string;
+  fileName: string;
+  fileKey: string;
+  fileSize: number;
+  mimeType: string;
+  status: TransactionFileStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface CreateTransaction {
   description: string;
   value: number;
@@ -40,6 +57,7 @@ export interface Transaction {
     id: string;
     name: string;
   };
+  files?: TransactionFile[];
 }
 
 export interface TransactionSummary {

@@ -124,7 +124,13 @@ class TransactionRepository {
   ): Promise<Transaction | null> {
     const transaction = await prisma.transaction.findUnique({
       where: { id: transactionId, userId },
-      include: { category: true },
+      include: {
+        category: true,
+        files: {
+          where: { status: 'ACTIVE' },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
 
     return transaction ? this.mapToDomain(transaction) : null;
@@ -142,6 +148,18 @@ class TransactionRepository {
         id: transaction.category.id,
         name: transaction.category.name,
       },
+      files:
+        transaction.files?.map((file: any) => ({
+          id: file.id,
+          transactionId: file.transactionId,
+          fileName: file.fileName,
+          fileKey: file.fileKey,
+          fileSize: file.fileSize,
+          mimeType: file.mimeType,
+          status: file.status,
+          createdAt: file.createdAt,
+          updatedAt: file.updatedAt,
+        })) || [],
     };
   }
 
