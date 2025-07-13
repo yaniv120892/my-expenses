@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const transactionController_1 = __importDefault(require("../controllers/transactionController"));
+const transactionFileController_1 = require("../controllers/transactionFileController");
 const validation_1 = require("../middlewares/validation");
 const requests_1 = require("../controllers/requests");
 const handleRequest_1 = require("../utils/handleRequest");
@@ -45,4 +46,16 @@ router.patch('/:id/status', (0, validation_1.validateRequest)(requests_1.UpdateT
     return transactionController_1.default.updateTransactionStatus(req.params.id, status, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
 }, 200));
 router.delete('/:id', (0, handleRequest_1.handleRequest)((req) => { var _a; return transactionController_1.default.deleteTransaction(req.params.id, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }));
+router.post('/:id/attachments', (0, validation_1.validateRequest)(transactionFileController_1.AttachFileRequest), (0, handleRequest_1.handleRequest)((req) => {
+    var _a;
+    return transactionFileController_1.transactionFileController.attachFile(req.params.id, (_a = req.userId) !== null && _a !== void 0 ? _a : '', req.body);
+}, 201));
+router.get('/:id/attachments', (0, handleRequest_1.handleRequest)((req) => {
+    var _a;
+    return transactionFileController_1.transactionFileController.getTransactionFiles(req.params.id, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
+}, 200));
+router.delete('/:id/attachments/:fileId', (0, handleRequest_1.handleRequest)((req) => {
+    var _a;
+    return transactionFileController_1.transactionFileController.removeFile(req.params.id, req.params.fileId, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
+}, 200));
 exports.default = router;

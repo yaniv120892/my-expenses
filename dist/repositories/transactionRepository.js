@@ -81,11 +81,18 @@ class TransactionRepository {
     async getTransactionItem(transactionId, userId) {
         const transaction = await client_2.default.transaction.findUnique({
             where: { id: transactionId, userId },
-            include: { category: true },
+            include: {
+                category: true,
+                files: {
+                    where: { status: 'ACTIVE' },
+                    orderBy: { createdAt: 'desc' },
+                },
+            },
         });
         return transaction ? this.mapToDomain(transaction) : null;
     }
     mapToDomain(transaction) {
+        var _a;
         return {
             id: transaction.id,
             description: transaction.description,
@@ -97,6 +104,17 @@ class TransactionRepository {
                 id: transaction.category.id,
                 name: transaction.category.name,
             },
+            files: ((_a = transaction.files) === null || _a === void 0 ? void 0 : _a.map((file) => ({
+                id: file.id,
+                transactionId: file.transactionId,
+                fileName: file.fileName,
+                fileKey: file.fileKey,
+                fileSize: file.fileSize,
+                mimeType: file.mimeType,
+                status: file.status,
+                createdAt: file.createdAt,
+                updatedAt: file.updatedAt,
+            }))) || [],
         };
     }
     async updateTransaction(id, data, userId) {

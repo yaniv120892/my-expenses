@@ -76,6 +76,7 @@
     "node-fetch": "^3.3.2",
     "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^7.0.3",
+    "nodemon": "^3.1.10",
     "openai": "^4.82.0",
     "prisma-field-encryption": "^1.6.0",
     "redis": "^5.1.0",

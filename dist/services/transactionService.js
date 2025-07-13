@@ -5,12 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const aiServiceFactory_1 = __importDefault(require("./ai/aiServiceFactory"));
 const transactionRepository_1 = __importDefault(require("../repositories/transactionRepository"));
+const transactionFileRepository_1 = __importDefault(require("../repositories/transactionFileRepository"));
 const createTransactionValidator_1 = __importDefault(require("../validators/createTransactionValidator"));
 const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
 const axios_1 = __importDefault(require("axios"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionNotifierFactory_1 = __importDefault(require("./transactionNotification/transactionNotifierFactory"));
 const userSettingsService_1 = __importDefault(require("../services/userSettingsService"));
+const transactionAttachmentFileUrlBuilder_1 = require("./transactionAttachmentFileUrlBuilder");
 class TransactionService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
@@ -73,6 +75,32 @@ class TransactionService {
     async deleteTransaction(id, userId) {
         return transactionRepository_1.default.deleteTransaction(id, userId);
     }
+    async attachFile(transactionId, userId, fileData) {
+        // Verify transaction exists and belongs to user
+        await this.assertTransactionExists(transactionId, userId);
+        await transactionFileRepository_1.default.create(Object.assign({ transactionId }, fileData));
+        logger_1.default.debug(`File attached to transaction ${transactionId}`, fileData);
+    }
+    async getTransactionFiles(transactionId, userId) {
+        await this.assertTransactionExists(transactionId, userId);
+        const files = await transactionFileRepository_1.default.findByTransactionId(transactionId);
+        return Promise.all(files.map(async (file) => {
+            const fileUrl = await (0, transactionAttachmentFileUrlBuilder_1.transactionAttachmentFileUrlBuilder)(file.fileKey);
+            return {
+                id: file.id,
+                fileName: file.fileName,
+                fileUrl, // signed URL for frontend
+                fileSize: file.fileSize,
+                mimeType: file.mimeType,
+            };
+        }));
+    }
+    async removeFile(transactionId, fileId, userId) {
+        await this.assertTransactionExists(transactionId, userId);
+        await this.assertTransactionFileExists(fileId, transactionId);
+        await transactionFileRepository_1.default.markForDeletion(fileId);
+        logger_1.default.debug(`File ${fileId} marked for deletion from transaction ${transactionId}`);
+    }
     async updateCategory(transaction) {
         if (transaction.categoryId) {
             return transaction;
@@ -134,6 +162,20 @@ class TransactionService {
         catch (error) {
             logger_1.default.error(`Failed to notify transaction created: ${transactionId} - ${error}`);
         }
+    }
+    async assertTransactionExists(transactionId, userId) {
+        const transaction = await this.getTransactionItem(transactionId, userId);
+        if (!transaction) {
+            throw new Error('Transaction not found or access denied');
+        }
+        return transaction;
+    }
+    async assertTransactionFileExists(fileId, transactionId) {
+        const file = await transactionFileRepository_1.default.findById(fileId);
+        if (!file || file.transactionId !== transactionId) {
+            throw new Error('File not found or access denied');
+        }
+        return file;
     }
 }
 exports.default = new TransactionService();

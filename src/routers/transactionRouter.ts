@@ -1,5 +1,9 @@
 import express, { Request } from 'express';
 import transactionController from '../controllers/transactionController';
+import {
+  transactionFileController,
+  AttachFileRequest,
+} from '../controllers/transactionFileController';
 import { validateRequest } from '../middlewares/validation';
 import {
   CreateTransactionRequest,
@@ -100,6 +104,45 @@ router.delete(
   '/:id',
   handleRequest((req: Request) =>
     transactionController.deleteTransaction(req.params.id, req.userId ?? ''),
+  ),
+);
+
+router.post(
+  '/:id/attachments',
+  validateRequest(AttachFileRequest),
+  handleRequest(
+    (req: Request) =>
+      transactionFileController.attachFile(
+        req.params.id,
+        req.userId ?? '',
+        req.body,
+      ),
+    201,
+  ),
+);
+
+router.get(
+  '/:id/attachments',
+  handleRequest(
+    (req: Request) =>
+      transactionFileController.getTransactionFiles(
+        req.params.id,
+        req.userId ?? '',
+      ),
+    200,
+  ),
+);
+
+router.delete(
+  '/:id/attachments/:fileId',
+  handleRequest(
+    (req: Request) =>
+      transactionFileController.removeFile(
+        req.params.id,
+        req.params.fileId,
+        req.userId ?? '',
+      ),
+    200,
   ),
 );
 

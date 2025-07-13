@@ -1,13 +1,14 @@
 import aiServiceFactory from './ai/aiServiceFactory';
 import transactionRepository from '../repositories/transactionRepository';
+import transactionFileRepository from '../repositories/transactionFileRepository';
 import {
   CreateTransaction,
   TransactionFilters,
   Transaction,
-  TransactionItem,
   TransactionSummaryFilters,
   TransactionSummary,
   TransactionStatus,
+  TransactionFile,
 } from '../types/transaction';
 import { CreateTransactionRequest } from '../controllers/requests';
 import createTransactionValidator from '../validators/createTransactionValidator';
@@ -17,6 +18,7 @@ import logger from '../utils/logger';
 import { Category } from '../types/category';
 import TransactionNotifierFactory from './transactionNotification/transactionNotifierFactory';
 import userSettingsService from '../services/userSettingsService';
+import { transactionAttachmentFileUrlBuilder } from './transactionAttachmentFileUrlBuilder';
 
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
@@ -128,6 +130,64 @@ class TransactionService {
     return transactionRepository.deleteTransaction(id, userId);
   }
 
+  public async attachFile(
+    transactionId: string,
+    userId: string,
+    fileData: {
+      fileName: string;
+      fileKey: string;
+      fileSize: number;
+      mimeType: string;
+    },
+  ): Promise<void> {
+    // Verify transaction exists and belongs to user
+    await this.assertTransactionExists(transactionId, userId);
+
+    await transactionFileRepository.create({
+      transactionId,
+      ...fileData,
+    });
+
+    logger.debug(`File attached to transaction ${transactionId}`, fileData);
+  }
+
+  public async getTransactionFiles(
+    transactionId: string,
+    userId: string,
+  ): Promise<any[]> {
+    await this.assertTransactionExists(transactionId, userId);
+
+    const files =
+      await transactionFileRepository.findByTransactionId(transactionId);
+
+    return Promise.all(
+      files.map(async (file) => {
+        const fileUrl = await transactionAttachmentFileUrlBuilder(file.fileKey);
+        return {
+          id: file.id,
+          fileName: file.fileName,
+          fileUrl, // signed URL for frontend
+          fileSize: file.fileSize,
+          mimeType: file.mimeType,
+        };
+      }),
+    );
+  }
+
+  public async removeFile(
+    transactionId: string,
+    fileId: string,
+    userId: string,
+  ): Promise<void> {
+    await this.assertTransactionExists(transactionId, userId);
+    await this.assertTransactionFileExists(fileId, transactionId);
+
+    await transactionFileRepository.markForDeletion(fileId);
+    logger.debug(
+      `File ${fileId} marked for deletion from transaction ${transactionId}`,
+    );
+  }
+
   private async updateCategory(
     transaction: CreateTransaction,
   ): Promise<CreateTransaction> {
@@ -233,6 +293,28 @@ class TransactionService {
         `Failed to notify transaction created: ${transactionId} - ${error}`,
       );
     }
+  }
+
+  private async assertTransactionExists(
+    transactionId: string,
+    userId: string,
+  ): Promise<Transaction> {
+    const transaction = await this.getTransactionItem(transactionId, userId);
+    if (!transaction) {
+      throw new Error('Transaction not found or access denied');
+    }
+    return transaction;
+  }
+
+  private async assertTransactionFileExists(
+    fileId: string,
+    transactionId: string,
+  ): Promise<TransactionFile> {
+    const file = await transactionFileRepository.findById(fileId);
+    if (!file || file.transactionId !== transactionId) {
+      throw new Error('File not found or access denied');
+    }
+    return file;
   }
 }
 
