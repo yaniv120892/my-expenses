@@ -19,3 +19,24 @@ export async function transactionAttachmentFileUrlBuilder(
   });
   return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
 }
+
+export async function buildPreviewUrl(key: string, expiresInSeconds = 600) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.TRANSACTION_ATTACHMENT_S3_BUCKET_NAME!,
+    Key: key,
+  });
+  return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+}
+
+export async function buildDownloadUrl(
+  key: string,
+  filename: string,
+  expiresInSeconds = 600,
+) {
+  const command = new GetObjectCommand({
+    Bucket: process.env.TRANSACTION_ATTACHMENT_S3_BUCKET_NAME!,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${filename}"`,
+  });
+  return getSignedUrl(s3Client, command, { expiresIn: expiresInSeconds });
+}
