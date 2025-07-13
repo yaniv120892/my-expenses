@@ -12,7 +12,7 @@ const axios_1 = __importDefault(require("axios"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionNotifierFactory_1 = __importDefault(require("./transactionNotification/transactionNotifierFactory"));
 const userSettingsService_1 = __importDefault(require("../services/userSettingsService"));
-const transactionAttachmentFileUrlBuilder_1 = require("./transactionAttachmentFileUrlBuilder");
+const transactionAttachmentFileUtils_1 = require("./transactionAttachmentFileUtils");
 class TransactionService {
     constructor() {
         this.aiService = aiServiceFactory_1.default.getAIService();
@@ -85,8 +85,8 @@ class TransactionService {
         await this.assertTransactionExists(transactionId, userId);
         const files = await transactionFileRepository_1.default.findByTransactionId(transactionId);
         return Promise.all(files.map(async (file) => {
-            const previewFileUrl = await (0, transactionAttachmentFileUrlBuilder_1.buildPreviewUrl)(file.fileKey);
-            const downloadableFileUrl = await (0, transactionAttachmentFileUrlBuilder_1.buildDownloadUrl)(file.fileKey, file.fileName);
+            const previewFileUrl = await (0, transactionAttachmentFileUtils_1.buildPreviewUrl)(file.fileKey);
+            const downloadableFileUrl = await (0, transactionAttachmentFileUtils_1.buildDownloadUrl)(file.fileKey, file.fileName);
             return {
                 id: file.id,
                 fileName: file.fileName,
@@ -102,6 +102,10 @@ class TransactionService {
         await this.assertTransactionFileExists(fileId, transactionId);
         await transactionFileRepository_1.default.markForDeletion(fileId);
         logger_1.default.debug(`File ${fileId} marked for deletion from transaction ${transactionId}`);
+    }
+    async getPresignedUploadUrl(transactionId, userId, fileName, mimeType) {
+        await this.assertTransactionExists(transactionId, userId);
+        return (0, transactionAttachmentFileUtils_1.getPresignedUploadUrl)(transactionId, fileName, mimeType);
     }
     async updateCategory(transaction) {
         if (transaction.categoryId) {

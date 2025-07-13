@@ -3,12 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.transactionFileController = exports.AttachFileRequest = void 0;
+exports.transactionFileController = exports.GetPresignedUploadUrlRequest = exports.AttachFileRequest = void 0;
 const transactionService_1 = __importDefault(require("../services/transactionService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 class AttachFileRequest {
 }
 exports.AttachFileRequest = AttachFileRequest;
+class GetPresignedUploadUrlRequest {
+}
+exports.GetPresignedUploadUrlRequest = GetPresignedUploadUrlRequest;
 class TransactionFileController {
     async attachFile(transactionId, userId, data) {
         try {
@@ -87,6 +90,29 @@ class TransactionFileController {
                 transactionId,
                 fileId,
                 userId,
+                error,
+            });
+            throw error;
+        }
+    }
+    async getPresignedUploadUrl(transactionId, userId, data) {
+        const { fileName, mimeType } = data;
+        try {
+            logger_1.default.debug('Generating presigned S3 upload URL', {
+                transactionId,
+                userId,
+                fileName,
+                mimeType,
+            });
+            const result = await transactionService_1.default.getPresignedUploadUrl(transactionId, userId, fileName, mimeType);
+            return result;
+        }
+        catch (error) {
+            logger_1.default.error('Failed to generate presigned upload URL', {
+                transactionId,
+                userId,
+                fileName,
+                mimeType,
                 error,
             });
             throw error;

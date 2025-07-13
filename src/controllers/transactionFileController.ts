@@ -8,6 +8,11 @@ export class AttachFileRequest {
   mimeType: string;
 }
 
+export class GetPresignedUploadUrlRequest {
+  fileName: string;
+  mimeType: string;
+}
+
 class TransactionFileController {
   async attachFile(
     transactionId: string,
@@ -101,6 +106,38 @@ class TransactionFileController {
         transactionId,
         fileId,
         userId,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  async getPresignedUploadUrl(
+    transactionId: string,
+    userId: string,
+    data: GetPresignedUploadUrlRequest,
+  ) {
+    const { fileName, mimeType } = data;
+    try {
+      logger.debug('Generating presigned S3 upload URL', {
+        transactionId,
+        userId,
+        fileName,
+        mimeType,
+      });
+      const result = await transactionService.getPresignedUploadUrl(
+        transactionId,
+        userId,
+        fileName,
+        mimeType,
+      );
+      return result;
+    } catch (error) {
+      logger.error('Failed to generate presigned upload URL', {
+        transactionId,
+        userId,
+        fileName,
+        mimeType,
         error,
       });
       throw error;
