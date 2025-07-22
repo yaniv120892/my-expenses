@@ -137,6 +137,9 @@ export class GetTransactionsRequest {
   @IsString()
   searchTerm?: string;
 
+  @IsOptional()
+  smartSearch?: boolean;
+
   @IsNumber()
   @Min(1)
   @Type(() => Number)

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const client_2 = __importDefault(require("../prisma/client"));
 const date_fns_1 = require("date-fns");
+const fuse_js_1 = __importDefault(require("fuse.js"));
 class TransactionRepository {
     async getTransactionsSummary(filters) {
         const { startDate, endDate } = this.getNormalizedDateRange(filters.startDate, filters.endDate);
@@ -46,22 +47,11 @@ class TransactionRepository {
     }
     async getTransactions(filters) {
         const { startDate, endDate } = this.getNormalizedDateRange(filters.startDate, filters.endDate);
-        const transactions = await client_2.default.transaction.findMany({
-            where: Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, (filters.startDate && filters.endDate
-                ? { date: { gte: startDate, lte: endDate } }
-                : filters.startDate
-                    ? { date: { gte: startDate } }
-                    : filters.endDate
-                        ? { date: { lte: endDate } }
-                        : {})), (filters.categoryId ? { categoryId: filters.categoryId } : {})), (filters.transactionType ? { type: filters.transactionType } : {})), (filters.searchTerm
-                ? { description: { contains: filters.searchTerm } }
-                : {})), { status: filters.status || client_1.TransactionStatus.APPROVED, userId: filters.userId }),
-            take: filters.perPage,
-            skip: (filters.page - 1) * filters.perPage,
-            include: { category: true },
-            orderBy: { date: 'desc' },
-        });
-        return transactions.map(this.mapToDomain);
+        const smartSearch = filters.smartSearch !== undefined ? filters.smartSearch : true;
+        if (filters.searchTerm && !smartSearch) {
+            return this.useStrictSearch(filters, startDate, endDate);
+        }
+        return this.useSmartSearch(filters, startDate, endDate);
     }
     async getPendingTransactions(userId) {
         const transactions = await client_2.default.transaction.findMany({
@@ -164,6 +154,50 @@ class TransactionRepository {
             include: { category: true },
         });
         return potentialTransactions.map(this.mapToDomain);
+    }
+    async useStrictSearch(filters, startDate, endDate) {
+        const transactions = await client_2.default.transaction.findMany({
+            where: Object.assign(Object.assign(Object.assign(Object.assign({}, (filters.startDate && filters.endDate
+                ? { date: { gte: startDate, lte: endDate } }
+                : filters.startDate
+                    ? { date: { gte: startDate } }
+                    : filters.endDate
+                        ? { date: { lte: endDate } }
+                        : {})), (filters.categoryId ? { categoryId: filters.categoryId } : {})), (filters.transactionType ? { type: filters.transactionType } : {})), { description: { contains: filters.searchTerm }, status: filters.status || client_1.TransactionStatus.APPROVED, userId: filters.userId }),
+            include: { category: true },
+            orderBy: { date: 'desc' },
+            skip: (filters.page - 1) * filters.perPage,
+            take: filters.perPage,
+        });
+        return transactions.map(this.mapToDomain);
+    }
+    async useSmartSearch(filters, startDate, endDate) {
+        var _a;
+        const transactions = await client_2.default.transaction.findMany({
+            where: Object.assign(Object.assign(Object.assign(Object.assign({}, (filters.startDate && filters.endDate
+                ? { date: { gte: startDate, lte: endDate } }
+                : filters.startDate
+                    ? { date: { gte: startDate } }
+                    : filters.endDate
+                        ? { date: { lte: endDate } }
+                        : {})), (filters.categoryId ? { categoryId: filters.categoryId } : {})), (filters.transactionType ? { type: filters.transactionType } : {})), { status: filters.status || client_1.TransactionStatus.APPROVED, userId: filters.userId }),
+            include: { category: true },
+            orderBy: { date: 'desc' },
+        });
+        let filtered = transactions;
+        if (filters.searchTerm && ((_a = filters.smartSearch) !== null && _a !== void 0 ? _a : true)) {
+            const fuse = new fuse_js_1.default(transactions, {
+                keys: ['description'],
+                threshold: 0.8,
+                ignoreLocation: true,
+                minMatchCharLength: 2,
+            });
+            filtered = fuse.search(filters.searchTerm).map((result) => result.item);
+        }
+        const page = filters.page || 1;
+        const perPage = filters.perPage || 10;
+        const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+        return paginated.map(this.mapToDomain);
     }
 }
 exports.default = new TransactionRepository();

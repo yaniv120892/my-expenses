@@ -58,6 +58,8 @@ class TransactionService {
     return transactionRepository.getTransactions({
       ...filters,
       status: filters.status || 'APPROVED',
+      smartSearch:
+        filters.smartSearch !== undefined ? filters.smartSearch : true,
     });
   }
 

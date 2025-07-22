@@ -30,6 +30,9 @@ router.get('/', (0, validation_1.validateRequest)(requests_1.GetTransactionsRequ
             ? parseInt(req.query.perPage, 10)
             : 10,
         searchTerm: req.query.searchTerm,
+        smartSearch: req.query.smartSearch !== undefined
+            ? req.query.smartSearch === 'true'
+            : true,
     }, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
 }, 200));
 router.get('/pending', (0, handleRequest_1.handleRequest)((req) => {

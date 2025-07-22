@@ -11,6 +11,7 @@ import {
   UpdateTransactionDbModel,
 } from 'repositories/types';
 import { endOfDay, startOfDay } from 'date-fns';
+import Fuse from 'fuse.js';
 
 class TransactionRepository {
   public async getTransactionsSummary(
@@ -71,30 +72,13 @@ class TransactionRepository {
       filters.endDate,
     );
 
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        ...(filters.startDate && filters.endDate
-          ? { date: { gte: startDate, lte: endDate } }
-          : filters.startDate
-            ? { date: { gte: startDate } }
-            : filters.endDate
-              ? { date: { lte: endDate } }
-              : {}),
-        ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
-        ...(filters.transactionType ? { type: filters.transactionType } : {}),
-        ...(filters.searchTerm
-          ? { description: { contains: filters.searchTerm } }
-          : {}),
-        status: filters.status || TransactionStatus.APPROVED,
-        userId: filters.userId,
-      },
-      take: filters.perPage,
-      skip: (filters.page - 1) * filters.perPage,
-      include: { category: true },
-      orderBy: { date: 'desc' },
-    });
+    const smartSearch =
+      filters.smartSearch !== undefined ? filters.smartSearch : true;
 
-    return transactions.map(this.mapToDomain);
+    if (filters.searchTerm && !smartSearch) {
+      return this.useStrictSearch(filters, startDate, endDate);
+    }
+    return this.useSmartSearch(filters, startDate, endDate);
   }
 
   public async getPendingTransactions(userId: string): Promise<Transaction[]> {
@@ -225,6 +209,74 @@ class TransactionRepository {
     });
 
     return potentialTransactions.map(this.mapToDomain);
+  }
+
+  private async useStrictSearch(
+    filters: TransactionFilters,
+    startDate: Date | undefined,
+    endDate: Date | undefined,
+  ): Promise<Transaction[]> {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        ...(filters.startDate && filters.endDate
+          ? { date: { gte: startDate, lte: endDate } }
+          : filters.startDate
+            ? { date: { gte: startDate } }
+            : filters.endDate
+              ? { date: { lte: endDate } }
+              : {}),
+        ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+        ...(filters.transactionType ? { type: filters.transactionType } : {}),
+        description: { contains: filters.searchTerm },
+        status: filters.status || TransactionStatus.APPROVED,
+        userId: filters.userId,
+      },
+      include: { category: true },
+      orderBy: { date: 'desc' },
+      skip: (filters.page - 1) * filters.perPage,
+      take: filters.perPage,
+    });
+    return transactions.map(this.mapToDomain);
+  }
+
+  private async useSmartSearch(
+    filters: TransactionFilters,
+    startDate: Date | undefined,
+    endDate: Date | undefined,
+  ): Promise<Transaction[]> {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        ...(filters.startDate && filters.endDate
+          ? { date: { gte: startDate, lte: endDate } }
+          : filters.startDate
+            ? { date: { gte: startDate } }
+            : filters.endDate
+              ? { date: { lte: endDate } }
+              : {}),
+        ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+        ...(filters.transactionType ? { type: filters.transactionType } : {}),
+        status: filters.status || TransactionStatus.APPROVED,
+        userId: filters.userId,
+      },
+      include: { category: true },
+      orderBy: { date: 'desc' },
+    });
+
+    let filtered = transactions;
+    if (filters.searchTerm && (filters.smartSearch ?? true)) {
+      const fuse = new Fuse(transactions, {
+        keys: ['description'],
+        threshold: 0.8,
+        ignoreLocation: true,
+        minMatchCharLength: 2,
+      });
+      filtered = fuse.search(filters.searchTerm).map((result) => result.item);
+    }
+
+    const page = filters.page || 1;
+    const perPage = filters.perPage || 10;
+    const paginated = filtered.slice((page - 1) * perPage, page * perPage);
+    return paginated.map(this.mapToDomain);
   }
 }
 

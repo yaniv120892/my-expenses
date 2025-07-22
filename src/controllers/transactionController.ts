@@ -51,6 +51,10 @@ class TransactionController {
           : undefined,
         transactionType: getTransactionsRequest.type,
         userId,
+        smartSearch:
+          getTransactionsRequest.smartSearch !== undefined
+            ? getTransactionsRequest.smartSearch
+            : true,
       });
       logger.debug(
         'Done get transactions',

@@ -35,11 +35,13 @@ export interface TransactionSummaryFilters {
   searchTerm?: string;
   status?: TransactionStatus;
   userId: string;
+  smartSearch?: boolean;
 }
 
 export interface TransactionFilters extends TransactionSummaryFilters {
   page: number;
   perPage: number;
+  smartSearch?: boolean;
 }
 
 export interface TransactionItem {

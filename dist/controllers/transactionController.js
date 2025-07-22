@@ -25,7 +25,9 @@ class TransactionController {
                     ? new Date(getTransactionsRequest.startDate)
                     : undefined, endDate: getTransactionsRequest.endDate
                     ? new Date(getTransactionsRequest.endDate)
-                    : undefined, transactionType: getTransactionsRequest.type, userId }));
+                    : undefined, transactionType: getTransactionsRequest.type, userId, smartSearch: getTransactionsRequest.smartSearch !== undefined
+                    ? getTransactionsRequest.smartSearch
+                    : true }));
             logger_1.default.debug('Done get transactions', getTransactionsRequest, transactions);
             return transactions;
         }
