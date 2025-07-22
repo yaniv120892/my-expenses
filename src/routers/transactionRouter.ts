@@ -60,6 +60,10 @@ router.get(
             ? parseInt(req.query.perPage as string, 10)
             : 10,
           searchTerm: req.query.searchTerm as string | undefined,
+          smartSearch:
+            req.query.smartSearch !== undefined
+              ? req.query.smartSearch === 'true'
+              : true,
         },
         req.userId ?? '',
       ),

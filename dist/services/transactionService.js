@@ -35,7 +35,7 @@ class TransactionService {
         return transactionId;
     }
     async getTransactions(filters) {
-        return transactionRepository_1.default.getTransactions(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));
+        return transactionRepository_1.default.getTransactions(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED', smartSearch: filters.smartSearch !== undefined ? filters.smartSearch : true }));
     }
     async getAllTransactions(filters) {
         const transactions = [];

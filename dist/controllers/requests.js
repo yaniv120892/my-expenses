@@ -161,6 +161,10 @@ __decorate([
     __metadata("design:type", String)
 ], GetTransactionsRequest.prototype, "searchTerm", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], GetTransactionsRequest.prototype, "smartSearch", void 0);
+__decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(1),
     (0, class_transformer_1.Type)(() => Number),
