@@ -1,45 +1,13 @@
 import winston from 'winston';
-import TransportStream from 'winston-transport';
-import https from 'https';
+import { Logtail } from '@logtail/node';
+import { LogtailTransport } from '@logtail/winston';
 
 const logtailToken = process.env.LOGTAIL_TOKEN || '';
 const logtailHost = process.env.LOGTAIL_HOST || 'in.logtail.com';
 
-class LogtailJsonTransport extends TransportStream {
-  log(info: any, callback: () => void) {
-    setImmediate(() => this.emit('logged', info));
-    if (!logtailToken) return callback();
-
-    // Prepare the log object
-    const log = {
-      message: info.message,
-      level: info.level,
-      ...info,
-    };
-    const data = JSON.stringify(log);
-    const options = {
-      hostname: logtailHost,
-      port: 443,
-      path: '/',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${logtailToken}`,
-        'Content-Length': Buffer.byteLength(data),
-      },
-    };
-    const req = https.request(options, (res) => {
-      res.on('data', () => {}); 
-      res.on('end', () => {});
-    });
-    req.on('error', (err) => {
-      console.error('Error logging to Logtail', err.message);
-    });
-    req.write(data);
-    req.end();
-    callback();
-  }
-}
+const logtail = new Logtail(logtailToken, {
+  endpoint: `https://${logtailHost}`,
+});
 
 const logFormat = winston.format.printf(
   ({ level, message, timestamp, ...meta }) => {
@@ -53,7 +21,7 @@ const logger = winston.createLogger({
   format: winston.format.combine(winston.format.timestamp(), logFormat),
   transports: [
     new winston.transports.Console(), // Log to console
-    new LogtailJsonTransport(), 
+    new LogtailTransport(logtail),
   ],
 });
 
