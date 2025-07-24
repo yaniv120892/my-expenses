@@ -17,7 +17,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestLogger = void 0;
 const winston_1 = __importDefault(require("winston"));
 const winston_transport_1 = __importDefault(require("winston-transport"));
-const node_fetch_1 = __importDefault(require("node-fetch"));
 const logtailToken = process.env.LOGTAIL_TOKEN || '';
 const logtailHost = process.env.LOGTAIL_HOST || '';
 const logtailEndpoint = `https://${logtailHost}`;
@@ -26,7 +25,7 @@ async function logToLogtail(message, level = 'info', meta = {}) {
         return;
     }
     try {
-        await (0, node_fetch_1.default)(logtailEndpoint, {
+        await fetch(logtailEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
