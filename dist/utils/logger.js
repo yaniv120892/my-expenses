@@ -16,24 +16,49 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.requestLogger = void 0;
 const winston_1 = __importDefault(require("winston"));
-const node_1 = require("@logtail/node");
-const winston_2 = require("@logtail/winston");
+const winston_transport_1 = __importDefault(require("winston-transport"));
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const logtailToken = process.env.LOGTAIL_TOKEN || '';
-const logtailHost = process.env.LOGTAIL_HOST || 'in.logtail.com';
-const logtail = new node_1.Logtail(logtailToken, {
-    endpoint: `https://${logtailHost}`,
-});
+const logtailHost = process.env.LOGTAIL_HOST || '';
+const logtailEndpoint = `https://${logtailHost}`;
+async function logToLogtail(message, level = 'info', meta = {}) {
+    if (!logtailToken || !logtailHost) {
+        return;
+    }
+    try {
+        await (0, node_fetch_1.default)(logtailEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${logtailToken}`,
+            },
+            body: JSON.stringify(Object.assign({ dt: new Date().toISOString(), level,
+                message }, meta)),
+        });
+    }
+    catch (err) {
+        console.error('Error logging to Logtail:', err);
+    }
+}
 const logFormat = winston_1.default.format.printf((_a) => {
     var { level, message, timestamp } = _a, meta = __rest(_a, ["level", "message", "timestamp"]);
     const metaString = Object.keys(meta).length ? JSON.stringify(meta) : '';
     return `${timestamp} ${level}: ${message} ${metaString}`;
 });
+class LogtailHttpTransport extends winston_transport_1.default {
+    log(info, callback) {
+        setImmediate(() => {
+            logToLogtail(info.message, info.level, info);
+            callback();
+        });
+    }
+}
 const logger = winston_1.default.createLogger({
     level: process.env.LOG_LEVEL || 'debug',
     format: winston_1.default.format.combine(winston_1.default.format.timestamp(), logFormat),
     transports: [
         new winston_1.default.transports.Console(), // Log to console
-        new winston_2.LogtailTransport(logtail),
+        new LogtailHttpTransport(), // Log to Logtail via HTTP
     ],
 });
 const requestLogger = (req, res, next) => {
