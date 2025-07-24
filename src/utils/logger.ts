@@ -1,6 +1,5 @@
 import winston from 'winston';
 import Transport from 'winston-transport';
-import fetch from 'node-fetch';
 
 const logtailToken = process.env.LOGTAIL_TOKEN || '';
 const logtailHost = process.env.LOGTAIL_HOST || '';
