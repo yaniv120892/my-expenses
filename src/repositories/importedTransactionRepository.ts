@@ -117,7 +117,6 @@ export class ImportedTransactionRepository {
     });
   }
 
-
   private async findExistingTransactions(
     importId: string,
     transactions: {
