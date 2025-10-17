@@ -1,15 +1,21 @@
-import { Import, ImportFileType, ImportStatus, ImportBankSourceType } from '@prisma/client';
+import {
+  Import,
+  ImportFileType,
+  ImportStatus,
+  ImportBankSourceType,
+} from '@prisma/client';
 import prisma from '../prisma/client';
 
 export class ImportRepository {
   async create(data: {
     fileUrl: string;
     originalFileName: string;
-    importType: ImportFileType;
-    bankSourceType: ImportBankSourceType;
+    importType: ImportFileType | null;
+    bankSourceType: ImportBankSourceType | null;
     userId: string;
-    creditCardLastFourDigits: string;
-    paymentMonth: string;
+    creditCardLastFourDigits?: string | null;
+    paymentMonth: string | null;
+    excelExtractionRequestId: string | null;
   }): Promise<Import> {
     return prisma.import.create({
       data: {
@@ -28,7 +34,15 @@ export class ImportRepository {
   async findByUserId(userId: string): Promise<Import[]> {
     return prisma.import.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { paymentMonth: 'desc' }],
+    });
+  }
+
+  async findByExtractionRequestId(
+    excelExtractionRequestId: string,
+  ): Promise<Import | null> {
+    return prisma.import.findFirst({
+      where: { excelExtractionRequestId },
     });
   }
 

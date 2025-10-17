@@ -115,7 +115,7 @@ model Import {
   userId        String               @db.Uuid
   fileUrl       String
   originalFileName String
-  importType               ImportFileType
+  importType               ImportFileType?
   bankSourceType           ImportBankSourceType?
   status        ImportStatus         @default(PENDING)
   error         String?
@@ -125,9 +125,11 @@ model Import {
   
   creditCardLastFourDigits String? /// @encrypted
   paymentMonth             String? // Format: MM/YYYY
+  excelExtractionRequestId String?
   user                     User    @relation(fields: [userId], references: [id])
 
   @@index([userId])
+  @@index([excelExtractionRequestId])
 }
 
 model ImportedTransaction {
