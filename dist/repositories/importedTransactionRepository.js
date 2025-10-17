@@ -59,6 +59,35 @@ class ImportedTransactionRepository {
             data: { deleted: true },
         });
     }
+    async filterDuplicates(importId, transactions) {
+        if (transactions.length === 0)
+            return [];
+        const existingTransactions = await this.findExistingTransactions(importId, transactions);
+        // Create a set of existing transaction keys for fast lookup
+        const existingKeys = new Set(existingTransactions.map((tx) => `${tx.description}|${tx.value}|${tx.date.getTime()}|${tx.type}`));
+        // Filter out transactions that already exist
+        return transactions.filter((tx) => {
+            const key = `${tx.description}|${tx.value}|${tx.date.getTime()}|${tx.type}`;
+            return !existingKeys.has(key);
+        });
+    }
+    async findExistingTransactions(importId, transactions) {
+        if (transactions.length === 0)
+            return [];
+        // Build a query to find existing transactions that match any of the provided transactions
+        const existingTransactions = await client_1.default.importedTransaction.findMany({
+            where: {
+                importId,
+                OR: transactions.map((tx) => ({
+                    description: tx.description,
+                    value: tx.value,
+                    date: tx.date,
+                    type: tx.type,
+                })),
+            },
+        });
+        return existingTransactions;
+    }
 }
 exports.ImportedTransactionRepository = ImportedTransactionRepository;
 exports.importedTransactionRepository = new ImportedTransactionRepository();

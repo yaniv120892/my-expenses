@@ -162,30 +162,91 @@ class ExcelExtractionWebhookController {
       },
     });
 
-    if (transactions.length > 0) {
+    // Check for duplicate import after we have the metadata
+    const existingImport = await importRepository.findExisting(
+      importRecord.userId,
+      result.metadata.paymentMonth,
+      result.metadata.creditCardLastFour,
+    );
+
+    let finalImportId = importId;
+    let shouldDeleteCurrentImport = false;
+
+    if (existingImport && existingImport.id !== importId) {
+      logger.info('Found duplicate import, merging transactions', {
+        currentImportId: importId,
+        existingImportId: existingImport.id,
+        paymentMonth: result.metadata.paymentMonth,
+        creditCardLastFour: result.metadata.creditCardLastFour,
+      });
+
+      // Filter out duplicate transactions before merging
+      const nonDuplicateTransactions =
+        await importedTransactionRepository.filterDuplicates(
+          existingImport.id,
+          transactions.map((transaction) => ({
+            ...transaction,
+            userId: importRecord.userId,
+          })),
+        );
+
+      if (nonDuplicateTransactions.length > 0) {
+        // Create non-duplicate transactions with the existing import ID
+        await importedTransactionRepository.createMany(
+          nonDuplicateTransactions.map((transaction) => ({
+            ...transaction,
+            importId: existingImport.id,
+          })),
+        );
+
+        logger.info('Merged non-duplicate transactions to existing import', {
+          existingImportId: existingImport.id,
+          mergedTransactionCount: nonDuplicateTransactions.length,
+          totalTransactionCount: transactions.length,
+        });
+      }
+
+      // Use the existing import for potential matching
+      finalImportId = existingImport.id;
+      shouldDeleteCurrentImport = true;
+    }
+
+    if (transactions.length > 0 && !shouldDeleteCurrentImport) {
       await importedTransactionRepository.createMany(
         transactions.map((transaction) => ({
           ...transaction,
           userId: importRecord.userId,
         })),
       );
-
-      // Find potential matches for imported transactions
-      try {
-        await importService.findPotentialMatchesForImport(
-          importId,
-          importRecord.userId,
-        );
-      } catch (error) {
-        logger.error('Error finding potential matches for import', {
-          importId,
-          error,
-        });
-        // Continue processing even if matching fails
-      }
     }
 
-    await importRepository.updateStatus(importId, ImportStatus.COMPLETED);
+    // Find potential matches for imported transactions
+    try {
+      await importService.findPotentialMatchesForImport(
+        finalImportId,
+        importRecord.userId,
+      );
+    } catch (error) {
+      logger.error('Error finding potential matches for import', {
+        importId: finalImportId,
+        error,
+      });
+      // Continue processing even if matching fails
+    }
+
+    if (shouldDeleteCurrentImport) {
+      // Delete the duplicate import record
+      await prisma.import.delete({
+        where: { id: importId },
+      });
+
+      logger.info('Deleted duplicate import record', {
+        deletedImportId: importId,
+        keptImportId: finalImportId,
+      });
+    } else {
+      await importRepository.updateStatus(importId, ImportStatus.COMPLETED);
+    }
 
     logger.info('Completed extraction processed successfully', {
       importId,
