@@ -15,6 +15,7 @@ const scheduledTransactionRouter_1 = __importDefault(require("./scheduledTransac
 const trendRouter_1 = __importDefault(require("./trendRouter"));
 const importRouter_1 = __importDefault(require("./importRouter"));
 const chatRouter_1 = __importDefault(require("./chatRouter"));
+const excelExtractionWebhookController_1 = require("../controllers/excelExtractionWebhookController");
 const router = express_1.default.Router();
 router.use('/api/auth', authRouter_1.default);
 router.use('/api/transactions', transactionRouter_1.default);
@@ -29,5 +30,8 @@ router.use('/api/imports', importRouter_1.default);
 router.use('/api/chat', chatRouter_1.default);
 router.get('/', (req, res) => {
     res.send('ok');
+});
+router.post('/excel-extraction-agent/webhook', (req, res) => {
+    excelExtractionWebhookController_1.excelExtractionWebhookController.handleWebhook(req, res);
 });
 exports.default = router;

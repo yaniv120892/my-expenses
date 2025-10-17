@@ -20,7 +20,12 @@ class ImportRepository {
     async findByUserId(userId) {
         return client_2.default.import.findMany({
             where: { userId },
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ createdAt: 'desc' }, { paymentMonth: 'desc' }],
+        });
+    }
+    async findByExtractionRequestId(excelExtractionRequestId) {
+        return client_2.default.import.findFirst({
+            where: { excelExtractionRequestId },
         });
     }
     async findExisting(userId, paymentMonth, creditCardLastFourDigits, bankSourceType) {

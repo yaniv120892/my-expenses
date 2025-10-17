@@ -10,6 +10,7 @@ import scheduledTransactionRouter from './scheduledTransactionRouter';
 import trendRouter from './trendRouter';
 import importRouter from './importRouter';
 import chatRouter from './chatRouter';
+import { excelExtractionWebhookController } from '../controllers/excelExtractionWebhookController';
 
 const router = express.Router();
 
@@ -28,4 +29,9 @@ router.use('/api/chat', chatRouter);
 router.get('/', (req, res) => {
   res.send('ok');
 });
+
+router.post('/excel-extraction-agent/webhook', (req, res) => {
+  excelExtractionWebhookController.handleWebhook(req, res);
+});
+
 export default router;
