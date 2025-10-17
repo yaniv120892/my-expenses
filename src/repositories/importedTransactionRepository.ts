@@ -83,6 +83,67 @@ export class ImportedTransactionRepository {
       data: { deleted: true },
     });
   }
+
+  async filterDuplicates(
+    importId: string,
+    transactions: {
+      description: string;
+      value: number;
+      date: Date;
+      type: TransactionType;
+      rawData: any;
+      matchingTransactionId: string | null;
+      userId: string;
+    }[],
+  ): Promise<typeof transactions> {
+    if (transactions.length === 0) return [];
+
+    const existingTransactions = await this.findExistingTransactions(
+      importId,
+      transactions,
+    );
+
+    // Create a set of existing transaction keys for fast lookup
+    const existingKeys = new Set(
+      existingTransactions.map(
+        (tx) => `${tx.description}|${tx.value}|${tx.date.getTime()}|${tx.type}`,
+      ),
+    );
+
+    // Filter out transactions that already exist
+    return transactions.filter((tx) => {
+      const key = `${tx.description}|${tx.value}|${tx.date.getTime()}|${tx.type}`;
+      return !existingKeys.has(key);
+    });
+  }
+
+
+  private async findExistingTransactions(
+    importId: string,
+    transactions: {
+      description: string;
+      value: number;
+      date: Date;
+      type: TransactionType;
+    }[],
+  ): Promise<ImportedTransaction[]> {
+    if (transactions.length === 0) return [];
+
+    // Build a query to find existing transactions that match any of the provided transactions
+    const existingTransactions = await prisma.importedTransaction.findMany({
+      where: {
+        importId,
+        OR: transactions.map((tx) => ({
+          description: tx.description,
+          value: tx.value,
+          date: tx.date,
+          type: tx.type,
+        })),
+      },
+    });
+
+    return existingTransactions;
+  }
 }
 
 export const importedTransactionRepository =

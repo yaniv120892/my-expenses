@@ -28,12 +28,11 @@ class ImportRepository {
             where: { excelExtractionRequestId },
         });
     }
-    async findExisting(userId, paymentMonth, creditCardLastFourDigits, bankSourceType) {
+    async findExisting(userId, paymentMonth, creditCardLastFourDigits) {
         const imports = await client_2.default.import.findMany({
             where: {
                 userId,
                 paymentMonth,
-                bankSourceType,
             },
             orderBy: { createdAt: 'desc' },
         });

@@ -50,13 +50,11 @@ export class ImportRepository {
     userId: string,
     paymentMonth: string,
     creditCardLastFourDigits: string,
-    bankSourceType: ImportBankSourceType,
   ): Promise<Import | null> {
     const imports = await prisma.import.findMany({
       where: {
         userId,
         paymentMonth,
-        bankSourceType,
       },
       orderBy: { createdAt: 'desc' },
     });

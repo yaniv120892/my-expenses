@@ -134,21 +134,59 @@ class ExcelExtractionWebhookController {
                     .bankSourceType,
             },
         });
-        if (transactions.length > 0) {
-            await importedTransactionRepository_1.importedTransactionRepository.createMany(transactions.map((transaction) => (Object.assign(Object.assign({}, transaction), { userId: importRecord.userId }))));
-            // Find potential matches for imported transactions
-            try {
-                await importService_1.importService.findPotentialMatchesForImport(importId, importRecord.userId);
-            }
-            catch (error) {
-                logger_1.default.error('Error finding potential matches for import', {
-                    importId,
-                    error,
+        // Check for duplicate import after we have the metadata
+        const existingImport = await importRepository_1.importRepository.findExisting(importRecord.userId, result.metadata.paymentMonth, result.metadata.creditCardLastFour);
+        let finalImportId = importId;
+        let shouldDeleteCurrentImport = false;
+        if (existingImport && existingImport.id !== importId) {
+            logger_1.default.info('Found duplicate import, merging transactions', {
+                currentImportId: importId,
+                existingImportId: existingImport.id,
+                paymentMonth: result.metadata.paymentMonth,
+                creditCardLastFour: result.metadata.creditCardLastFour,
+            });
+            // Filter out duplicate transactions before merging
+            const nonDuplicateTransactions = await importedTransactionRepository_1.importedTransactionRepository.filterDuplicates(existingImport.id, transactions.map((transaction) => (Object.assign(Object.assign({}, transaction), { userId: importRecord.userId }))));
+            if (nonDuplicateTransactions.length > 0) {
+                // Create non-duplicate transactions with the existing import ID
+                await importedTransactionRepository_1.importedTransactionRepository.createMany(nonDuplicateTransactions.map((transaction) => (Object.assign(Object.assign({}, transaction), { importId: existingImport.id }))));
+                logger_1.default.info('Merged non-duplicate transactions to existing import', {
+                    existingImportId: existingImport.id,
+                    mergedTransactionCount: nonDuplicateTransactions.length,
+                    totalTransactionCount: transactions.length,
                 });
-                // Continue processing even if matching fails
             }
+            // Use the existing import for potential matching
+            finalImportId = existingImport.id;
+            shouldDeleteCurrentImport = true;
         }
-        await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.COMPLETED);
+        if (transactions.length > 0 && !shouldDeleteCurrentImport) {
+            await importedTransactionRepository_1.importedTransactionRepository.createMany(transactions.map((transaction) => (Object.assign(Object.assign({}, transaction), { userId: importRecord.userId }))));
+        }
+        // Find potential matches for imported transactions
+        try {
+            await importService_1.importService.findPotentialMatchesForImport(finalImportId, importRecord.userId);
+        }
+        catch (error) {
+            logger_1.default.error('Error finding potential matches for import', {
+                importId: finalImportId,
+                error,
+            });
+            // Continue processing even if matching fails
+        }
+        if (shouldDeleteCurrentImport) {
+            // Delete the duplicate import record
+            await client_2.default.import.delete({
+                where: { id: importId },
+            });
+            logger_1.default.info('Deleted duplicate import record', {
+                deletedImportId: importId,
+                keptImportId: finalImportId,
+            });
+        }
+        else {
+            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.COMPLETED);
+        }
         logger_1.default.info('Completed extraction processed successfully', {
             importId,
             transactionCount: transactions.length,
