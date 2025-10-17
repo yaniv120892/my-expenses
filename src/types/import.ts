@@ -17,11 +17,17 @@ export interface Import {
   id: string;
   userId: string;
   fileUrl: string;
-  importType: ImportFileType;
+  originalFileName: string;
+  importType?: ImportFileType;
+  bankSourceType?: string;
   status: ImportStatus;
   error?: string;
   createdAt: Date;
+  updatedAt: Date;
   completedAt?: Date;
+  creditCardLastFourDigits?: string;
+  paymentMonth?: string;
+  excelExtractionRequestId?: string;
 }
 
 export interface ImportedTransaction {

@@ -120,6 +120,7 @@ model Import {
   status        ImportStatus         @default(PENDING)
   error         String?
   createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
   completedAt   DateTime?
   transactions  ImportedTransaction[]
   
