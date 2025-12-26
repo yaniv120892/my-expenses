@@ -21,6 +21,18 @@ class ImportRepository {
         return client_2.default.import.findMany({
             where: { userId },
             orderBy: [{ createdAt: 'desc' }, { paymentMonth: 'desc' }],
+            include: {
+                _count: {
+                    select: {
+                        transactions: {
+                            where: {
+                                status: client_1.ImportedTransactionStatus.PENDING,
+                                deleted: false,
+                            },
+                        },
+                    },
+                },
+            },
         });
     }
     async findByExtractionRequestId(excelExtractionRequestId) {
