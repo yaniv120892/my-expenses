@@ -124,7 +124,14 @@ class ImportService {
   }
 
   public async getImports(userId: string) {
-    return importRepository.findByUserId(userId);
+    const imports = await importRepository.findByUserId(userId);
+    return imports.map((imp) => {
+      const { _count, ...importData } = imp;
+      return {
+        ...importData,
+        isVerified: _count.transactions === 0,
+      };
+    });
   }
 
   public async getImportedTransactions(importId: string, userId: string) {

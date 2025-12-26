@@ -30,6 +30,10 @@ export interface Import {
   excelExtractionRequestId?: string;
 }
 
+export interface ImportWithVerification extends Import {
+  isVerified: boolean;
+}
+
 export interface ImportedTransaction {
   id: string;
   importId: string;

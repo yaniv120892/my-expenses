@@ -3,8 +3,15 @@ import {
   ImportFileType,
   ImportStatus,
   ImportBankSourceType,
+  ImportedTransactionStatus,
 } from '@prisma/client';
 import prisma from '../prisma/client';
+
+export type ImportWithPendingCount = Import & {
+  _count: {
+    transactions: number;
+  };
+};
 
 export class ImportRepository {
   async create(data: {
@@ -31,10 +38,22 @@ export class ImportRepository {
     });
   }
 
-  async findByUserId(userId: string): Promise<Import[]> {
+  async findByUserId(userId: string): Promise<ImportWithPendingCount[]> {
     return prisma.import.findMany({
       where: { userId },
       orderBy: [{ createdAt: 'desc' }, { paymentMonth: 'desc' }],
+      include: {
+        _count: {
+          select: {
+            transactions: {
+              where: {
+                status: ImportedTransactionStatus.PENDING,
+                deleted: false,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
