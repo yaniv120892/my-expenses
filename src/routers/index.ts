@@ -10,6 +10,7 @@ import scheduledTransactionRouter from './scheduledTransactionRouter';
 import trendRouter from './trendRouter';
 import importRouter from './importRouter';
 import chatRouter from './chatRouter';
+import dashboardRouter from './dashboardRouter';
 import { excelExtractionWebhookController } from '../controllers/excelExtractionWebhookController';
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.use('/api/scheduled-transactions', scheduledTransactionRouter);
 router.use('/api/trends', trendRouter);
 router.use('/api/imports', importRouter);
 router.use('/api/chat', chatRouter);
+router.use('/api/dashboard', dashboardRouter);
 
 router.get('/', (req, res) => {
   res.send('ok');
