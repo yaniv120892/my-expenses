@@ -75,6 +75,9 @@ class ImportedTransactionRepository {
                 status: client_1.ImportedTransactionStatus.PENDING,
                 deleted: false,
             },
+            include: {
+                matchingTransaction: true,
+            },
             orderBy: { date: 'desc' },
         });
     }

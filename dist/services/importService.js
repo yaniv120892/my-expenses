@@ -169,13 +169,27 @@ class ImportService {
         };
         for (const transaction of pendingTransactions) {
             try {
-                await this.approveImportedTransaction(transaction.id, userId, {
-                    description: transaction.description,
-                    value: transaction.value,
-                    date: transaction.date,
-                    type: transaction.type,
-                    categoryId: null,
-                });
+                if (transaction.matchingTransactionId) {
+                    // Merge with existing transaction
+                    const matchingTx = transaction.matchingTransaction;
+                    await this.mergeImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: (matchingTx === null || matchingTx === void 0 ? void 0 : matchingTx.categoryId) || transaction.matchingTransactionId,
+                    });
+                }
+                else {
+                    // Create new transaction
+                    await this.approveImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: null,
+                    });
+                }
                 result.succeeded++;
             }
             catch (error) {
@@ -224,13 +238,24 @@ class ImportService {
                 continue;
             result.total++;
             try {
-                await this.approveImportedTransaction(transaction.id, userId, {
-                    description: transaction.description,
-                    value: transaction.value,
-                    date: transaction.date,
-                    type: transaction.type,
-                    categoryId: matchingRule.categoryId,
-                });
+                if (transaction.matchingTransactionId) {
+                    await this.mergeImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: matchingRule.categoryId,
+                    });
+                }
+                else {
+                    await this.approveImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: matchingRule.categoryId,
+                    });
+                }
                 result.succeeded++;
             }
             catch (error) {
