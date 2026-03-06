@@ -4,16 +4,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.importedTransactionRepository = exports.ImportedTransactionRepository = void 0;
-const client_1 = __importDefault(require("../prisma/client"));
+const client_1 = require("@prisma/client");
+const client_2 = __importDefault(require("../prisma/client"));
 class ImportedTransactionRepository {
     async createMany(transactions) {
-        const result = await client_1.default.importedTransaction.createMany({
+        const result = await client_2.default.importedTransaction.createMany({
             data: transactions,
         });
         return result.count;
     }
     async findByUserIdAndImportId(userId, importId) {
-        return client_1.default.importedTransaction.findMany({
+        return client_2.default.importedTransaction.findMany({
             where: {
                 userId,
                 importId,
@@ -26,7 +27,7 @@ class ImportedTransactionRepository {
         });
     }
     async findByImportId(importId) {
-        return client_1.default.importedTransaction.findMany({
+        return client_2.default.importedTransaction.findMany({
             where: {
                 importId,
                 deleted: false,
@@ -35,7 +36,7 @@ class ImportedTransactionRepository {
         });
     }
     async findById(id) {
-        return client_1.default.importedTransaction.findUnique({
+        return client_2.default.importedTransaction.findUnique({
             where: { id },
             include: {
                 matchingTransaction: true,
@@ -43,21 +44,46 @@ class ImportedTransactionRepository {
         });
     }
     async delete(id) {
-        await client_1.default.importedTransaction.delete({
+        await client_2.default.importedTransaction.delete({
             where: { id },
         });
     }
     async updateStatus(id, userId, status) {
-        await client_1.default.importedTransaction.update({
+        await client_2.default.importedTransaction.update({
             where: { id, userId },
             data: { status },
         });
     }
     async softDelete(id, userId) {
-        await client_1.default.importedTransaction.update({
+        await client_2.default.importedTransaction.update({
             where: { id, userId },
             data: { deleted: true },
         });
+    }
+    async updateStatusBatch(ids, userId, status) {
+        const result = await client_2.default.importedTransaction.updateMany({
+            where: { id: { in: ids }, userId },
+            data: { status },
+        });
+        return result.count;
+    }
+    async findPendingByImportId(importId, userId) {
+        return client_2.default.importedTransaction.findMany({
+            where: {
+                importId,
+                userId,
+                status: client_1.ImportedTransactionStatus.PENDING,
+                deleted: false,
+            },
+            orderBy: { date: 'desc' },
+        });
+    }
+    async softDeleteBatch(ids, userId) {
+        const result = await client_2.default.importedTransaction.updateMany({
+            where: { id: { in: ids }, userId },
+            data: { deleted: true },
+        });
+        return result.count;
     }
     async filterDuplicates(importId, transactions) {
         if (transactions.length === 0)
@@ -75,7 +101,7 @@ class ImportedTransactionRepository {
         if (transactions.length === 0)
             return [];
         // Build a query to find existing transactions that match any of the provided transactions
-        const existingTransactions = await client_1.default.importedTransaction.findMany({
+        const existingTransactions = await client_2.default.importedTransaction.findMany({
             where: {
                 importId,
                 OR: transactions.map((tx) => ({

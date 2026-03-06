@@ -84,6 +84,41 @@ export class ImportedTransactionRepository {
     });
   }
 
+  async updateStatusBatch(
+    ids: string[],
+    userId: string,
+    status: ImportedTransactionStatus,
+  ): Promise<number> {
+    const result = await prisma.importedTransaction.updateMany({
+      where: { id: { in: ids }, userId },
+      data: { status },
+    });
+    return result.count;
+  }
+
+  async findPendingByImportId(
+    importId: string,
+    userId: string,
+  ): Promise<ImportedTransaction[]> {
+    return prisma.importedTransaction.findMany({
+      where: {
+        importId,
+        userId,
+        status: ImportedTransactionStatus.PENDING,
+        deleted: false,
+      },
+      orderBy: { date: 'desc' },
+    });
+  }
+
+  async softDeleteBatch(ids: string[], userId: string): Promise<number> {
+    const result = await prisma.importedTransaction.updateMany({
+      where: { id: { in: ids }, userId },
+      data: { deleted: true },
+    });
+    return result.count;
+  }
+
   async filterDuplicates(
     importId: string,
     transactions: {
