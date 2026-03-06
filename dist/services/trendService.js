@@ -8,6 +8,7 @@ const logger_1 = __importDefault(require("../utils/logger"));
 const transactionRepository_1 = __importDefault(require("../repositories/transactionRepository"));
 const categoryRepository_1 = __importDefault(require("../repositories/categoryRepository"));
 const client_1 = require("@prisma/client");
+const categoryHierarchy_1 = require("../utils/categoryHierarchy");
 class TrendService {
     async getSpendingTrends(request, userId) {
         try {
@@ -61,7 +62,7 @@ class TrendService {
                 this.fetchTransactionsForPeriod(startDate, endDate, userId, request.transactionType),
                 this.fetchPreviousPeriodData(startDate, endDate, userId, request.transactionType),
                 categoryRepository_1.default.getTopLevelCategories(),
-                this.buildCategoryParentMap(),
+                (0, categoryHierarchy_1.buildCategoryParentMap)(),
             ]);
             // Initialize category trends with top-level categories
             const categoryTrends = new Map();
@@ -198,41 +199,6 @@ class TrendService {
             amount: data.amount,
             count: data.count,
         }));
-    }
-    async buildCategoryParentMap() {
-        const allCategories = await categoryRepository_1.default.getAllCategories();
-        const parentMap = new Map();
-        // First pass: Create a map of category ID to its parent ID
-        const categoryToParentMap = new Map();
-        for (const category of allCategories) {
-            if ('parentId' in category && category.parentId !== null) {
-                categoryToParentMap.set(category.id, category.parentId);
-            }
-        }
-        // Second pass: For each category, traverse up to find top-level parent
-        for (const category of allCategories) {
-            let currentId = category.id;
-            let parentId = categoryToParentMap.get(currentId);
-            // If we've already processed this category, skip it
-            if (parentMap.has(currentId))
-                continue;
-            // Keep going up the chain until we find a category with no parent
-            while (parentId) {
-                const nextParentId = categoryToParentMap.get(parentId);
-                if (!nextParentId) {
-                    // We found the top-level parent
-                    parentMap.set(currentId, parentId);
-                    break;
-                }
-                currentId = parentId;
-                parentId = nextParentId;
-            }
-            // If we didn't find a parent, this category is itself a top-level category
-            if (!parentMap.has(category.id)) {
-                parentMap.set(category.id, category.id);
-            }
-        }
-        return parentMap;
     }
 }
 exports.default = new TrendService();
