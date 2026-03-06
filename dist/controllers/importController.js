@@ -12,9 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.importController = exports.MergeImportedTransactionRequest = exports.IgnoreImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
+exports.importController = exports.UpdateAutoApproveRuleRequest = exports.CreateAutoApproveRuleRequest = exports.BatchActionRequest = exports.MergeImportedTransactionRequest = exports.IgnoreImportedTransactionRequest = exports.ApproveImportedTransactionRequest = exports.GetImportedTransactionsRequest = exports.ProcessImportRequest = void 0;
 const class_validator_1 = require("class-validator");
 const importService_1 = require("../services/importService");
+const autoApproveRuleRepository_1 = require("../repositories/autoApproveRuleRepository");
 const logger_1 = __importDefault(require("../utils/logger"));
 const class_transformer_1 = require("class-transformer");
 class ProcessImportRequest {
@@ -96,6 +97,61 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], MergeImportedTransactionRequest.prototype, "categoryId", void 0);
+class BatchActionRequest {
+}
+exports.BatchActionRequest = BatchActionRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BatchActionRequest.prototype, "importId", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], BatchActionRequest.prototype, "transactionIds", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BatchActionRequest.prototype, "action", void 0);
+class CreateAutoApproveRuleRequest {
+}
+exports.CreateAutoApproveRuleRequest = CreateAutoApproveRuleRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAutoApproveRuleRequest.prototype, "descriptionPattern", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAutoApproveRuleRequest.prototype, "categoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAutoApproveRuleRequest.prototype, "type", void 0);
+class UpdateAutoApproveRuleRequest {
+}
+exports.UpdateAutoApproveRuleRequest = UpdateAutoApproveRuleRequest;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateAutoApproveRuleRequest.prototype, "descriptionPattern", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateAutoApproveRuleRequest.prototype, "categoryId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateAutoApproveRuleRequest.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateAutoApproveRuleRequest.prototype, "isActive", void 0);
 class ImportController {
     async processImport(req, userId) {
         const { fileUrl, originalFileName, paymentMonth } = req;
@@ -231,6 +287,96 @@ class ImportController {
         catch (error) {
             logger_1.default.error(`Failed to delete imported transaction`, {
                 importedTransactionId,
+                userId,
+                error,
+            });
+            throw error;
+        }
+    }
+    async batchAction(req, userId) {
+        try {
+            logger_1.default.debug('Start batch action', { req, userId });
+            const transactionIds = req.transactionIds || 'all';
+            let result;
+            if (req.action === 'approve') {
+                result = await importService_1.importService.batchApproveImportedTransactions(req.importId, transactionIds, userId);
+            }
+            else {
+                result = await importService_1.importService.batchIgnoreImportedTransactions(req.importId, transactionIds, userId);
+            }
+            logger_1.default.debug('Done batch action', { result });
+            return result;
+        }
+        catch (error) {
+            logger_1.default.error('Failed batch action', { req, userId, error });
+            throw error;
+        }
+    }
+    async applyAutoApproveRules(importId, userId) {
+        try {
+            logger_1.default.debug('Start apply auto-approve rules', { importId, userId });
+            const result = await importService_1.importService.applyAutoApproveRules(importId, userId);
+            logger_1.default.debug('Done apply auto-approve rules', { result });
+            return result;
+        }
+        catch (error) {
+            logger_1.default.error('Failed to apply auto-approve rules', {
+                importId,
+                userId,
+                error,
+            });
+            throw error;
+        }
+    }
+    async getAutoApproveRules(userId) {
+        try {
+            return await autoApproveRuleRepository_1.autoApproveRuleRepository.findByUserId(userId);
+        }
+        catch (error) {
+            logger_1.default.error('Failed to get auto-approve rules', { userId, error });
+            throw error;
+        }
+    }
+    async createAutoApproveRule(req, userId) {
+        try {
+            return await autoApproveRuleRepository_1.autoApproveRuleRepository.create({
+                userId,
+                descriptionPattern: req.descriptionPattern,
+                categoryId: req.categoryId,
+                type: req.type,
+            });
+        }
+        catch (error) {
+            logger_1.default.error('Failed to create auto-approve rule', {
+                req,
+                userId,
+                error,
+            });
+            throw error;
+        }
+    }
+    async updateAutoApproveRule(ruleId, req, userId) {
+        try {
+            return await autoApproveRuleRepository_1.autoApproveRuleRepository.update(ruleId, userId, req);
+        }
+        catch (error) {
+            logger_1.default.error('Failed to update auto-approve rule', {
+                ruleId,
+                req,
+                userId,
+                error,
+            });
+            throw error;
+        }
+    }
+    async deleteAutoApproveRule(ruleId, userId) {
+        try {
+            await autoApproveRuleRepository_1.autoApproveRuleRepository.delete(ruleId, userId);
+            return { success: true };
+        }
+        catch (error) {
+            logger_1.default.error('Failed to delete auto-approve rule', {
+                ruleId,
                 userId,
                 error,
             });

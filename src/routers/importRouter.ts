@@ -2,11 +2,14 @@ import express from 'express';
 import { handleRequest } from '../utils/handleRequest';
 import {
   ApproveImportedTransactionRequest,
+  BatchActionRequest,
+  CreateAutoApproveRuleRequest,
+  UpdateAutoApproveRuleRequest,
   importController,
   MergeImportedTransactionRequest,
+  ProcessImportRequest,
 } from '../controllers/importController';
 import { validateRequest } from '../middlewares/validation';
-import { ProcessImportRequest } from '../controllers/importController';
 import { authenticateRequest } from '../middlewares/authMiddleware';
 
 const router = express.Router();
@@ -25,6 +28,72 @@ router.post(
 router.get(
   '/',
   handleRequest((req) => importController.getImports(req.userId ?? ''), 200),
+);
+
+// Batch operations and auto-approve rules — MUST be before /:importId routes
+router.post(
+  '/batch-action',
+  validateRequest(BatchActionRequest),
+  handleRequest(
+    (req) => importController.batchAction(req.body, req.userId ?? ''),
+    200,
+  ),
+);
+
+router.get(
+  '/auto-approve-rules',
+  handleRequest(
+    (req) => importController.getAutoApproveRules(req.userId ?? ''),
+    200,
+  ),
+);
+
+router.post(
+  '/auto-approve-rules',
+  validateRequest(CreateAutoApproveRuleRequest),
+  handleRequest(
+    (req) =>
+      importController.createAutoApproveRule(req.body, req.userId ?? ''),
+    200,
+  ),
+);
+
+router.put(
+  '/auto-approve-rules/:ruleId',
+  validateRequest(UpdateAutoApproveRuleRequest),
+  handleRequest(
+    (req) =>
+      importController.updateAutoApproveRule(
+        req.params.ruleId,
+        req.body,
+        req.userId ?? '',
+      ),
+    200,
+  ),
+);
+
+router.delete(
+  '/auto-approve-rules/:ruleId',
+  handleRequest(
+    (req) =>
+      importController.deleteAutoApproveRule(
+        req.params.ruleId,
+        req.userId ?? '',
+      ),
+    200,
+  ),
+);
+
+router.post(
+  '/:importId/apply-auto-approve-rules',
+  handleRequest(
+    (req) =>
+      importController.applyAutoApproveRules(
+        req.params.importId,
+        req.userId ?? '',
+      ),
+    200,
+  ),
 );
 
 router.get(
