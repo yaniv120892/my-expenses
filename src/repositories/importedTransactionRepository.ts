@@ -107,6 +107,9 @@ export class ImportedTransactionRepository {
         status: ImportedTransactionStatus.PENDING,
         deleted: false,
       },
+      include: {
+        matchingTransaction: true,
+      },
       orderBy: { date: 'desc' },
     });
   }
