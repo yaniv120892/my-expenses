@@ -8,11 +8,19 @@ import {
 import logger from '../utils/logger';
 import { importRepository } from '../repositories/importRepository';
 import { importedTransactionRepository } from '../repositories/importedTransactionRepository';
+import { autoApproveRuleRepository } from '../repositories/autoApproveRuleRepository';
 import transactionRepository from '../repositories/transactionRepository';
 import transactionService from './transactionService';
 import { excelExtractionAgentClient } from '../clients/excelExtractionAgentClient';
 import prisma from '../prisma/client';
 import AIServiceFactory from './ai/aiServiceFactory';
+
+interface BatchResult {
+  total: number;
+  succeeded: number;
+  failed: number;
+  errors: Array<{ id: string; error: string }>;
+}
 
 interface ApproveImportedTransactionData {
   description: string;
@@ -255,6 +263,158 @@ class ImportService {
       importedTransactionId,
       userId,
     );
+  }
+
+  public async batchApproveImportedTransactions(
+    importId: string,
+    transactionIds: string[] | 'all',
+    userId: string,
+  ): Promise<BatchResult> {
+    const transactions =
+      transactionIds === 'all'
+        ? await importedTransactionRepository.findPendingByImportId(
+            importId,
+            userId,
+          )
+        : await Promise.all(
+            transactionIds.map((id) =>
+              importedTransactionRepository.findById(id),
+            ),
+          ).then((results) => results.filter((t) => t !== null));
+
+    const pendingTransactions = transactions.filter(
+      (t) => t.status === ImportedTransactionStatus.PENDING && t.userId === userId,
+    );
+
+    const result: BatchResult = {
+      total: pendingTransactions.length,
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    for (const transaction of pendingTransactions) {
+      try {
+        if (transaction.matchingTransactionId) {
+          // Merge with existing transaction
+          const matchingTx = (transaction as any).matchingTransaction;
+          await this.mergeImportedTransaction(transaction.id, userId, {
+            description: transaction.description,
+            value: transaction.value,
+            date: transaction.date,
+            type: transaction.type,
+            categoryId: matchingTx?.categoryId || transaction.matchingTransactionId,
+          });
+        } else {
+          // Create new transaction
+          await this.approveImportedTransaction(transaction.id, userId, {
+            description: transaction.description,
+            value: transaction.value,
+            date: transaction.date,
+            type: transaction.type,
+            categoryId: null,
+          });
+        }
+        result.succeeded++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
+  }
+
+  public async batchIgnoreImportedTransactions(
+    importId: string,
+    transactionIds: string[] | 'all',
+    userId: string,
+  ): Promise<BatchResult> {
+    let ids: string[];
+
+    if (transactionIds === 'all') {
+      const pending =
+        await importedTransactionRepository.findPendingByImportId(
+          importId,
+          userId,
+        );
+      ids = pending.map((t) => t.id);
+    } else {
+      ids = transactionIds;
+    }
+
+    const count = await importedTransactionRepository.updateStatusBatch(
+      ids,
+      userId,
+      ImportedTransactionStatus.IGNORED,
+    );
+
+    return {
+      total: ids.length,
+      succeeded: count,
+      failed: ids.length - count,
+      errors: [],
+    };
+  }
+
+  public async applyAutoApproveRules(
+    importId: string,
+    userId: string,
+  ): Promise<BatchResult> {
+    const [pendingTransactions, rules] = await Promise.all([
+      importedTransactionRepository.findPendingByImportId(importId, userId),
+      autoApproveRuleRepository.findActiveByUserId(userId),
+    ]);
+
+    const result: BatchResult = {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    for (const transaction of pendingTransactions) {
+      const matchingRule = rules.find((rule) =>
+        transaction.description
+          .toLowerCase()
+          .includes(rule.descriptionPattern.toLowerCase()),
+      );
+
+      if (!matchingRule) continue;
+
+      result.total++;
+      try {
+        if (transaction.matchingTransactionId) {
+          await this.mergeImportedTransaction(transaction.id, userId, {
+            description: transaction.description,
+            value: transaction.value,
+            date: transaction.date,
+            type: transaction.type,
+            categoryId: matchingRule.categoryId,
+          });
+        } else {
+          await this.approveImportedTransaction(transaction.id, userId, {
+            description: transaction.description,
+            value: transaction.value,
+            date: transaction.date,
+            type: transaction.type,
+            categoryId: matchingRule.categoryId,
+          });
+        }
+        result.succeeded++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          id: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return result;
   }
 
   public async findPotentialMatchesForImport(

@@ -3,8 +3,11 @@ import {
   IsOptional,
   IsNumber,
   IsDate,
+  IsArray,
+  IsBoolean,
 } from 'class-validator';
 import { importService } from '../services/importService';
+import { autoApproveRuleRepository } from '../repositories/autoApproveRuleRepository';
 import logger from '../utils/logger';
 import { TransactionType } from '../types/transaction';
 import { Type } from 'class-transformer';
@@ -66,6 +69,48 @@ export class MergeImportedTransactionRequest {
 
   @IsString()
   categoryId: string;
+}
+
+export class BatchActionRequest {
+  @IsString()
+  importId: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  transactionIds?: string[];
+
+  @IsString()
+  action: 'approve' | 'ignore';
+}
+
+export class CreateAutoApproveRuleRequest {
+  @IsString()
+  descriptionPattern: string;
+
+  @IsString()
+  categoryId: string;
+
+  @IsString()
+  type: TransactionType;
+}
+
+export class UpdateAutoApproveRuleRequest {
+  @IsString()
+  @IsOptional()
+  descriptionPattern?: string;
+
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  type?: TransactionType;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
 
 class ImportController {
@@ -243,6 +288,114 @@ class ImportController {
     } catch (error) {
       logger.error(`Failed to delete imported transaction`, {
         importedTransactionId,
+        userId,
+        error,
+      });
+      throw error;
+    }
+  }
+  async batchAction(req: BatchActionRequest, userId: string) {
+    try {
+      logger.debug('Start batch action', { req, userId });
+      const transactionIds = req.transactionIds || 'all';
+
+      let result;
+      if (req.action === 'approve') {
+        result = await importService.batchApproveImportedTransactions(
+          req.importId,
+          transactionIds,
+          userId,
+        );
+      } else {
+        result = await importService.batchIgnoreImportedTransactions(
+          req.importId,
+          transactionIds,
+          userId,
+        );
+      }
+
+      logger.debug('Done batch action', { result });
+      return result;
+    } catch (error) {
+      logger.error('Failed batch action', { req, userId, error });
+      throw error;
+    }
+  }
+
+  async applyAutoApproveRules(importId: string, userId: string) {
+    try {
+      logger.debug('Start apply auto-approve rules', { importId, userId });
+      const result = await importService.applyAutoApproveRules(
+        importId,
+        userId,
+      );
+      logger.debug('Done apply auto-approve rules', { result });
+      return result;
+    } catch (error) {
+      logger.error('Failed to apply auto-approve rules', {
+        importId,
+        userId,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  async getAutoApproveRules(userId: string) {
+    try {
+      return await autoApproveRuleRepository.findByUserId(userId);
+    } catch (error) {
+      logger.error('Failed to get auto-approve rules', { userId, error });
+      throw error;
+    }
+  }
+
+  async createAutoApproveRule(
+    req: CreateAutoApproveRuleRequest,
+    userId: string,
+  ) {
+    try {
+      return await autoApproveRuleRepository.create({
+        userId,
+        descriptionPattern: req.descriptionPattern,
+        categoryId: req.categoryId,
+        type: req.type as any,
+      });
+    } catch (error) {
+      logger.error('Failed to create auto-approve rule', {
+        req,
+        userId,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  async updateAutoApproveRule(
+    ruleId: string,
+    req: UpdateAutoApproveRuleRequest,
+    userId: string,
+  ) {
+    try {
+      return await autoApproveRuleRepository.update(ruleId, userId, req as any);
+    } catch (error) {
+      logger.error('Failed to update auto-approve rule', {
+        ruleId,
+        req,
+        userId,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  async deleteAutoApproveRule(ruleId: string, userId: string) {
+    try {
+      await autoApproveRuleRepository.delete(ruleId, userId);
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to delete auto-approve rule', {
+        ruleId,
         userId,
         error,
       });
