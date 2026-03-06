@@ -19,6 +19,7 @@ const client_1 = require("@prisma/client");
 const logger_1 = __importDefault(require("../utils/logger"));
 const importRepository_1 = require("../repositories/importRepository");
 const importedTransactionRepository_1 = require("../repositories/importedTransactionRepository");
+const autoApproveRuleRepository_1 = require("../repositories/autoApproveRuleRepository");
 const transactionRepository_1 = __importDefault(require("../repositories/transactionRepository"));
 const transactionService_1 = __importDefault(require("./transactionService"));
 const excelExtractionAgentClient_1 = require("../clients/excelExtractionAgentClient");
@@ -154,6 +155,118 @@ class ImportService {
     }
     async deleteImportedTransaction(importedTransactionId, userId) {
         await importedTransactionRepository_1.importedTransactionRepository.softDelete(importedTransactionId, userId);
+    }
+    async batchApproveImportedTransactions(importId, transactionIds, userId) {
+        const transactions = transactionIds === 'all'
+            ? await importedTransactionRepository_1.importedTransactionRepository.findPendingByImportId(importId, userId)
+            : await Promise.all(transactionIds.map((id) => importedTransactionRepository_1.importedTransactionRepository.findById(id))).then((results) => results.filter((t) => t !== null));
+        const pendingTransactions = transactions.filter((t) => t.status === client_1.ImportedTransactionStatus.PENDING && t.userId === userId);
+        const result = {
+            total: pendingTransactions.length,
+            succeeded: 0,
+            failed: 0,
+            errors: [],
+        };
+        for (const transaction of pendingTransactions) {
+            try {
+                if (transaction.matchingTransactionId) {
+                    // Merge with existing transaction
+                    const matchingTx = transaction.matchingTransaction;
+                    await this.mergeImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: (matchingTx === null || matchingTx === void 0 ? void 0 : matchingTx.categoryId) || transaction.matchingTransactionId,
+                    });
+                }
+                else {
+                    // Create new transaction
+                    await this.approveImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: null,
+                    });
+                }
+                result.succeeded++;
+            }
+            catch (error) {
+                result.failed++;
+                result.errors.push({
+                    id: transaction.id,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        }
+        return result;
+    }
+    async batchIgnoreImportedTransactions(importId, transactionIds, userId) {
+        let ids;
+        if (transactionIds === 'all') {
+            const pending = await importedTransactionRepository_1.importedTransactionRepository.findPendingByImportId(importId, userId);
+            ids = pending.map((t) => t.id);
+        }
+        else {
+            ids = transactionIds;
+        }
+        const count = await importedTransactionRepository_1.importedTransactionRepository.updateStatusBatch(ids, userId, client_1.ImportedTransactionStatus.IGNORED);
+        return {
+            total: ids.length,
+            succeeded: count,
+            failed: ids.length - count,
+            errors: [],
+        };
+    }
+    async applyAutoApproveRules(importId, userId) {
+        const [pendingTransactions, rules] = await Promise.all([
+            importedTransactionRepository_1.importedTransactionRepository.findPendingByImportId(importId, userId),
+            autoApproveRuleRepository_1.autoApproveRuleRepository.findActiveByUserId(userId),
+        ]);
+        const result = {
+            total: 0,
+            succeeded: 0,
+            failed: 0,
+            errors: [],
+        };
+        for (const transaction of pendingTransactions) {
+            const matchingRule = rules.find((rule) => transaction.description
+                .toLowerCase()
+                .includes(rule.descriptionPattern.toLowerCase()));
+            if (!matchingRule)
+                continue;
+            result.total++;
+            try {
+                if (transaction.matchingTransactionId) {
+                    await this.mergeImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: matchingRule.categoryId,
+                    });
+                }
+                else {
+                    await this.approveImportedTransaction(transaction.id, userId, {
+                        description: transaction.description,
+                        value: transaction.value,
+                        date: transaction.date,
+                        type: transaction.type,
+                        categoryId: matchingRule.categoryId,
+                    });
+                }
+                result.succeeded++;
+            }
+            catch (error) {
+                result.failed++;
+                result.errors.push({
+                    id: transaction.id,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        }
+        return result;
     }
     async findPotentialMatchesForImport(importId, userId) {
         try {
