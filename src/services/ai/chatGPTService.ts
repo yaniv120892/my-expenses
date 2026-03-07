@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { AIProvider } from 'services/ai/aiProvider';
+import { AIProvider, CategorizerHint } from 'services/ai/aiProvider';
 import { Category } from 'types/category';
 import { Transaction } from 'types/transaction';
 
@@ -63,8 +63,17 @@ export class ChatGPTService implements AIProvider {
   async suggestCategory(
     expenseDescription: string,
     categoryOptions: Category[],
+    categorizerHint?: CategorizerHint,
   ): Promise<string> {
     try {
+      let userContent = `Which category does this expense belong to?\n\n"${expenseDescription}"\n\nAvailable categories:\n${categoryOptions.map((c) => `- ${c.name}`).join('\n')}`;
+
+      if (categorizerHint) {
+        userContent += `\n\nA machine learning model suggested "${categorizerHint.hint}" with ${Math.round(categorizerHint.confidence * 100)}% confidence. Consider this suggestion but use your own judgment.`;
+      }
+
+      userContent += '\n\nReturn only the category name, nothing else.';
+
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4-turbo',
         messages: [
@@ -75,16 +84,13 @@ export class ChatGPTService implements AIProvider {
           },
           {
             role: 'user',
-            content: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map(
-              (category) =>
-                `- ${category.name}\n, return only the category name`,
-            )}`,
+            content: userContent,
           },
         ],
         max_tokens: 50,
       });
 
-      const aiSuggestedCategory = response.choices[0].message?.content;
+      const aiSuggestedCategory = response.choices[0].message?.content?.trim();
 
       const suggestedCategory = categoryOptions.find(
         (category) => category.name === aiSuggestedCategory,

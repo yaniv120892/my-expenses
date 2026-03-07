@@ -67,5 +67,13 @@ export interface TransactionSummary {
   totalExpense: number;
 }
 
+export interface CreateTransactionResult {
+  id: string;
+  suggestedCategory?: {
+    id: string;
+    name: string;
+  };
+}
+
 //TODO: remove this type and use enum instead
 export type TransactionType = 'INCOME' | 'EXPENSE';
