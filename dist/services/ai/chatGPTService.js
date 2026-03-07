@@ -55,9 +55,14 @@ class ChatGPTService {
             return 'I encountered an issue analyzing your expenses.';
         }
     }
-    async suggestCategory(expenseDescription, categoryOptions) {
-        var _a;
+    async suggestCategory(expenseDescription, categoryOptions, categorizerHint) {
+        var _a, _b;
         try {
+            let userContent = `Which category does this expense belong to?\n\n"${expenseDescription}"\n\nAvailable categories:\n${categoryOptions.map((c) => `- ${c.name}`).join('\n')}`;
+            if (categorizerHint) {
+                userContent += `\n\nA machine learning model suggested "${categorizerHint.hint}" with ${Math.round(categorizerHint.confidence * 100)}% confidence. Consider this suggestion but use your own judgment.`;
+            }
+            userContent += '\n\nReturn only the category name, nothing else.';
             const response = await this.openai.chat.completions.create({
                 model: 'gpt-4-turbo',
                 messages: [
@@ -67,12 +72,12 @@ class ChatGPTService {
                     },
                     {
                         role: 'user',
-                        content: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map((category) => `- ${category.name}\n, return only the category name`)}`,
+                        content: userContent,
                     },
                 ],
                 max_tokens: 50,
             });
-            const aiSuggestedCategory = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content;
+            const aiSuggestedCategory = (_b = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b.trim();
             const suggestedCategory = categoryOptions.find((category) => category.name === aiSuggestedCategory);
             return (suggestedCategory === null || suggestedCategory === void 0 ? void 0 : suggestedCategory.id) || 'No category found.';
         }

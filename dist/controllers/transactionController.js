@@ -9,9 +9,9 @@ class TransactionController {
     async createTransaction(createTransactionRequest, userId) {
         try {
             logger_1.default.debug('Start create transaction', createTransactionRequest);
-            const transactionId = await transactionService_1.default.createTransaction(Object.assign(Object.assign({}, createTransactionRequest), { date: createTransactionRequest.date || new Date(), categoryId: createTransactionRequest.categoryId || null, userId }));
-            logger_1.default.debug('Done create transaction', createTransactionRequest, transactionId);
-            return transactionId;
+            const result = await transactionService_1.default.createTransaction(Object.assign(Object.assign({}, createTransactionRequest), { date: createTransactionRequest.date || new Date(), categoryId: createTransactionRequest.categoryId || null, userId }));
+            logger_1.default.debug('Done create transaction', createTransactionRequest, result.id);
+            return result;
         }
         catch (error) {
             logger_1.default.error(`Failed to create transaction, ${JSON.stringify(createTransactionRequest)}, ${error.message}`);

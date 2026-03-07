@@ -12,6 +12,7 @@ const axios_1 = __importDefault(require("axios"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const transactionNotifierFactory_1 = __importDefault(require("./transactionNotification/transactionNotifierFactory"));
 const userSettingsService_1 = __importDefault(require("../services/userSettingsService"));
+const userCategoryMappingRepository_1 = __importDefault(require("../repositories/userCategoryMappingRepository"));
 const transactionAttachmentFileUtils_1 = require("./transactionAttachmentFileUtils");
 class TransactionService {
     constructor() {
@@ -19,6 +20,7 @@ class TransactionService {
         this.transactionNotifier = transactionNotifierFactory_1.default.getNotifier();
     }
     async createTransaction(data) {
+        const userProvidedCategory = !!data.categoryId;
         const createTransaction = await this.updateCategory(data);
         await createTransactionValidator_1.default.validate(createTransaction);
         const CreateTransactionDbModel = {
@@ -32,7 +34,15 @@ class TransactionService {
         };
         const transactionId = await transactionRepository_1.default.createTransaction(CreateTransactionDbModel);
         await this.notifyTransactionCreatedSafe(transactionId, createTransaction.userId);
-        return transactionId;
+        const result = { id: transactionId };
+        if (!userProvidedCategory && createTransaction.categoryId) {
+            const categories = await categoryRepository_1.default.getAllCategories();
+            const cat = categories.find((c) => c.id === createTransaction.categoryId);
+            if (cat) {
+                result.suggestedCategory = { id: cat.id, name: cat.name };
+            }
+        }
+        return result;
     }
     async getTransactions(filters) {
         return transactionRepository_1.default.getTransactions(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED', smartSearch: filters.smartSearch !== undefined ? filters.smartSearch : true }));
@@ -70,6 +80,21 @@ class TransactionService {
         return transactionRepository_1.default.getTransactionsSummary(Object.assign(Object.assign({}, filters), { status: filters.status || 'APPROVED' }));
     }
     async updateTransaction(id, data, userId) {
+        if (data.categoryId) {
+            try {
+                const existing = await transactionRepository_1.default.getTransactionItem(id, userId);
+                if (existing && existing.category.id !== data.categoryId) {
+                    const normalizedDescription = existing.description
+                        .toLowerCase()
+                        .trim();
+                    await userCategoryMappingRepository_1.default.upsert(userId, normalizedDescription, data.categoryId);
+                    logger_1.default.debug(`Saved category mapping: "${normalizedDescription}" -> ${data.categoryId}`);
+                }
+            }
+            catch (err) {
+                logger_1.default.warn(`Failed to save category mapping on update: ${err}`);
+            }
+        }
         await transactionRepository_1.default.updateTransaction(id, data, userId);
     }
     async deleteTransaction(id, userId) {
@@ -112,30 +137,53 @@ class TransactionService {
             return transaction;
         }
         const categories = await categoryRepository_1.default.getAllCategories();
-        const suggestedCategoryId = await this.getSuggestedCategory(transaction.description, categories);
+        const suggestedCategoryId = await this.getSuggestedCategory(transaction.description, transaction.userId, categories);
         return Object.assign(Object.assign({}, transaction), { categoryId: suggestedCategoryId });
     }
-    async getSuggestedCategory(description, categories) {
-        var _a;
-        let categoryFoundUsingCategorizer = false;
-        let category = null;
+    async getSuggestedCategory(description, userId, categories) {
+        // 1. Check user category mappings first (learned from corrections)
         try {
-            category = await this.categorizeExpense(description);
-            if (category && categories.find((c) => c.name === category)) {
-                categoryFoundUsingCategorizer = true;
+            const normalizedDescription = description.toLowerCase().trim();
+            const mapping = await userCategoryMappingRepository_1.default.findByUserAndDescription(userId, normalizedDescription);
+            if (mapping) {
+                const cat = categories.find((c) => c.id === mapping.categoryId);
+                if (cat) {
+                    logger_1.default.debug(`User mapping found for expense: ${description} -> ${cat.name}`);
+                    return cat.id;
+                }
             }
+        }
+        catch (err) {
+            logger_1.default.warn(`Failed to check user category mapping: ${err}`);
+        }
+        // 2. Try FastText categorizer with confidence routing
+        let categorizerResult = null;
+        try {
+            categorizerResult = await this.categorizeExpense(description);
         }
         catch (err) {
             logger_1.default.warn(`Failed to categorize expense: ${description}`);
         }
-        if (categoryFoundUsingCategorizer) {
-            logger_1.default.debug(`Categorizer found category for expense: ${description} - ${category}`);
-            return (_a = categories.find((c) => c.name === category)) === null || _a === void 0 ? void 0 : _a.id;
+        if (categorizerResult) {
+            const matchedCategory = categories.find((c) => c.name === categorizerResult.category);
+            if (matchedCategory && categorizerResult.confidence >= 0.7) {
+                logger_1.default.debug(`High confidence (${categorizerResult.confidence.toFixed(2)}) category: ${categorizerResult.category}`);
+                return matchedCategory.id;
+            }
+            if (matchedCategory && categorizerResult.confidence >= 0.4) {
+                logger_1.default.debug(`Medium confidence (${categorizerResult.confidence.toFixed(2)}), passing hint to LLM: ${categorizerResult.category}`);
+                return this.aiService.suggestCategory(description, categories, {
+                    hint: categorizerResult.category,
+                    confidence: categorizerResult.confidence,
+                });
+            }
         }
-        logger_1.default.warn(`No category found for expense using categorizer. Using AI service instead.`);
+        // 3. Low confidence or no result — LLM fallback without hint
+        logger_1.default.warn(`No reliable category from categorizer for: ${description}. Using AI service.`);
         return this.aiService.suggestCategory(description, categories);
     }
     async categorizeExpense(description) {
+        var _a;
         const expenseCategorizerBaseUrl = process.env.EXPENSE_CATEGORIZER_BASE_URL;
         const response = await axios_1.default.post(`${expenseCategorizerBaseUrl}/predict`, {
             description,
@@ -145,7 +193,10 @@ class TransactionService {
             logger_1.default.error('No category found for expense using categorizer.');
             return null;
         }
-        return response.data.category;
+        return {
+            category: response.data.category,
+            confidence: (_a = response.data.confidence) !== null && _a !== void 0 ? _a : 0,
+        };
     }
     async notifyTransactionCreatedSafe(transactionId, userId) {
         try {

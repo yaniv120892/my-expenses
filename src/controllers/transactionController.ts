@@ -15,7 +15,7 @@ class TransactionController {
   ) {
     try {
       logger.debug('Start create transaction', createTransactionRequest);
-      const transactionId = await transactionService.createTransaction({
+      const result = await transactionService.createTransaction({
         ...createTransactionRequest,
         date: createTransactionRequest.date || new Date(),
         categoryId: createTransactionRequest.categoryId || null,
@@ -24,9 +24,9 @@ class TransactionController {
       logger.debug(
         'Done create transaction',
         createTransactionRequest,
-        transactionId,
+        result.id,
       );
-      return transactionId;
+      return result;
     } catch (error: any) {
       logger.error(
         `Failed to create transaction, ${JSON.stringify(createTransactionRequest)}, ${error.message}`,
