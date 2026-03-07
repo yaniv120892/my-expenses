@@ -173,7 +173,7 @@ class TransactionManager {
       ? new Date()
       : new Date(sanitizedText);
 
-    const createdTransaction = await TransactionService.createTransaction({
+    const createdResult = await TransactionService.createTransaction({
       type: inProcessTransaction.type as TransactionType,
       value: inProcessTransaction.value as number,
       description: inProcessTransaction.description as string,
@@ -183,7 +183,7 @@ class TransactionManager {
     });
 
     const transaction = await TransactionService.getTransactionItem(
-      createdTransaction,
+      createdResult.id,
       userId,
     );
 

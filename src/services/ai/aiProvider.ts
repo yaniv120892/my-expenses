@@ -1,6 +1,11 @@
 import { Category } from '../../types/category';
 import { Transaction } from '../../types/transaction';
 
+export interface CategorizerHint {
+  hint: string;
+  confidence: number;
+}
+
 export interface AIProvider {
   generateContent(prompt: string): Promise<string>;
   analyzeExpenses(
@@ -10,6 +15,7 @@ export interface AIProvider {
   suggestCategory(
     expenseDescription: string,
     categoryOptions: Category[],
+    categorizerHint?: CategorizerHint,
   ): Promise<string>;
   findMatchingTransaction(
     importedDescription: string,
