@@ -128,6 +128,7 @@ model Import {
   
   creditCardLastFourDigits String? /// @encrypted
   paymentMonth             String? // Format: MM/YYYY
+  deleted                  Boolean @default(false)
   excelExtractionRequestId String?
   user                     User    @relation(fields: [userId], references: [id])
 

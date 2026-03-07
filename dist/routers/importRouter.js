@@ -24,6 +24,7 @@ router.delete('/auto-approve-rules/:ruleId', (0, handleRequest_1.handleRequest)(
     var _a;
     return importController_1.importController.deleteAutoApproveRule(req.params.ruleId, (_a = req.userId) !== null && _a !== void 0 ? _a : '');
 }, 200));
+router.delete('/:importId', (0, handleRequest_1.handleRequest)((req) => { var _a; return importController_1.importController.deleteImport(req.params.importId, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 200));
 router.post('/:importId/apply-auto-approve-rules', (0, handleRequest_1.handleRequest)((req) => {
     var _a;
     return importController_1.importController.applyAutoApproveRules(req.params.importId, (_a = req.userId) !== null && _a !== void 0 ? _a : '');

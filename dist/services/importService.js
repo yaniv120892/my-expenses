@@ -153,6 +153,9 @@ class ImportService {
     async ignoreImportedTransaction(importedTransactionId, userId) {
         await importedTransactionRepository_1.importedTransactionRepository.updateStatus(importedTransactionId, userId, client_1.ImportedTransactionStatus.IGNORED);
     }
+    async deleteImport(importId, userId) {
+        await importRepository_1.importRepository.softDelete(importId, userId);
+    }
     async deleteImportedTransaction(importedTransactionId, userId) {
         await importedTransactionRepository_1.importedTransactionRepository.softDelete(importedTransactionId, userId);
     }
