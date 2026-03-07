@@ -84,6 +84,14 @@ router.delete(
   ),
 );
 
+router.delete(
+  '/:importId',
+  handleRequest(
+    (req) => importController.deleteImport(req.params.importId, req.userId ?? ''),
+    200,
+  ),
+);
+
 router.post(
   '/:importId/apply-auto-approve-rules',
   handleRequest(

@@ -274,6 +274,18 @@ class ImportController {
             throw error;
         }
     }
+    async deleteImport(importId, userId) {
+        try {
+            logger_1.default.debug('Start delete import', { importId, userId });
+            await importService_1.importService.deleteImport(importId, userId);
+            logger_1.default.debug('Done delete import');
+            return { success: true };
+        }
+        catch (error) {
+            logger_1.default.error('Failed to delete import', { importId, userId, error });
+            throw error;
+        }
+    }
     async deleteImportedTransaction(importedTransactionId, userId) {
         try {
             logger_1.default.debug('Start delete imported transaction', {

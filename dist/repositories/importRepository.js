@@ -19,7 +19,7 @@ class ImportRepository {
     }
     async findByUserId(userId) {
         return client_2.default.import.findMany({
-            where: { userId },
+            where: { userId, deleted: false },
             orderBy: [{ createdAt: 'desc' }, { paymentMonth: 'desc' }],
             include: {
                 _count: {
@@ -56,6 +56,12 @@ class ImportRepository {
             }
         }
         return null;
+    }
+    async softDelete(id, userId) {
+        await client_2.default.import.update({
+            where: { id, userId },
+            data: { deleted: true },
+        });
     }
     async updateStatus(id, status, error) {
         const data = Object.assign(Object.assign({ status }, (status === client_1.ImportStatus.COMPLETED && { completedAt: new Date() })), (error && { error }));
