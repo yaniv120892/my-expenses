@@ -255,6 +255,10 @@ class ImportService {
     );
   }
 
+  public async deleteImport(importId: string, userId: string) {
+    await importRepository.softDelete(importId, userId);
+  }
+
   public async deleteImportedTransaction(
     importedTransactionId: string,
     userId: string,

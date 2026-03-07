@@ -40,7 +40,7 @@ export class ImportRepository {
 
   async findByUserId(userId: string): Promise<ImportWithPendingCount[]> {
     return prisma.import.findMany({
-      where: { userId },
+      where: { userId, deleted: false },
       orderBy: [{ createdAt: 'desc' }, { paymentMonth: 'desc' }],
       include: {
         _count: {
@@ -87,6 +87,13 @@ export class ImportRepository {
     }
 
     return null;
+  }
+
+  async softDelete(id: string, userId: string): Promise<void> {
+    await prisma.import.update({
+      where: { id, userId },
+      data: { deleted: true },
+    });
   }
 
   async updateStatus(
