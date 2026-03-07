@@ -125,7 +125,7 @@ class TransactionManager {
         const date = ['now', 'today'].includes(sanitizedText)
             ? new Date()
             : new Date(sanitizedText);
-        const createdTransaction = await transactionService_1.default.createTransaction({
+        const createdResult = await transactionService_1.default.createTransaction({
             type: inProcessTransaction.type,
             value: inProcessTransaction.value,
             description: inProcessTransaction.description,
@@ -133,7 +133,7 @@ class TransactionManager {
             date,
             userId,
         });
-        const transaction = await transactionService_1.default.getTransactionItem(createdTransaction, userId);
+        const transaction = await transactionService_1.default.getTransactionItem(createdResult.id, userId);
         if (!transaction) {
             return {
                 message: 'Transaction created, but failed to retrieve details.',

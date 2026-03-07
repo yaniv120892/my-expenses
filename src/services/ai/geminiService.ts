@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AIProvider } from './aiProvider';
+import { AIProvider, CategorizerHint } from './aiProvider';
 import logger from '../../utils/logger';
 import { Category } from '../../types/category';
 import { Transaction } from '../../types/transaction';
@@ -72,24 +72,27 @@ export class GeminiService implements AIProvider {
   async suggestCategory(
     expenseDescription: string,
     categoryOptions: Category[],
+    categorizerHint?: CategorizerHint,
   ): Promise<string> {
     try {
       logger.debug(
         `Start suggesting category for expense: ${expenseDescription}`,
       );
       const model = this.gemini.getGenerativeModel({ model: this.modelName });
+
+      let promptText = `Which category does this expense belong to?\n\n"${expenseDescription}"\n\nAvailable categories:\n${categoryOptions.map((c) => `- ${c.name}`).join('\n')}`;
+
+      if (categorizerHint) {
+        promptText += `\n\nA machine learning model suggested "${categorizerHint.hint}" with ${Math.round(categorizerHint.confidence * 100)}% confidence. Consider this suggestion but use your own judgment.`;
+      }
+
+      promptText += '\n\nReturn only the category name, nothing else.';
+
       const response = await model.generateContent({
         contents: [
           {
             role: 'user',
-            parts: [
-              {
-                text: `Which category does this expense belong to?\n\n"${expenseDescription}", here are the available options:\n${categoryOptions.map(
-                  (category) =>
-                    `- ${category.name}\n, return only the category name`,
-                )}`,
-              },
-            ],
+            parts: [{ text: promptText }],
           },
         ],
       });
