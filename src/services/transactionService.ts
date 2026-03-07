@@ -3,6 +3,7 @@ import transactionRepository from '../repositories/transactionRepository';
 import transactionFileRepository from '../repositories/transactionFileRepository';
 import {
   CreateTransaction,
+  CreateTransactionResult,
   TransactionFilters,
   Transaction,
   TransactionSummaryFilters,
@@ -18,6 +19,7 @@ import logger from '../utils/logger';
 import { Category } from '../types/category';
 import TransactionNotifierFactory from './transactionNotification/transactionNotifierFactory';
 import userSettingsService from '../services/userSettingsService';
+import userCategoryMappingRepository from '../repositories/userCategoryMappingRepository';
 import {
   buildPreviewUrl,
   buildDownloadUrl,
@@ -28,7 +30,10 @@ class TransactionService {
   private aiService = aiServiceFactory.getAIService();
   private transactionNotifier = TransactionNotifierFactory.getNotifier();
 
-  public async createTransaction(data: CreateTransaction): Promise<string> {
+  public async createTransaction(
+    data: CreateTransaction,
+  ): Promise<CreateTransactionResult> {
+    const userProvidedCategory = !!data.categoryId;
     const createTransaction = await this.updateCategory(data);
     await createTransactionValidator.validate(createTransaction);
     const CreateTransactionDbModel = {
@@ -49,7 +54,19 @@ class TransactionService {
       createTransaction.userId,
     );
 
-    return transactionId;
+    const result: CreateTransactionResult = { id: transactionId };
+
+    if (!userProvidedCategory && createTransaction.categoryId) {
+      const categories = await categoryRepository.getAllCategories();
+      const cat = categories.find(
+        (c) => c.id === createTransaction.categoryId,
+      );
+      if (cat) {
+        result.suggestedCategory = { id: cat.id, name: cat.name };
+      }
+    }
+
+    return result;
   }
 
   public async getTransactions(
@@ -129,6 +146,29 @@ class TransactionService {
     data: CreateTransactionRequest,
     userId: string,
   ): Promise<void> {
+    if (data.categoryId) {
+      try {
+        const existing = await transactionRepository.getTransactionItem(
+          id,
+          userId,
+        );
+        if (existing && existing.category.id !== data.categoryId) {
+          const normalizedDescription = existing.description
+            .toLowerCase()
+            .trim();
+          await userCategoryMappingRepository.upsert(
+            userId,
+            normalizedDescription,
+            data.categoryId,
+          );
+          logger.debug(
+            `Saved category mapping: "${normalizedDescription}" -> ${data.categoryId}`,
+          );
+        }
+      } catch (err) {
+        logger.warn(`Failed to save category mapping on update: ${err}`);
+      }
+    }
     await transactionRepository.updateTransaction(id, data, userId);
   }
 
@@ -220,6 +260,7 @@ class TransactionService {
 
     const suggestedCategoryId = await this.getSuggestedCategory(
       transaction.description,
+      transaction.userId,
       categories,
     );
 
@@ -231,35 +272,78 @@ class TransactionService {
 
   private async getSuggestedCategory(
     description: string,
+    userId: string,
     categories: Category[],
   ): Promise<string> {
-    let categoryFoundUsingCategorizer = false;
-    let category: string | null = null;
+    // 1. Check user category mappings first (learned from corrections)
     try {
-      category = await this.categorizeExpense(description);
-
-      if (category && categories.find((c) => c.name === category)) {
-        categoryFoundUsingCategorizer = true;
+      const normalizedDescription = description.toLowerCase().trim();
+      const mapping =
+        await userCategoryMappingRepository.findByUserAndDescription(
+          userId,
+          normalizedDescription,
+        );
+      if (mapping) {
+        const cat = categories.find((c) => c.id === mapping.categoryId);
+        if (cat) {
+          logger.debug(
+            `User mapping found for expense: ${description} -> ${cat.name}`,
+          );
+          return cat.id;
+        }
       }
+    } catch (err) {
+      logger.warn(`Failed to check user category mapping: ${err}`);
+    }
+
+    // 2. Try FastText categorizer with confidence routing
+    let categorizerResult: {
+      category: string;
+      confidence: number;
+    } | null = null;
+    try {
+      categorizerResult = await this.categorizeExpense(description);
     } catch (err) {
       logger.warn(`Failed to categorize expense: ${description}`);
     }
 
-    if (categoryFoundUsingCategorizer) {
-      logger.debug(
-        `Categorizer found category for expense: ${description} - ${category}`,
+    if (categorizerResult) {
+      const matchedCategory = categories.find(
+        (c) => c.name === categorizerResult!.category,
       );
-      return categories.find((c) => c.name === category)?.id as string;
+
+      if (matchedCategory && categorizerResult.confidence >= 0.7) {
+        logger.debug(
+          `High confidence (${categorizerResult.confidence.toFixed(2)}) category: ${categorizerResult.category}`,
+        );
+        return matchedCategory.id;
+      }
+
+      if (matchedCategory && categorizerResult.confidence >= 0.4) {
+        logger.debug(
+          `Medium confidence (${categorizerResult.confidence.toFixed(2)}), passing hint to LLM: ${categorizerResult.category}`,
+        );
+        return this.aiService.suggestCategory(
+          description,
+          categories,
+          {
+            hint: categorizerResult.category,
+            confidence: categorizerResult.confidence,
+          },
+        );
+      }
     }
 
+    // 3. Low confidence or no result — LLM fallback without hint
     logger.warn(
-      `No category found for expense using categorizer. Using AI service instead.`,
+      `No reliable category from categorizer for: ${description}. Using AI service.`,
     );
-
     return this.aiService.suggestCategory(description, categories);
   }
 
-  private async categorizeExpense(description: string): Promise<string | null> {
+  private async categorizeExpense(
+    description: string,
+  ): Promise<{ category: string; confidence: number } | null> {
     const expenseCategorizerBaseUrl = process.env.EXPENSE_CATEGORIZER_BASE_URL;
     const response = await axios.post(`${expenseCategorizerBaseUrl}/predict`, {
       description,
@@ -271,7 +355,10 @@ class TransactionService {
       return null;
     }
 
-    return response.data.category;
+    return {
+      category: response.data.category,
+      confidence: response.data.confidence ?? 0,
+    };
   }
 
   private async notifyTransactionCreatedSafe(
