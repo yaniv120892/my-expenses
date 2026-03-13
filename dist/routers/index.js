@@ -16,6 +16,7 @@ const trendRouter_1 = __importDefault(require("./trendRouter"));
 const importRouter_1 = __importDefault(require("./importRouter"));
 const chatRouter_1 = __importDefault(require("./chatRouter"));
 const dashboardRouter_1 = __importDefault(require("./dashboardRouter"));
+const subscriptionRouter_1 = __importDefault(require("./subscriptionRouter"));
 const excelExtractionWebhookController_1 = require("../controllers/excelExtractionWebhookController");
 const router = express_1.default.Router();
 router.use('/api/auth', authRouter_1.default);
@@ -30,6 +31,7 @@ router.use('/api/trends', trendRouter_1.default);
 router.use('/api/imports', importRouter_1.default);
 router.use('/api/chat', chatRouter_1.default);
 router.use('/api/dashboard', dashboardRouter_1.default);
+router.use('/api/subscriptions', subscriptionRouter_1.default);
 router.get('/', (req, res) => {
     res.send('ok');
 });
