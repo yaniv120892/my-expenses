@@ -299,6 +299,9 @@ export class UserSettingsNotificationsDto {
 
   @IsBoolean()
   dailySummary: boolean;
+
+  @IsBoolean()
+  subscriptionAudit: boolean;
 }
 
 export class NotificationProviderDto {
@@ -341,4 +344,9 @@ export class TestTelegramRequest {
   @IsString()
   @IsNotEmpty()
   chatId: string;
+}
+
+export class ConvertSubscriptionRequest {
+  @IsUUID()
+  categoryId: string;
 }

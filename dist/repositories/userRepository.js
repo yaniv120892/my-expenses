@@ -47,7 +47,7 @@ class UserRepository {
         });
     }
     async getUserSettings(userId) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         const user = await client_1.default.user.findUnique({
             where: { id: userId },
             select: {
@@ -64,6 +64,7 @@ class UserRepository {
             notifications: {
                 createTransaction: (_b = (_a = user.userNotification) === null || _a === void 0 ? void 0 : _a.createTransaction) !== null && _b !== void 0 ? _b : false,
                 dailySummary: (_d = (_c = user.userNotification) === null || _c === void 0 ? void 0 : _c.dailySummary) !== null && _d !== void 0 ? _d : false,
+                subscriptionAudit: (_f = (_e = user.userNotification) === null || _e === void 0 ? void 0 : _e.subscriptionAudit) !== null && _f !== void 0 ? _f : false,
             },
             providers: user.userNotificationProviders || [],
         };
@@ -74,11 +75,13 @@ class UserRepository {
             update: {
                 createTransaction: notifications.createTransaction,
                 dailySummary: notifications.dailySummary,
+                subscriptionAudit: notifications.subscriptionAudit,
             },
             create: {
                 userId: userId,
                 createTransaction: notifications.createTransaction,
                 dailySummary: notifications.dailySummary,
+                subscriptionAudit: notifications.subscriptionAudit,
             },
         });
         for (const provider of providers) {

@@ -16,6 +16,7 @@ class UserSettingsController {
         notifications: {
           createTransaction: userSettings.notifications.createTransaction,
           dailySummary: userSettings.notifications.dailySummary,
+          subscriptionAudit: userSettings.notifications.subscriptionAudit,
         },
         provider: {
           enabled: userSettings.provider.enabled,
@@ -38,6 +39,7 @@ class UserSettingsController {
         notifications: {
           createTransaction: settings.notifications.createTransaction,
           dailySummary: settings.notifications.dailySummary,
+          subscriptionAudit: settings.notifications.subscriptionAudit,
         },
         provider: {
           enabled: settings.provider.enabled,

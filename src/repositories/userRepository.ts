@@ -77,6 +77,7 @@ class UserRepository {
       notifications: {
         createTransaction: user.userNotification?.createTransaction ?? false,
         dailySummary: user.userNotification?.dailySummary ?? false,
+        subscriptionAudit: user.userNotification?.subscriptionAudit ?? false,
       },
       providers: user.userNotificationProviders || [],
     };
@@ -84,7 +85,7 @@ class UserRepository {
 
   public async updateUserSettings(
     userId: string,
-    notifications: { createTransaction: boolean; dailySummary: boolean },
+    notifications: { createTransaction: boolean; dailySummary: boolean; subscriptionAudit: boolean },
     providers: {
       provider: NotificationProvider;
       enabled: boolean;
@@ -96,11 +97,13 @@ class UserRepository {
       update: {
         createTransaction: notifications.createTransaction,
         dailySummary: notifications.dailySummary,
+        subscriptionAudit: notifications.subscriptionAudit,
       },
       create: {
         userId: userId,
         createTransaction: notifications.createTransaction,
         dailySummary: notifications.dailySummary,
+        subscriptionAudit: notifications.subscriptionAudit,
       },
     });
 

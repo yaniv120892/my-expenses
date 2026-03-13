@@ -23,6 +23,7 @@ class UserSettingsService {
       notifications: {
         createTransaction: userSettings.notifications.createTransaction,
         dailySummary: userSettings.notifications.dailySummary,
+        subscriptionAudit: userSettings.notifications.subscriptionAudit,
       },
       provider: {
         enabled: userSettings.providers[0]?.enabled ?? false,
@@ -36,7 +37,7 @@ class UserSettingsService {
     userId: string,
     settings: {
       info: { email: string };
-      notifications: { createTransaction: boolean; dailySummary: boolean };
+      notifications: { createTransaction: boolean; dailySummary: boolean; subscriptionAudit: boolean };
       provider: {
         enabled: boolean;
         chatId: string | null;
