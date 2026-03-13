@@ -1,5 +1,6 @@
 import AIServiceFactory from './ai/aiServiceFactory';
 import dashboardRepository from '../repositories/dashboardRepository';
+import subscriptionDetectionService from './subscriptionDetectionService';
 import {
   DashboardResponse,
   DashboardInsightsResponse,
@@ -28,6 +29,7 @@ class DashboardService {
       topCategoriesCurrent,
       topCategoriesPrevious,
       recentTransactions,
+      subscriptionSnapshot,
     ] = await Promise.all([
       dashboardRepository.getMonthSummary(userId, currentYear, currentMonth),
       dashboardRepository.getMonthSummary(userId, prevYear, prevMonth),
@@ -44,6 +46,7 @@ class DashboardService {
         7,
       ),
       dashboardRepository.getRecentTransactions(userId, 5),
+      subscriptionDetectionService.getDashboardSnapshot(userId),
     ]);
 
     const monthComparison = this.buildMonthComparison(
@@ -56,7 +59,7 @@ class DashboardService {
       currentMonthSummary.totalExpense,
     );
 
-    return { monthComparison, topCategories, recentTransactions };
+    return { monthComparison, topCategories, recentTransactions, subscriptions: subscriptionSnapshot };
   }
 
   public async getInsights(

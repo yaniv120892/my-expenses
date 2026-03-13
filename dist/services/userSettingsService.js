@@ -24,6 +24,7 @@ class UserSettingsService {
             notifications: {
                 createTransaction: userSettings.notifications.createTransaction,
                 dailySummary: userSettings.notifications.dailySummary,
+                subscriptionAudit: userSettings.notifications.subscriptionAudit,
             },
             provider: {
                 enabled: (_b = (_a = userSettings.providers[0]) === null || _a === void 0 ? void 0 : _a.enabled) !== null && _b !== void 0 ? _b : false,
