@@ -48,6 +48,18 @@ enum ImportBankSourceType {
   BANK_CREDIT
 }
 
+enum SubscriptionStatus {
+  DETECTED
+  CONFIRMED
+  DISMISSED
+}
+
+enum SubscriptionFrequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
 enum ImportedTransactionStatus {
   PENDING
   APPROVED
@@ -75,6 +87,7 @@ model User {
   importedTransactions      ImportedTransaction[]
   autoApproveRules          AutoApproveRule[]
   categoryMappings          UserCategoryMapping[]
+  detectedSubscriptions     DetectedSubscription[]
 }
 
 model UserNotificationPreference {
@@ -82,6 +95,7 @@ model UserNotificationPreference {
   user               User     @relation(fields: [userId], references: [id])
   createTransaction  Boolean  @default(false)
   dailySummary       Boolean  @default(false)
+  subscriptionAudit  Boolean  @default(false)
 }
 
 model UserNotificationProvider {
@@ -231,4 +245,28 @@ model AutoApproveRule {
   category           Category        @relation(fields: [categoryId], references: [id])
 
   @@index([userId])
+}
+
+model DetectedSubscription {
+  id                     String                @id @default(uuid()) @db.Uuid
+  userId                 String                @db.Uuid
+  merchantName           String
+  displayName            String
+  averageAmount          Float
+  frequency              SubscriptionFrequency
+  lastChargeDate         DateTime
+  nextExpectedDate       DateTime
+  annualCost             Float
+  status                 SubscriptionStatus    @default(DETECTED)
+  matchingDescriptions   String[]
+  scheduledTransactionId String?               @db.Uuid
+  confidence             Float                 @default(0)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  user                   User                  @relation(fields: [userId], references: [id])
+
+  @@unique([userId, merchantName, frequency])
+  @@index([userId])
+  @@index([status])
 }

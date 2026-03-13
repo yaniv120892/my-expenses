@@ -11,6 +11,7 @@ import trendRouter from './trendRouter';
 import importRouter from './importRouter';
 import chatRouter from './chatRouter';
 import dashboardRouter from './dashboardRouter';
+import subscriptionRouter from './subscriptionRouter';
 import { excelExtractionWebhookController } from '../controllers/excelExtractionWebhookController';
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.use('/api/trends', trendRouter);
 router.use('/api/imports', importRouter);
 router.use('/api/chat', chatRouter);
 router.use('/api/dashboard', dashboardRouter);
+router.use('/api/subscriptions', subscriptionRouter);
 
 router.get('/', (req, res) => {
   res.send('ok');

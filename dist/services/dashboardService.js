@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const aiServiceFactory_1 = __importDefault(require("./ai/aiServiceFactory"));
 const dashboardRepository_1 = __importDefault(require("../repositories/dashboardRepository"));
+const subscriptionDetectionService_1 = __importDefault(require("./subscriptionDetectionService"));
 const logger_1 = __importDefault(require("../utils/logger"));
 const redisProvider_1 = require("../common/redisProvider");
 class DashboardService {
@@ -18,16 +19,17 @@ class DashboardService {
         const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const prevYear = prevDate.getFullYear();
         const prevMonth = prevDate.getMonth() + 1;
-        const [currentMonthSummary, previousMonthSummary, topCategoriesCurrent, topCategoriesPrevious, recentTransactions,] = await Promise.all([
+        const [currentMonthSummary, previousMonthSummary, topCategoriesCurrent, topCategoriesPrevious, recentTransactions, subscriptionSnapshot,] = await Promise.all([
             dashboardRepository_1.default.getMonthSummary(userId, currentYear, currentMonth),
             dashboardRepository_1.default.getMonthSummary(userId, prevYear, prevMonth),
             dashboardRepository_1.default.getTopCategoriesForMonth(userId, currentYear, currentMonth, 7),
             dashboardRepository_1.default.getTopCategoriesForMonth(userId, prevYear, prevMonth, 7),
             dashboardRepository_1.default.getRecentTransactions(userId, 5),
+            subscriptionDetectionService_1.default.getDashboardSnapshot(userId),
         ]);
         const monthComparison = this.buildMonthComparison(currentMonthSummary, previousMonthSummary);
         const topCategories = this.mergeTopCategories(topCategoriesCurrent, topCategoriesPrevious, currentMonthSummary.totalExpense);
-        return { monthComparison, topCategories, recentTransactions };
+        return { monthComparison, topCategories, recentTransactions, subscriptions: subscriptionSnapshot };
     }
     async getInsights(userId) {
         const now = new Date();
