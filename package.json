@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "build": "rimraf dist && npx prisma generate && tsc",
+    "build": "rm -rf dist && npx prisma generate && tsc",
     "start": "npx prisma migrate deploy && node dist/index.js",
     "dev": "npx prisma migrate deploy && ts-node src/index.ts",
     "watch": "npx prisma migrate deploy && nodemon --exec ts-node src/index.ts",
@@ -46,8 +46,7 @@
     "pre-commit": "^1.2.2",
     "prettier": "^3.3.3",
     "prisma": "^6.9.0",
-    "rimraf": "^6.0.1",
-    "ts-node": "^10.9.2",
+"ts-node": "^10.9.2",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.7.0"
   },

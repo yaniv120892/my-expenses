@@ -1,70 +1,155 @@
 import AIServiceFactory from '../services/ai/aiServiceFactory';
 import transactionRepository from '../repositories/transactionRepository';
+import categoryRepository from '../repositories/categoryRepository';
+import chatAggregationService from './chatAggregationService';
 import { Transaction } from '../types/transaction';
 import { AIProvider } from '../services/ai/aiProvider';
+import { ChatIntent, AggregationType } from '../types/chat';
 
 class ChatService {
   private aiProvider: AIProvider;
   private transactionRepository: typeof transactionRepository;
+  private categoryRepository: typeof categoryRepository;
 
   constructor() {
     this.aiProvider = AIServiceFactory.getAIService();
     this.transactionRepository = transactionRepository;
+    this.categoryRepository = categoryRepository;
   }
 
-  public async getChatResponse(messages: { sender: string; text: string }[], userId: string): Promise<string> {
+  public async getChatResponse(
+    messages: { sender: string; text: string }[],
+    userId: string,
+  ): Promise<string> {
     const currentDate = new Date().toISOString().split('T')[0];
-    const conversation = messages.map(m => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
-    const lastUserMessage = [...messages].reverse().find(m => m.sender === 'user')?.text || '';
+    const conversation = messages
+      .map((m) => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
+      .join('\n');
+    const lastUserMessage =
+      [...messages].reverse().find((m) => m.sender === 'user')?.text || '';
 
-    const prompt = `
-      You are a financial assistant chatbot. Your task is to understand the user's request about their transactions and respond in a helpful, conversational way.
-      The current date is ${currentDate}. Please use this as a reference for any relative date queries (e.g., 'last week', 'yesterday').
-      Here is the conversation so far:\n${conversation}\n
+    const intentPrompt = `
+      You are a financial assistant chatbot. Your task is to understand the user's request about their transactions.
+      The current date is ${currentDate}. Use this as a reference for relative date queries (e.g., 'last week', 'yesterday').
+
+      Conversation so far:\n${conversation}\n
+
       Analyze the user's latest message: "${lastUserMessage}"
 
-      Based on the conversation, determine the user's intent and extract relevant parameters. The primary intents are 'list_transactions' and 'get_transaction_summary'.
+      Determine the user's intent and extract relevant parameters. Respond with a JSON object.
 
-      Extract the following parameters if present:
-      - category (e.g., 'groceries', 'rent')
-      - startDate (in YYYY-MM-DD format)
-      - endDate (in YYYY-MM-DD format)
+      Intents:
+      - "list_transactions" — user wants to see specific transactions
+      - "get_transaction_summary" — user wants totals, averages, or breakdowns
+      - "compare_periods" — user wants to compare spending across time periods
+      - "general_question" — general financial question not about their data
 
-      Your response should be a JSON object with the intent and parameters. For example:
-      { "intent": "list_transactions", "parameters": { "category": "restaurants", "startDate": "2025-07-01", "endDate": "2025-07-04" } }
+      Parameters to extract (if present):
+      - category: the category name (e.g., "groceries", "restaurants")
+      - startDate: in YYYY-MM-DD format
+      - endDate: in YYYY-MM-DD format
+      - transactionType: "INCOME" or "EXPENSE"
+
+      Aggregation types — pick the one that best matches the user's question:
+      - "total" — sum of transactions (e.g., "How much did I spend on X?")
+      - "average" — average transaction value (e.g., "What's my average grocery expense?")
+      - "count" — count of transactions (e.g., "How many transactions this month?")
+      - "breakdown_by_category" — group by category (e.g., "Show spending by category")
+      - "breakdown_by_month" — group by month (e.g., "Monthly spending trend")
+      - "min_max" — highest and lowest (e.g., "What was my biggest expense?")
+      - "list" — show individual transactions (e.g., "List my restaurant transactions")
+
+      Examples:
+      - "How much did I spend last month?" → { "intent": "get_transaction_summary", "parameters": { "startDate": "...", "endDate": "...", "transactionType": "EXPENSE" }, "aggregation": "total" }
+      - "What's my average grocery expense?" → { "intent": "get_transaction_summary", "parameters": { "category": "groceries", "transactionType": "EXPENSE" }, "aggregation": "average" }
+      - "Show me spending by category" → { "intent": "get_transaction_summary", "parameters": { "transactionType": "EXPENSE" }, "aggregation": "breakdown_by_category" }
+      - "List my restaurant transactions" → { "intent": "list_transactions", "parameters": { "category": "restaurants" }, "aggregation": "list" }
+
+      Respond ONLY with valid JSON, no markdown fences.
     `;
 
     try {
-      const result = await this.aiProvider.generateContent(prompt);
-      const parsedResult = JSON.parse(result.replace(/```json/g, '').replace(/```/g, ''));
+      const result = await this.aiProvider.generateContent(intentPrompt);
+      const parsedResult: ChatIntent = JSON.parse(
+        result.replace(/```json/g, '').replace(/```/g, '').trim(),
+      );
 
       const { intent, parameters } = parsedResult;
 
-      let transactions: Transaction[] | undefined;
-      if (intent === 'list_transactions' || intent === 'get_transaction_summary') {
-        transactions = await this.transactionRepository.getTransactions({
-          userId,
-          page: 1,
-          perPage: 100,
-          ...parameters,
-        });
-      } else {
+      if (
+        intent !== 'list_transactions' &&
+        intent !== 'get_transaction_summary' &&
+        intent !== 'compare_periods'
+      ) {
         return "I'm sorry, I can only help with questions about your transactions. Please try asking something like, 'How much did I spend on groceries last week?'";
       }
 
-      const finalPrompt = `
-        You are a friendly financial assistant. The current date is ${currentDate}. The user asked: "${lastUserMessage}"
-        You have retrieved the following transaction data: ${JSON.stringify(transactions, null, 2)}
-        
-        Based on this data, provide a clear and concise answer to the user's question.
+      const categoryId = await this.resolveCategoryId(parameters.category);
+
+      const aggregationType = this.resolveAggregationType(parsedResult);
+      const isListQuery = aggregationType === 'list';
+
+      const transactions = await this.transactionRepository.getTransactions({
+        userId,
+        page: 1,
+        perPage: isListQuery ? 100 : 10000,
+        ...(parameters.startDate
+          ? { startDate: new Date(parameters.startDate) }
+          : {}),
+        ...(parameters.endDate
+          ? { endDate: new Date(parameters.endDate) }
+          : {}),
+        ...(parameters.transactionType
+          ? { transactionType: parameters.transactionType }
+          : {}),
+        ...(categoryId ? { categoryId } : {}),
+      });
+
+      const aggregationResult = chatAggregationService.aggregate(
+        transactions,
+        aggregationType,
+      );
+
+      const responsePrompt = `
+        You are a friendly financial assistant. The user asked: "${lastUserMessage}"
+
+        Here are the EXACT pre-computed results. Do NOT recalculate these numbers — use them as-is:
+        ${aggregationResult.summary}
+
+        ${aggregationResult.transactionCount} transactions were analyzed.
+
+        Present this information conversationally to the user. Use the exact numbers provided. Keep currency in ₪ (Israeli Shekel).
       `;
 
-      const finalResult = await this.aiProvider.generateContent(finalPrompt);
-      return finalResult;
+      return await this.aiProvider.generateContent(responsePrompt);
     } catch (error) {
       console.error('Error in ChatService:', error);
       return "I'm sorry, something went wrong while I was trying to understand that. Please try again.";
     }
+  }
+
+  private async resolveCategoryId(
+    categoryName?: string,
+  ): Promise<string | undefined> {
+    if (!categoryName) return undefined;
+
+    const categories = await this.categoryRepository.getAllCategories();
+    const lowerName = categoryName.toLowerCase();
+
+    const exact = categories.find((c) => c.name.toLowerCase() === lowerName);
+    if (exact) return exact.id;
+
+    const partial = categories.find((c) =>
+      c.name.toLowerCase().includes(lowerName),
+    );
+    return partial?.id;
+  }
+
+  private resolveAggregationType(parsed: ChatIntent): AggregationType {
+    if (parsed.aggregation) return parsed.aggregation;
+
+    if (parsed.intent === 'list_transactions') return 'list';
+    return 'total';
   }
 }
 
