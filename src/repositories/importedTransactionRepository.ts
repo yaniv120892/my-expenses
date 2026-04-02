@@ -66,6 +66,13 @@ export class ImportedTransactionRepository {
     });
   }
 
+  async clearMatchingTransaction(id: string, userId: string): Promise<void> {
+    await prisma.importedTransaction.update({
+      where: { id, userId },
+      data: { matchingTransactionId: null },
+    });
+  }
+
   async updateStatus(
     id: string,
     userId: string,
