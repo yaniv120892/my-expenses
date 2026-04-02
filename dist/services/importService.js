@@ -109,6 +109,7 @@ class ImportService {
                 ' and userId: ' +
                 userId);
         }
+        await importedTransactionRepository_1.importedTransactionRepository.clearMatchingTransaction(importedTransactionId, userId);
         await transactionService_1.default.createTransaction({
             description: transactionData.description,
             value: transactionData.value,
