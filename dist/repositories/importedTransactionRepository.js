@@ -48,6 +48,12 @@ class ImportedTransactionRepository {
             where: { id },
         });
     }
+    async clearMatchingTransaction(id, userId) {
+        await client_2.default.importedTransaction.update({
+            where: { id, userId },
+            data: { matchingTransactionId: null },
+        });
+    }
     async updateStatus(id, userId, status) {
         await client_2.default.importedTransaction.update({
             where: { id, userId },
