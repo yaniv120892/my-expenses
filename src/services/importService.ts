@@ -434,6 +434,103 @@ class ImportService {
     return result;
   }
 
+  public async rematchImport(importId: string, userId: string): Promise<void> {
+    const importRecord = await importRepository.findById(importId);
+    if (!importRecord || importRecord.userId !== userId || importRecord.deleted) {
+      throw new Error('Import not found');
+    }
+
+    if (importRecord.status !== ImportStatus.COMPLETED) {
+      throw new Error('Import must be in COMPLETED status to re-match');
+    }
+
+    const allTransactions =
+      await importedTransactionRepository.findByUserIdAndImportId(userId, importId);
+
+    const pendingTransactions = allTransactions.filter(
+      (t) => t.status === ImportedTransactionStatus.PENDING,
+    );
+
+    if (pendingTransactions.length === 0) {
+      throw new Error('No pending transactions to re-match');
+    }
+
+    await importRepository.updateStatus(importId, ImportStatus.REMATCHING);
+
+    try {
+      const excludedTransactionIds = new Set(
+        allTransactions
+          .filter(
+            (t) =>
+              t.status !== ImportedTransactionStatus.PENDING &&
+              t.matchingTransactionId,
+          )
+          .map((t) => t.matchingTransactionId!),
+      );
+
+      await prisma.importedTransaction.updateMany({
+        where: {
+          importId,
+          userId,
+          status: ImportedTransactionStatus.PENDING,
+        },
+        data: { matchingTransactionId: null },
+      });
+
+      for (const transaction of pendingTransactions) {
+        try {
+          const matches = await transactionRepository.findPotentialMatches(
+            userId,
+            transaction.date,
+            transaction.value,
+          );
+
+          const availableMatches = matches.filter(
+            (m) => !excludedTransactionIds.has(m.id),
+          );
+
+          if (availableMatches.length === 0) continue;
+
+          const bestMatchId = await this.aiProvider.findMatchingTransaction(
+            transaction.description,
+            availableMatches,
+          );
+
+          const matchingTransactionId =
+            bestMatchId ?? availableMatches[0]?.id ?? null;
+
+          if (matchingTransactionId) {
+            await prisma.importedTransaction.update({
+              where: { id: transaction.id },
+              data: { matchingTransactionId },
+            });
+
+            excludedTransactionIds.add(matchingTransactionId);
+          }
+        } catch (error) {
+          logger.error('Error re-matching transaction', {
+            transactionId: transaction.id,
+            error,
+          });
+        }
+      }
+
+      await importRepository.updateStatus(importId, ImportStatus.COMPLETED);
+
+      logger.info('Completed re-matching import', {
+        importId,
+        pendingCount: pendingTransactions.length,
+      });
+    } catch (error) {
+      await importRepository.updateStatus(
+        importId,
+        ImportStatus.FAILED,
+        error instanceof Error ? error.message : 'Re-match failed',
+      );
+      throw error;
+    }
+  }
+
   public async findPotentialMatchesForImport(
     importId: string,
     userId: string,

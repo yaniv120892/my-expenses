@@ -275,6 +275,68 @@ class ImportService {
         }
         return result;
     }
+    async rematchImport(importId, userId) {
+        var _a, _b;
+        const importRecord = await importRepository_1.importRepository.findById(importId);
+        if (!importRecord || importRecord.userId !== userId || importRecord.deleted) {
+            throw new Error('Import not found');
+        }
+        if (importRecord.status !== client_1.ImportStatus.COMPLETED) {
+            throw new Error('Import must be in COMPLETED status to re-match');
+        }
+        const allTransactions = await importedTransactionRepository_1.importedTransactionRepository.findByUserIdAndImportId(userId, importId);
+        const pendingTransactions = allTransactions.filter((t) => t.status === client_1.ImportedTransactionStatus.PENDING);
+        if (pendingTransactions.length === 0) {
+            throw new Error('No pending transactions to re-match');
+        }
+        await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.REMATCHING);
+        try {
+            const excludedTransactionIds = new Set(allTransactions
+                .filter((t) => t.status !== client_1.ImportedTransactionStatus.PENDING &&
+                t.matchingTransactionId)
+                .map((t) => t.matchingTransactionId));
+            await client_2.default.importedTransaction.updateMany({
+                where: {
+                    importId,
+                    userId,
+                    status: client_1.ImportedTransactionStatus.PENDING,
+                },
+                data: { matchingTransactionId: null },
+            });
+            for (const transaction of pendingTransactions) {
+                try {
+                    const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
+                    const availableMatches = matches.filter((m) => !excludedTransactionIds.has(m.id));
+                    if (availableMatches.length === 0)
+                        continue;
+                    const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, availableMatches);
+                    const matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = availableMatches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
+                    if (matchingTransactionId) {
+                        await client_2.default.importedTransaction.update({
+                            where: { id: transaction.id },
+                            data: { matchingTransactionId },
+                        });
+                        excludedTransactionIds.add(matchingTransactionId);
+                    }
+                }
+                catch (error) {
+                    logger_1.default.error('Error re-matching transaction', {
+                        transactionId: transaction.id,
+                        error,
+                    });
+                }
+            }
+            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.COMPLETED);
+            logger_1.default.info('Completed re-matching import', {
+                importId,
+                pendingCount: pendingTransactions.length,
+            });
+        }
+        catch (error) {
+            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.FAILED, error instanceof Error ? error.message : 'Re-match failed');
+            throw error;
+        }
+    }
     async findPotentialMatchesForImport(importId, userId) {
         try {
             logger_1.default.info('Finding potential matches for import', {
