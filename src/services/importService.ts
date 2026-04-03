@@ -479,33 +479,14 @@ class ImportService {
 
       for (const transaction of pendingTransactions) {
         try {
-          const matches = await transactionRepository.findPotentialMatches(
+          const matchedId = await this.matchSingleTransaction(
+            transaction,
             userId,
-            transaction.date,
-            transaction.value,
+            excludedTransactionIds,
           );
 
-          const availableMatches = matches.filter(
-            (m) => !excludedTransactionIds.has(m.id),
-          );
-
-          if (availableMatches.length === 0) continue;
-
-          const bestMatchId = await this.aiProvider.findMatchingTransaction(
-            transaction.description,
-            availableMatches,
-          );
-
-          const matchingTransactionId =
-            bestMatchId ?? availableMatches[0]?.id ?? null;
-
-          if (matchingTransactionId) {
-            await prisma.importedTransaction.update({
-              where: { id: transaction.id },
-              data: { matchingTransactionId },
-            });
-
-            excludedTransactionIds.add(matchingTransactionId);
+          if (matchedId) {
+            excludedTransactionIds.add(matchedId);
           }
         } catch (error) {
           logger.error('Error re-matching transaction', {
@@ -552,45 +533,12 @@ class ImportService {
       await Promise.all(
         importedTransactions.map(async (transaction) => {
           try {
-            const matches = await transactionRepository.findPotentialMatches(
-              userId,
-              transaction.date,
-              transaction.value,
-            );
-
-            let matchingTransactionId = null;
-            if (matches.length > 0) {
-              logger.debug('Found potential matches for transaction', {
-                transactionId: transaction.id,
-                matchCount: matches.length,
-              });
-
-              const bestMatchId = await this.aiProvider.findMatchingTransaction(
-                transaction.description,
-                matches,
-              );
-
-              matchingTransactionId = bestMatchId ?? matches[0]?.id ?? null;
-
-              logger.debug('Selected matching transaction', {
-                transactionId: transaction.id,
-                matchingTransactionId,
-                usedAI: !!bestMatchId,
-              });
-            }
-
-            if (matchingTransactionId) {
-              await prisma.importedTransaction.update({
-                where: { id: transaction.id },
-                data: { matchingTransactionId },
-              });
-            }
+            await this.matchSingleTransaction(transaction, userId);
           } catch (error) {
             logger.error('Error finding match for transaction', {
               transactionId: transaction.id,
               error,
             });
-            // Continue processing other transactions even if one fails
           }
         }),
       );
@@ -605,6 +553,41 @@ class ImportService {
       });
       throw error;
     }
+  }
+
+  private async matchSingleTransaction(
+    transaction: { id: string; description: string; date: Date; value: number },
+    userId: string,
+    excludedIds?: Set<string>,
+  ): Promise<string | null> {
+    const matches = await transactionRepository.findPotentialMatches(
+      userId,
+      transaction.date,
+      transaction.value,
+    );
+
+    const availableMatches = excludedIds
+      ? matches.filter((m) => !excludedIds.has(m.id))
+      : matches;
+
+    if (availableMatches.length === 0) return null;
+
+    const bestMatchId = await this.aiProvider.findMatchingTransaction(
+      transaction.description,
+      availableMatches,
+    );
+
+    const matchingTransactionId =
+      bestMatchId ?? availableMatches[0]?.id ?? null;
+
+    if (matchingTransactionId) {
+      await prisma.importedTransaction.update({
+        where: { id: transaction.id },
+        data: { matchingTransactionId },
+      });
+    }
+
+    return matchingTransactionId;
   }
 }
 
