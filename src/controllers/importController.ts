@@ -306,6 +306,19 @@ class ImportController {
       throw error;
     }
   }
+
+  async rematchImport(importId: string, userId: string) {
+    try {
+      logger.debug('Start rematch import', { importId, userId });
+      await importService.rematchImport(importId, userId);
+      logger.debug('Done rematch import');
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to rematch import', { importId, userId, error });
+      throw error;
+    }
+  }
+
   async batchAction(req: BatchActionRequest, userId: string) {
     try {
       logger.debug('Start batch action', { req, userId });
