@@ -276,7 +276,6 @@ class ImportService {
         return result;
     }
     async rematchImport(importId, userId) {
-        var _a, _b;
         const importRecord = await importRepository_1.importRepository.findById(importId);
         if (!importRecord || importRecord.userId !== userId || importRecord.deleted) {
             throw new Error('Import not found');
@@ -305,18 +304,9 @@ class ImportService {
             });
             for (const transaction of pendingTransactions) {
                 try {
-                    const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
-                    const availableMatches = matches.filter((m) => !excludedTransactionIds.has(m.id));
-                    if (availableMatches.length === 0)
-                        continue;
-                    const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, availableMatches);
-                    const matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = availableMatches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
-                    if (matchingTransactionId) {
-                        await client_2.default.importedTransaction.update({
-                            where: { id: transaction.id },
-                            data: { matchingTransactionId },
-                        });
-                        excludedTransactionIds.add(matchingTransactionId);
+                    const matchedId = await this.matchSingleTransaction(transaction, userId, excludedTransactionIds);
+                    if (matchedId) {
+                        excludedTransactionIds.add(matchedId);
                     }
                 }
                 catch (error) {
@@ -349,36 +339,14 @@ class ImportService {
                 count: importedTransactions.length,
             });
             await Promise.all(importedTransactions.map(async (transaction) => {
-                var _a, _b;
                 try {
-                    const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
-                    let matchingTransactionId = null;
-                    if (matches.length > 0) {
-                        logger_1.default.debug('Found potential matches for transaction', {
-                            transactionId: transaction.id,
-                            matchCount: matches.length,
-                        });
-                        const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, matches);
-                        matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = matches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
-                        logger_1.default.debug('Selected matching transaction', {
-                            transactionId: transaction.id,
-                            matchingTransactionId,
-                            usedAI: !!bestMatchId,
-                        });
-                    }
-                    if (matchingTransactionId) {
-                        await client_2.default.importedTransaction.update({
-                            where: { id: transaction.id },
-                            data: { matchingTransactionId },
-                        });
-                    }
+                    await this.matchSingleTransaction(transaction, userId);
                 }
                 catch (error) {
                     logger_1.default.error('Error finding match for transaction', {
                         transactionId: transaction.id,
                         error,
                     });
-                    // Continue processing other transactions even if one fails
                 }
             }));
             logger_1.default.info('Completed finding potential matches', {
@@ -392,6 +360,24 @@ class ImportService {
             });
             throw error;
         }
+    }
+    async matchSingleTransaction(transaction, userId, excludedIds) {
+        var _a, _b;
+        const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
+        const availableMatches = excludedIds
+            ? matches.filter((m) => !excludedIds.has(m.id))
+            : matches;
+        if (availableMatches.length === 0)
+            return null;
+        const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, availableMatches);
+        const matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = availableMatches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
+        if (matchingTransactionId) {
+            await client_2.default.importedTransaction.update({
+                where: { id: transaction.id },
+                data: { matchingTransactionId },
+            });
+        }
+        return matchingTransactionId;
     }
 }
 exports.importService = new ImportService();
