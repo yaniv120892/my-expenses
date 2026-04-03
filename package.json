@@ -14,15 +14,12 @@
     "lint": "eslint './src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "add-build": "git add dist",
     "ts.check": "tsc --project tsconfig.json",
     "postinstall": "prisma generate"
   },
   "keywords": [],
   "pre-commit": [
-    "ts.check",
-    "build",
-    "add-build"
+    "ts.check"
   ],
   "author": "",
   "license": "ISC",
