@@ -93,6 +93,15 @@ router.delete(
 );
 
 router.post(
+  '/:importId/rematch',
+  handleRequest(
+    (req) =>
+      importController.rematchImport(req.params.importId, req.userId ?? ''),
+    200,
+  ),
+);
+
+router.post(
   '/:importId/apply-auto-approve-rules',
   handleRequest(
     (req) =>

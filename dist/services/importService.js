@@ -275,6 +275,58 @@ class ImportService {
         }
         return result;
     }
+    async rematchImport(importId, userId) {
+        const importRecord = await importRepository_1.importRepository.findById(importId);
+        if (!importRecord || importRecord.userId !== userId || importRecord.deleted) {
+            throw new Error('Import not found');
+        }
+        if (importRecord.status !== client_1.ImportStatus.COMPLETED) {
+            throw new Error('Import must be in COMPLETED status to re-match');
+        }
+        const allTransactions = await importedTransactionRepository_1.importedTransactionRepository.findByUserIdAndImportId(userId, importId);
+        const pendingTransactions = allTransactions.filter((t) => t.status === client_1.ImportedTransactionStatus.PENDING);
+        if (pendingTransactions.length === 0) {
+            throw new Error('No pending transactions to re-match');
+        }
+        await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.REMATCHING);
+        try {
+            const excludedTransactionIds = new Set(allTransactions
+                .filter((t) => t.status !== client_1.ImportedTransactionStatus.PENDING &&
+                t.matchingTransactionId)
+                .map((t) => t.matchingTransactionId));
+            await client_2.default.importedTransaction.updateMany({
+                where: {
+                    importId,
+                    userId,
+                    status: client_1.ImportedTransactionStatus.PENDING,
+                },
+                data: { matchingTransactionId: null },
+            });
+            for (const transaction of pendingTransactions) {
+                try {
+                    const matchedId = await this.matchSingleTransaction(transaction, userId, excludedTransactionIds);
+                    if (matchedId) {
+                        excludedTransactionIds.add(matchedId);
+                    }
+                }
+                catch (error) {
+                    logger_1.default.error('Error re-matching transaction', {
+                        transactionId: transaction.id,
+                        error,
+                    });
+                }
+            }
+            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.COMPLETED);
+            logger_1.default.info('Completed re-matching import', {
+                importId,
+                pendingCount: pendingTransactions.length,
+            });
+        }
+        catch (error) {
+            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.FAILED, error instanceof Error ? error.message : 'Re-match failed');
+            throw error;
+        }
+    }
     async findPotentialMatchesForImport(importId, userId) {
         try {
             logger_1.default.info('Finding potential matches for import', {
@@ -287,36 +339,14 @@ class ImportService {
                 count: importedTransactions.length,
             });
             await Promise.all(importedTransactions.map(async (transaction) => {
-                var _a, _b;
                 try {
-                    const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
-                    let matchingTransactionId = null;
-                    if (matches.length > 0) {
-                        logger_1.default.debug('Found potential matches for transaction', {
-                            transactionId: transaction.id,
-                            matchCount: matches.length,
-                        });
-                        const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, matches);
-                        matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = matches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
-                        logger_1.default.debug('Selected matching transaction', {
-                            transactionId: transaction.id,
-                            matchingTransactionId,
-                            usedAI: !!bestMatchId,
-                        });
-                    }
-                    if (matchingTransactionId) {
-                        await client_2.default.importedTransaction.update({
-                            where: { id: transaction.id },
-                            data: { matchingTransactionId },
-                        });
-                    }
+                    await this.matchSingleTransaction(transaction, userId);
                 }
                 catch (error) {
                     logger_1.default.error('Error finding match for transaction', {
                         transactionId: transaction.id,
                         error,
                     });
-                    // Continue processing other transactions even if one fails
                 }
             }));
             logger_1.default.info('Completed finding potential matches', {
@@ -330,6 +360,24 @@ class ImportService {
             });
             throw error;
         }
+    }
+    async matchSingleTransaction(transaction, userId, excludedIds) {
+        var _a, _b;
+        const matches = await transactionRepository_1.default.findPotentialMatches(userId, transaction.date, transaction.value);
+        const availableMatches = excludedIds
+            ? matches.filter((m) => !excludedIds.has(m.id))
+            : matches;
+        if (availableMatches.length === 0)
+            return null;
+        const bestMatchId = await this.aiProvider.findMatchingTransaction(transaction.description, availableMatches);
+        const matchingTransactionId = (_b = bestMatchId !== null && bestMatchId !== void 0 ? bestMatchId : (_a = availableMatches[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : null;
+        if (matchingTransactionId) {
+            await client_2.default.importedTransaction.update({
+                where: { id: transaction.id },
+                data: { matchingTransactionId },
+            });
+        }
+        return matchingTransactionId;
     }
 }
 exports.importService = new ImportService();
