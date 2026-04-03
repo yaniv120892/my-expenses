@@ -149,6 +149,9 @@ class ImportService {
             date: transactionData.date,
             categoryId: transactionData.categoryId,
         }, userId);
+        if (matchingTransaction.status === client_1.TransactionStatus.PENDING_APPROVAL) {
+            await transactionService_1.default.updateTransactionStatus(importedTransaction.matchingTransactionId, client_1.TransactionStatus.APPROVED, userId);
+        }
         await importedTransactionRepository_1.importedTransactionRepository.updateStatus(importedTransactionId, userId, client_1.ImportedTransactionStatus.MERGED);
     }
     async ignoreImportedTransaction(importedTransactionId, userId) {

@@ -203,8 +203,11 @@ class TransactionRepository {
           gte: value - tolerance,
           lte: value + tolerance,
         },
-        status: TransactionStatus.APPROVED,
+        status: {
+          in: [TransactionStatus.APPROVED, TransactionStatus.PENDING_APPROVAL],
+        },
       },
+      orderBy: { status: 'desc' },
       include: { category: true },
     });
 

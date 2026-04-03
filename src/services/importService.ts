@@ -242,6 +242,14 @@ class ImportService {
       userId,
     );
 
+    if (matchingTransaction.status === TransactionStatus.PENDING_APPROVAL) {
+      await transactionService.updateTransactionStatus(
+        importedTransaction.matchingTransactionId,
+        TransactionStatus.APPROVED,
+        userId,
+      );
+    }
+
     await importedTransactionRepository.updateStatus(
       importedTransactionId,
       userId,
