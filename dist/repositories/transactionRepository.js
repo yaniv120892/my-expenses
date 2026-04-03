@@ -149,8 +149,11 @@ class TransactionRepository {
                     gte: value - tolerance,
                     lte: value + tolerance,
                 },
-                status: client_1.TransactionStatus.APPROVED,
+                status: {
+                    in: [client_1.TransactionStatus.APPROVED, client_1.TransactionStatus.PENDING_APPROVAL],
+                },
             },
+            orderBy: { status: 'desc' },
             include: { category: true },
         });
         return potentialTransactions.map(this.mapToDomain);
