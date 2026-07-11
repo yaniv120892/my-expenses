@@ -74,6 +74,27 @@ enum TransactionFileStatus {
   DELETED
 }
 
+enum AgentMessageSender {
+  USER
+  ASSISTANT
+  TOOL
+}
+
+enum AgentToolCallStatus {
+  SUCCESS
+  FAILED
+}
+
+enum AgentPendingActionType {
+  CREATE_TRANSACTION
+}
+
+enum AgentPendingActionStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
 model User {
   id                        String                @id @default(uuid()) @db.Uuid
   username                  String                @unique
@@ -89,6 +110,8 @@ model User {
   autoApproveRules          AutoApproveRule[]
   categoryMappings          UserCategoryMapping[]
   detectedSubscriptions     DetectedSubscription[]
+  agentConversations        AgentConversation[]
+  agentPendingActions       AgentPendingAction[]
 }
 
 model UserNotificationPreference {
@@ -268,6 +291,64 @@ model DetectedSubscription {
   user                   User                  @relation(fields: [userId], references: [id])
 
   @@unique([userId, merchantName, frequency])
+  @@index([userId])
+  @@index([status])
+}
+
+model AgentConversation {
+  id             String                @id @default(uuid()) @db.Uuid
+  userId         String                @db.Uuid
+  title          String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  user           User                  @relation(fields: [userId], references: [id])
+  messages       AgentMessage[]
+  toolCalls      AgentToolCall[]
+  pendingActions AgentPendingAction[]
+
+  @@index([userId])
+}
+
+model AgentMessage {
+  id             String             @id @default(uuid()) @db.Uuid
+  conversationId String             @db.Uuid
+  sender         AgentMessageSender
+  content        String
+  createdAt      DateTime           @default(now())
+  conversation   AgentConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model AgentToolCall {
+  id             String              @id @default(uuid()) @db.Uuid
+  conversationId String              @db.Uuid
+  name           String
+  args           Json
+  result         Json?
+  status         AgentToolCallStatus
+  error          String?
+  createdAt      DateTime            @default(now())
+  conversation   AgentConversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model AgentPendingAction {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  conversationId      String                   @db.Uuid
+  userId              String                   @db.Uuid
+  type                AgentPendingActionType
+  status              AgentPendingActionStatus @default(PENDING)
+  payload             Json
+  resultTransactionId String?                  @db.Uuid
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  confirmedAt         DateTime?
+  conversation        AgentConversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user                User                     @relation(fields: [userId], references: [id])
+
+  @@index([conversationId])
   @@index([userId])
   @@index([status])
 }
