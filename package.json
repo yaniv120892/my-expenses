@@ -14,6 +14,9 @@
     "lint": "eslint './src/**/*.{js,ts,tsx}' --fix",
     "format": "prettier --write 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
+    "test": "npm run test:agent",
+    "test:agent": "ts-node src/services/agent/agentToolRegistry.spec.ts && ts-node src/services/agent/agentService.spec.ts",
+    "proof:agent": "ts-node src/scripts/proofAgentFlow.ts",
     "add-build": "git add dist",
     "ts.check": "tsc --project tsconfig.json",
     "postinstall": "prisma generate"
