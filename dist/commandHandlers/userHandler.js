@@ -24,7 +24,7 @@ class UserHandler {
         return telegramService_1.telegramService.sendMessage(chatId, '🔄 State has been reset.');
     }
     async handleUserState(chatId, text) {
-        const { message, nextStep } = await transactionManager_1.transactionManager.handleUserState(chatId, text);
+        const { message } = await transactionManager_1.transactionManager.handleUserState(chatId, text);
         return telegramService_1.telegramService.sendMessage(chatId, message);
     }
 }

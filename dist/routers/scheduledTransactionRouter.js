@@ -11,7 +11,7 @@ const validation_1 = require("../middlewares/validation");
 const requests_1 = require("../controllers/requests");
 const authMiddleware_1 = require("../middlewares/authMiddleware");
 const router = express_1.default.Router();
-router.get('/process', (0, handleRequest_1.handleRequest)((req) => scheduledTransactionService_1.default.processDueScheduledTransactions(new Date()), 200));
+router.get('/process', (0, handleRequest_1.handleRequest)((_req) => scheduledTransactionService_1.default.processDueScheduledTransactions(new Date()), 200));
 router.post('/', (0, validation_1.validateRequest)(requests_1.CreateScheduledTransactionRequest), authMiddleware_1.authenticateRequest, (0, handleRequest_1.handleRequest)((req) => { var _a; return scheduledTransactionController_1.default.create(req.body, (_a = req.userId) !== null && _a !== void 0 ? _a : ''); }, 201));
 router.put('/:id', (0, validation_1.validateRequest)(requests_1.UpdateScheduledTransactionRequest), authMiddleware_1.authenticateRequest, (0, handleRequest_1.handleRequest)((req) => {
     var _a;

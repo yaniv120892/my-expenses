@@ -1,6 +1,7 @@
 import categoryService from '../services/categoryService';
 import { Category } from '../types/category';
 import logger from '../utils/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export class CategoryController {
   public async list(): Promise<Category[]> {
@@ -9,8 +10,8 @@ export class CategoryController {
       const categories = await categoryService.list();
       logger.debug('Done get all categories', categories);
       return categories;
-    } catch (error: any) {
-      logger.error(`Failed to get all categories, ${error.message}`);
+    } catch (error) {
+      logger.error(`Failed to get all categories, ${getErrorMessage(error)}`);
       throw error;
     }
   }
@@ -21,8 +22,8 @@ export class CategoryController {
       const category = await categoryService.byId(id);
       logger.debug('Done get category by id', category);
       return category;
-    } catch (error: any) {
-      logger.error(`Failed to get category by id, ${error.message}`);
+    } catch (error) {
+      logger.error(`Failed to get category by id, ${getErrorMessage(error)}`);
       throw error;
     }
   }

@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import logger from '../utils/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 import trendService from '../services/trendService';
 import { GetSpendingTrendsRequest } from '../types/trends';
 import { TransactionType } from '@prisma/client';
@@ -23,8 +24,8 @@ class TrendController {
       const trends = await trendService.getSpendingTrends(trendRequest, userId);
       logger.debug('Done get spending trends', trends);
       return trends;
-    } catch (error: any) {
-      logger.error(`Failed to get spending trends, ${error.message}`);
+    } catch (error) {
+      logger.error(`Failed to get spending trends, ${getErrorMessage(error)}`);
       throw error;
     }
   }
@@ -48,8 +49,10 @@ class TrendController {
       );
       logger.debug('Done get category spending trends', trends);
       return trends;
-    } catch (error: any) {
-      logger.error(`Failed to get category spending trends, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to get category spending trends, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }

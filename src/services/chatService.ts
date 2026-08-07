@@ -2,7 +2,6 @@ import AIServiceFactory from '../services/ai/aiServiceFactory';
 import transactionRepository from '../repositories/transactionRepository';
 import categoryRepository from '../repositories/categoryRepository';
 import chatAggregationService from './chatAggregationService';
-import { Transaction } from '../types/transaction';
 import { AIProvider } from '../services/ai/aiProvider';
 import { ChatIntent, AggregationType } from '../types/chat';
 

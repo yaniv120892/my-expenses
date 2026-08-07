@@ -45,7 +45,7 @@ const logoutHandler = async (req, res) => {
         await authService_1.default.logoutUser(req.userId, req.token || '');
         res.json({ success: true });
     }
-    catch (error) {
+    catch (_a) {
         res.status(500).json({ error: 'Failed to logout' });
     }
 };

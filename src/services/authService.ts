@@ -52,7 +52,7 @@ class AuthService {
   }
 
   public async verifyLoginCode(email: string, code: string) {
-    const cachedCode = await getValue(`loginCode:${email}`);
+    const cachedCode = await getValue<string>(`loginCode:${email}`);
     if (!cachedCode || cachedCode !== code) {
       return { error: 'Invalid or expired code' };
     }

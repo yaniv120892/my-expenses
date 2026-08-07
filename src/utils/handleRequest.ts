@@ -1,7 +1,7 @@
 import { RequestHandler, Request } from 'express';
 
 export const handleRequest = (
-  fn: (param: Request) => Promise<any>,
+  fn: (param: Request) => Promise<unknown>,
   status: number = 200,
 ): RequestHandler => {
   return async (req, res, next) => {

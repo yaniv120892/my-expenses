@@ -2,7 +2,6 @@ import userSettingsService from '../services/userSettingsService';
 import { UserSettingsResponse, UpdateUserSettingsRequest } from './requests';
 import logger from '../utils/logger';
 import { telegramService } from '../services/telegramService';
-import { log } from 'winston';
 
 class UserSettingsController {
   public async getUserSettings(userId: string): Promise<UserSettingsResponse> {

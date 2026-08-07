@@ -42,7 +42,11 @@ function generateWebhookToken(userId, timestamp) {
  * @returns true if token is valid and not expired
  */
 function verifyWebhookToken(token, userId, timestamp) {
-    const secret = getWebhookSecret();
+    // Called for its side effect: it throws when the webhook secret is missing,
+    // failing fast before any comparison. Keeping the call (rather than the
+    // unused binding) preserves that — inside the try block below the same throw
+    // would be swallowed into a `false` return.
+    getWebhookSecret();
     if (!token || !userId || !timestamp) {
         logger_1.default.warn('Missing required parameters for token verification', {
             hasToken: !!token,
@@ -108,7 +112,7 @@ function extractWebhookParams(query) {
         });
         return null;
     }
-    const timestampNum = parseInt(timestamp, 10);
+    const timestampNum = parseInt(String(timestamp), 10);
     if (isNaN(timestampNum)) {
         logger_1.default.warn('Invalid timestamp in webhook query', { timestamp });
         return null;

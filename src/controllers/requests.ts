@@ -21,15 +21,19 @@ import { Type } from 'class-transformer';
 import { ScheduleType } from '@prisma/client';
 
 function IsValidScheduledCombination(validationOptions?: ValidationOptions) {
-  return function (object: any, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isValidScheduledCombination',
       target: object.constructor,
       propertyName,
       options: validationOptions,
       validator: {
-        validate(_: any, args: ValidationArguments) {
-          const { scheduleType, dayOfWeek, dayOfMonth } = args.object as any;
+        validate(_: unknown, args: ValidationArguments) {
+          const { scheduleType, dayOfWeek, dayOfMonth } = args.object as {
+            scheduleType?: ScheduleType;
+            dayOfWeek?: number | null;
+            dayOfMonth?: number | null;
+          };
           if (scheduleType === 'WEEKLY') {
             if (dayOfWeek === undefined || dayOfWeek === null) return false;
             if (dayOfMonth !== undefined) return false;
@@ -210,7 +214,8 @@ export class CreateScheduledTransactionRequest {
   @IsValidScheduledCombination({
     message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
   })
-  dummy?: any;
+  // Marker property: exists only to carry the class-validator decorator above.
+  dummy?: unknown;
 }
 
 export class UpdateScheduledTransactionRequest {
@@ -253,7 +258,8 @@ export class UpdateScheduledTransactionRequest {
   @IsValidScheduledCombination({
     message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
   })
-  dummy?: any;
+  // Marker property: exists only to carry the class-validator decorator above.
+  dummy?: unknown;
 }
 
 export class LoginRequest {
