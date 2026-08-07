@@ -1,3 +1,5 @@
+import { Transaction } from './transaction';
+
 export type AggregationType =
   | 'total'
   | 'average'
@@ -7,23 +9,13 @@ export type AggregationType =
   | 'min_max'
   | 'list';
 
-export interface ChatIntent {
-  intent:
-    | 'list_transactions'
-    | 'get_transaction_summary'
-    | 'compare_periods'
-    | 'general_question';
-  parameters: {
-    category?: string;
-    startDate?: string;
-    endDate?: string;
-    transactionType?: 'INCOME' | 'EXPENSE';
-  };
-  aggregation?: AggregationType;
-}
-
 export interface AggregationResult {
   summary: string;
   data: Record<string, number | string>;
   transactionCount: number;
+}
+
+export interface ComparisonPeriod {
+  label: string;
+  transactions: Transaction[];
 }

@@ -1,7 +1,61 @@
 import { Transaction } from '../types/transaction';
-import { AggregationType, AggregationResult } from '../types/chat';
+import {
+  AggregationType,
+  AggregationResult,
+  ComparisonPeriod,
+} from '../types/chat';
 
 class ChatAggregationService {
+  /**
+   * Compares two periods and returns the difference and percentage change.
+   *
+   * Derived figures are computed here rather than left to the model. Without
+   * this, answering "how much more did I spend in February?" would mean handing
+   * the assistant two totals and having it do the subtraction itself.
+   */
+  public computeComparison(
+    periodA: ComparisonPeriod,
+    periodB: ComparisonPeriod,
+  ): AggregationResult {
+    const totalA = this.sumValues(periodA.transactions);
+    const totalB = this.sumValues(periodB.transactions);
+    const difference = this.round(totalB - totalA);
+
+    const lines = [
+      `${periodA.label}: ${this.formatCurrency(totalA)} (${this.pluralize(periodA.transactions.length, 'transaction')})`,
+      `${periodB.label}: ${this.formatCurrency(totalB)} (${this.pluralize(periodB.transactions.length, 'transaction')})`,
+      `Difference: ${difference >= 0 ? '+' : '-'}${this.formatCurrency(Math.abs(difference))} (${periodB.label} vs ${periodA.label})`,
+    ];
+
+    const data: Record<string, number | string> = {
+      [`${periodA.label} total`]: totalA,
+      [`${periodB.label} total`]: totalB,
+      difference,
+    };
+
+    // A percentage change against a zero baseline is undefined, not infinite.
+    if (totalA === 0) {
+      lines.push(
+        totalB === 0
+          ? 'Percentage change: not applicable (both periods are zero)'
+          : `Percentage change: not applicable (${periodA.label} has no transactions to compare against)`,
+      );
+    } else {
+      const percentChange = this.round((difference / totalA) * 100);
+      lines.push(
+        `Percentage change: ${percentChange >= 0 ? '+' : ''}${percentChange}%`,
+      );
+      data.percentChange = percentChange;
+    }
+
+    return {
+      summary: lines.join('\n'),
+      data,
+      transactionCount:
+        periodA.transactions.length + periodB.transactions.length,
+    };
+  }
+
   public aggregate(
     transactions: Transaction[],
     aggregationType: AggregationType,
@@ -62,9 +116,7 @@ class ChatAggregationService {
   }
 
   private computeCount(transactions: Transaction[]): AggregationResult {
-    const incomeCount = transactions.filter(
-      (t) => t.type === 'INCOME',
-    ).length;
+    const incomeCount = transactions.filter((t) => t.type === 'INCOME').length;
     const expenseCount = transactions.filter(
       (t) => t.type === 'EXPENSE',
     ).length;
@@ -86,14 +138,24 @@ class ChatAggregationService {
     }
 
     const sorted = [...byCategory.entries()].sort(([, a], [, b]) => b - a);
-    const lines = sorted.map(
-      ([name, amount]) => `  ${name}: ${this.formatCurrency(amount)}`,
-    );
     const total = sorted.reduce((sum, [, amount]) => sum + amount, 0);
+
+    // Shares are computed here so "what percentage went to rent?" is answered
+    // from a tool result rather than by dividing two numbers in the model.
+    const lines = sorted.map(([name, amount]) => {
+      const share = total === 0 ? 0 : this.round((amount / total) * 100);
+      return `  ${name}: ${this.formatCurrency(amount)} (${share}%)`;
+    });
+
+    const data: Record<string, number | string> = {};
+    for (const [name, amount] of sorted) {
+      data[name] = amount;
+      data[`${name} %`] = total === 0 ? 0 : this.round((amount / total) * 100);
+    }
 
     return {
       summary: `Spending by category:\n${lines.join('\n')}\n\nTotal: ${this.formatCurrency(total)}`,
-      data: Object.fromEntries(sorted),
+      data,
       transactionCount: transactions.length,
     };
   }
@@ -169,7 +231,11 @@ class ChatAggregationService {
 
     return {
       summary: summaryParts.join('\n'),
-      data: { shown: top.length, total: transactions.length, totalValue: total },
+      data: {
+        shown: top.length,
+        total: transactions.length,
+        totalValue: total,
+      },
       transactionCount: transactions.length,
     };
   }
@@ -181,6 +247,18 @@ class ChatAggregationService {
     return transactions
       .filter((t) => t.type === type)
       .reduce((sum, t) => sum + t.value, 0);
+  }
+
+  private sumValues(transactions: Transaction[]): number {
+    return this.round(transactions.reduce((sum, t) => sum + t.value, 0));
+  }
+
+  private round(value: number): number {
+    return Math.round(value * 100) / 100;
+  }
+
+  private pluralize(count: number, noun: string): string {
+    return `${count} ${noun}${count === 1 ? '' : 's'}`;
   }
 
   private formatCurrency(amount: number): string {
