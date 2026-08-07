@@ -1,156 +1,70 @@
-import AIServiceFactory from '../services/ai/aiServiceFactory';
-import transactionRepository from '../repositories/transactionRepository';
-import categoryRepository from '../repositories/categoryRepository';
-import chatAggregationService from './chatAggregationService';
-import { Transaction } from '../types/transaction';
-import { AIProvider } from '../services/ai/aiProvider';
-import { ChatIntent, AggregationType } from '../types/chat';
+import { RequestContext } from '@mastra/core/request-context';
+import { financialAssistant } from './assistant/financialAssistant';
+import { getThreadId, isMemoryEnabled } from './assistant/memory';
+import { USER_ID_CONTEXT_KEY } from './assistant/tools';
+
+export interface ChatMessage {
+  sender: string;
+  text: string;
+}
 
 class ChatService {
-  private aiProvider: AIProvider;
-  private transactionRepository: typeof transactionRepository;
-  private categoryRepository: typeof categoryRepository;
-
-  constructor() {
-    this.aiProvider = AIServiceFactory.getAIService();
-    this.transactionRepository = transactionRepository;
-    this.categoryRepository = categoryRepository;
-  }
-
-  public async getChatResponse(
-    messages: { sender: string; text: string }[],
+  /**
+   * Runs the assistant and returns a stream of text deltas.
+   *
+   * The agent decides which tools to call and how many times, so questions that
+   * need more than one lookup (comparisons, follow-ups) are answered in a single
+   * turn. Figures always come from tool results, never from the model.
+   */
+  public async streamChatResponse(
+    messages: ChatMessage[],
     userId: string,
-  ): Promise<string> {
-    const currentDate = new Date().toISOString().split('T')[0];
-    const conversation = messages
-      .map((m) => `${m.sender === 'user' ? 'User' : 'Assistant'}: ${m.text}`)
-      .join('\n');
-    const lastUserMessage =
-      [...messages].reverse().find((m) => m.sender === 'user')?.text || '';
+    abortSignal?: AbortSignal,
+  ): Promise<AsyncIterable<string>> {
+    // Injected server-side so the model cannot choose whose data it reads.
+    const requestContext = new RequestContext();
+    requestContext.set(USER_ID_CONTEXT_KEY, userId);
 
-    const intentPrompt = `
-      You are a financial assistant chatbot. Your task is to understand the user's request about their transactions.
-      The current date is ${currentDate}. Use this as a reference for relative date queries (e.g., 'last week', 'yesterday').
-
-      Conversation so far:\n${conversation}\n
-
-      Analyze the user's latest message: "${lastUserMessage}"
-
-      Determine the user's intent and extract relevant parameters. Respond with a JSON object.
-
-      Intents:
-      - "list_transactions" — user wants to see specific transactions
-      - "get_transaction_summary" — user wants totals, averages, or breakdowns
-      - "compare_periods" — user wants to compare spending across time periods
-      - "general_question" — general financial question not about their data
-
-      Parameters to extract (if present):
-      - category: the category name (e.g., "groceries", "restaurants")
-      - startDate: in YYYY-MM-DD format
-      - endDate: in YYYY-MM-DD format
-      - transactionType: "INCOME" or "EXPENSE"
-
-      Aggregation types — pick the one that best matches the user's question:
-      - "total" — sum of transactions (e.g., "How much did I spend on X?")
-      - "average" — average transaction value (e.g., "What's my average grocery expense?")
-      - "count" — count of transactions (e.g., "How many transactions this month?")
-      - "breakdown_by_category" — group by category (e.g., "Show spending by category")
-      - "breakdown_by_month" — group by month (e.g., "Monthly spending trend")
-      - "min_max" — highest and lowest (e.g., "What was my biggest expense?")
-      - "list" — show individual transactions (e.g., "List my restaurant transactions")
-
-      Examples:
-      - "How much did I spend last month?" → { "intent": "get_transaction_summary", "parameters": { "startDate": "...", "endDate": "...", "transactionType": "EXPENSE" }, "aggregation": "total" }
-      - "What's my average grocery expense?" → { "intent": "get_transaction_summary", "parameters": { "category": "groceries", "transactionType": "EXPENSE" }, "aggregation": "average" }
-      - "Show me spending by category" → { "intent": "get_transaction_summary", "parameters": { "transactionType": "EXPENSE" }, "aggregation": "breakdown_by_category" }
-      - "List my restaurant transactions" → { "intent": "list_transactions", "parameters": { "category": "restaurants" }, "aggregation": "list" }
-
-      Respond ONLY with valid JSON, no markdown fences.
-    `;
-
-    try {
-      const result = await this.aiProvider.generateContent(intentPrompt);
-      const parsedResult: ChatIntent = JSON.parse(
-        result.replace(/```json/g, '').replace(/```/g, '').trim(),
-      );
-
-      const { intent, parameters } = parsedResult;
-
-      if (
-        intent !== 'list_transactions' &&
-        intent !== 'get_transaction_summary' &&
-        intent !== 'compare_periods'
-      ) {
-        return "I'm sorry, I can only help with questions about your transactions. Please try asking something like, 'How much did I spend on groceries last week?'";
-      }
-
-      const categoryId = await this.resolveCategoryId(parameters.category);
-
-      const aggregationType = this.resolveAggregationType(parsedResult);
-      const isListQuery = aggregationType === 'list';
-
-      const transactions = await this.transactionRepository.getTransactions({
-        userId,
-        page: 1,
-        perPage: isListQuery ? 100 : 10000,
-        ...(parameters.startDate
-          ? { startDate: new Date(parameters.startDate) }
-          : {}),
-        ...(parameters.endDate
-          ? { endDate: new Date(parameters.endDate) }
-          : {}),
-        ...(parameters.transactionType
-          ? { transactionType: parameters.transactionType }
-          : {}),
-        ...(categoryId ? { categoryId } : {}),
-      });
-
-      const aggregationResult = chatAggregationService.aggregate(
-        transactions,
-        aggregationType,
-      );
-
-      const responsePrompt = `
-        You are a friendly financial assistant. The user asked: "${lastUserMessage}"
-
-        Here are the EXACT pre-computed results. Do NOT recalculate these numbers — use them as-is:
-        ${aggregationResult.summary}
-
-        ${aggregationResult.transactionCount} transactions were analyzed.
-
-        Present this information conversationally to the user. Use the exact numbers provided. Keep currency in ₪ (Israeli Shekel).
-      `;
-
-      return await this.aiProvider.generateContent(responsePrompt);
-    } catch (error) {
-      console.error('Error in ChatService:', error);
-      return "I'm sorry, something went wrong while I was trying to understand that. Please try again.";
-    }
-  }
-
-  private async resolveCategoryId(
-    categoryName?: string,
-  ): Promise<string | undefined> {
-    if (!categoryName) return undefined;
-
-    const categories = await this.categoryRepository.getAllCategories();
-    const lowerName = categoryName.toLowerCase();
-
-    const exact = categories.find((c) => c.name.toLowerCase() === lowerName);
-    if (exact) return exact.id;
-
-    const partial = categories.find((c) =>
-      c.name.toLowerCase().includes(lowerName),
+    const result = await financialAssistant.stream(
+      this.toModelMessages(messages),
+      {
+        memory: {
+          thread: getThreadId(userId),
+          resource: userId,
+        },
+        requestContext,
+        ...(abortSignal ? { abortSignal } : {}),
+      },
     );
-    return partial?.id;
+
+    return result.textStream;
   }
 
-  private resolveAggregationType(parsed: ChatIntent): AggregationType {
-    if (parsed.aggregation) return parsed.aggregation;
+  /**
+   * The client posts its full message list, but the thread already holds the
+   * earlier turns. Sending everything again would append duplicates on each
+   * request, so only the newest user message is passed through when memory is
+   * active; without memory the whole conversation is the only context there is.
+   */
+  private toModelMessages(messages: ChatMessage[]): ModelMessage[] {
+    const history = isMemoryEnabled()
+      ? messages.slice(-1).filter((message) => message.sender === 'user')
+      : messages;
 
-    if (parsed.intent === 'list_transactions') return 'list';
-    return 'total';
+    // Fall back to the last message if the client's final entry was not a user
+    // turn, so a request never arrives with nothing to answer.
+    const selected = history.length ? history : messages.slice(-1);
+
+    return selected.map((message) =>
+      message.sender === 'user'
+        ? { role: 'user' as const, content: message.text }
+        : { role: 'assistant' as const, content: message.text },
+    );
   }
 }
+
+type ModelMessage =
+  | { role: 'user'; content: string }
+  | { role: 'assistant'; content: string };
 
 export default new ChatService();
