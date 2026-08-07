@@ -1,4 +1,5 @@
 import logger from '../utils/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 import subscriptionDetectionService from '../services/subscriptionDetectionService';
 import { SubscriptionStatus } from '@prisma/client';
 import { ConvertSubscriptionRequest } from './requests';
@@ -12,10 +13,12 @@ class SubscriptionController {
         userId,
         validStatus,
       );
-      logger.debug('Done list subscriptions', { count: result.subscriptions.length });
+      logger.debug('Done list subscriptions', {
+        count: result.subscriptions.length,
+      });
       return result;
-    } catch (error: any) {
-      logger.error(`Failed to list subscriptions, ${error.message}`);
+    } catch (error) {
+      logger.error(`Failed to list subscriptions, ${getErrorMessage(error)}`);
       throw error;
     }
   }
@@ -29,8 +32,10 @@ class SubscriptionController {
       );
       logger.debug('Done confirm subscription', { id });
       return result;
-    } catch (error: any) {
-      logger.error(`Failed to confirm subscription ${id}, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to confirm subscription ${id}, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -44,8 +49,10 @@ class SubscriptionController {
       );
       logger.debug('Done dismiss subscription', { id });
       return result;
-    } catch (error: any) {
-      logger.error(`Failed to dismiss subscription ${id}, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to dismiss subscription ${id}, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -65,8 +72,10 @@ class SubscriptionController {
         );
       logger.debug('Done convert subscription', { id });
       return result;
-    } catch (error: any) {
-      logger.error(`Failed to convert subscription ${id}, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to convert subscription ${id}, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }

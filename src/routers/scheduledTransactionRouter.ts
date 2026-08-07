@@ -14,7 +14,7 @@ const router = express.Router();
 router.get(
   '/process',
   handleRequest(
-    (req: Request) =>
+    (_req: Request) =>
       scheduledTransactionService.processDueScheduledTransactions(new Date()),
     200,
   ),

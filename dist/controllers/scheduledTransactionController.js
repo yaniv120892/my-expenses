@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = __importDefault(require("../utils/logger"));
+const errorUtils_1 = require("../utils/errorUtils");
 const scheduledTransactionService_1 = __importDefault(require("../services/scheduledTransactionService"));
 class ScheduledTransactionController {
     async create(request, userId) {
@@ -14,19 +15,22 @@ class ScheduledTransactionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to create scheduled transaction, ${JSON.stringify(request)}, ${error.message}`);
+            logger_1.default.error(`Failed to create scheduled transaction, ${JSON.stringify(request)}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
     async update(id, request, userId) {
         try {
-            logger_1.default.debug('Start update scheduled transaction', { id, reqBody: request });
+            logger_1.default.debug('Start update scheduled transaction', {
+                id,
+                reqBody: request,
+            });
             const result = await scheduledTransactionService_1.default.updateScheduledTransaction(id, request, userId);
             logger_1.default.debug('Done update scheduled transaction', result);
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to update scheduled transaction ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to update scheduled transaction ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -38,7 +42,7 @@ class ScheduledTransactionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to list scheduled transactions, ${error.message}`);
+            logger_1.default.error(`Failed to list scheduled transactions, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -50,7 +54,7 @@ class ScheduledTransactionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to delete scheduled transaction ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to delete scheduled transaction ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }

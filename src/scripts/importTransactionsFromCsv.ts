@@ -7,6 +7,9 @@ import { normalizeCategoryName } from './categoryMappingUtils';
 
 dotenv.config();
 
+/** csv-parser yields one object per row, keyed by column header. */
+type CsvRow = Record<string, string>;
+
 const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const categoryCache: Map<string, string> = new Map();
 
@@ -22,7 +25,7 @@ async function importData() {
   const userId = getUserIdFromArgs();
   console.log('Start importing data');
 
-  const rows: any[] = [];
+  const rows: CsvRow[] = [];
   await readCSVFile(rows);
   await upsertCategories(rows);
   await processRowsInBatches(rows, 10, userId);
@@ -31,7 +34,7 @@ async function importData() {
 }
 
 /** Step 1: Read CSV file into memory */
-async function readCSVFile(rows: any[]) {
+async function readCSVFile(rows: CsvRow[]) {
   return new Promise<void>((resolve, reject) => {
     fs.createReadStream(csvFilePath)
       .pipe(csv({ separator: ';' }))
@@ -42,7 +45,7 @@ async function readCSVFile(rows: any[]) {
 }
 
 /** Step 2: Collect unique categories and batch insert missing ones */
-async function upsertCategories(rows: any[]) {
+async function upsertCategories(rows: CsvRow[]) {
   console.log('Extracting unique categories...');
 
   const uniqueCategories = new Set<string>();
@@ -86,7 +89,7 @@ async function upsertCategories(rows: any[]) {
 }
 
 async function processRowsInBatches(
-  rows: any[],
+  rows: CsvRow[],
   batchSize: number = 10,
   userId: string,
 ) {
@@ -102,7 +105,7 @@ async function processRowsInBatches(
   }
 }
 
-async function processRow(row: any, userId: string) {
+async function processRow(row: CsvRow, userId: string) {
   const { Category, Date } = row;
   const normalizedCategory = normalizeCategoryName(Category);
 
@@ -123,13 +126,17 @@ function parseTransactionDate(transactionDate: string): Date {
 }
 
 async function createTransaction(
-  row: any,
+  row: CsvRow,
   parsedDate: Date,
   categoryId: string,
   userId: string,
 ) {
-  const type = row.Value > 0 ? 'INCOME' : 'EXPENSE';
-  const value = Math.abs(row.Value);
+  // CSV values arrive as strings; the comparison and Math.abs below previously
+  // relied on implicit coercion. Number() makes that explicit with identical
+  // results, including for empty and non-numeric cells (both give NaN/0).
+  const numericValue = Number(row.Value);
+  const type = numericValue > 0 ? 'INCOME' : 'EXPENSE';
+  const value = Math.abs(numericValue);
   await prisma.transaction.create({
     data: {
       description: row.Notes || '',

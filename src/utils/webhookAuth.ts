@@ -50,7 +50,12 @@ export function verifyWebhookToken(
   userId: string,
   timestamp: number,
 ): boolean {
-  const secret = getWebhookSecret();
+  // Called for its side effect: it throws when the webhook secret is missing,
+  // failing fast before any comparison. Keeping the call (rather than the
+  // unused binding) preserves that — inside the try block below the same throw
+  // would be swallowed into a `false` return.
+  getWebhookSecret();
+
   if (!token || !userId || !timestamp) {
     logger.warn('Missing required parameters for token verification', {
       hasToken: !!token,
@@ -115,7 +120,7 @@ export function verifyWebhookToken(
  * @param query - Express request query object
  * @returns Extracted parameters or null if invalid
  */
-export function extractWebhookParams(query: any): {
+export function extractWebhookParams(query: Record<string, unknown>): {
   token: string;
   userId: string;
   timestamp: number;
@@ -131,7 +136,7 @@ export function extractWebhookParams(query: any): {
     return null;
   }
 
-  const timestampNum = parseInt(timestamp, 10);
+  const timestampNum = parseInt(String(timestamp), 10);
   if (isNaN(timestampNum)) {
     logger.warn('Invalid timestamp in webhook query', { timestamp });
     return null;

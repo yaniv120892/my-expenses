@@ -1,4 +1,4 @@
-import { endOfDay, startOfDay, subMonths, format } from 'date-fns';
+import { subMonths, format } from 'date-fns';
 import {
   GetSpendingTrendsRequest,
   SpendingTrend,
@@ -11,6 +11,7 @@ import transactionRepository from '../repositories/transactionRepository';
 import categoryRepository from '../repositories/categoryRepository';
 import { TransactionStatus, TransactionType } from '@prisma/client';
 import { buildCategoryParentMap } from '../utils/categoryHierarchy';
+import { Transaction } from '../types/transaction';
 
 interface CategoryTrendData {
   points: CategoryTrendPoint[];
@@ -244,7 +245,7 @@ class TrendService {
   }
 
   private filterTransactionsByCategory(
-    transactions: any[],
+    transactions: Transaction[],
     categoryIds: Set<string>,
   ) {
     return transactions.filter(
@@ -252,7 +253,7 @@ class TrendService {
     );
   }
 
-  private calculateTotalAmount(transactions: any[]): number {
+  private calculateTotalAmount(transactions: Transaction[]): number {
     return transactions.reduce(
       (sum, transaction) => sum + transaction.value,
       0,
@@ -305,7 +306,7 @@ class TrendService {
   }
 
   private groupTransactionsByPeriod(
-    transactions: any[],
+    transactions: Transaction[],
     period: string,
   ): TrendPoint[] {
     const groupedData = new Map<string, { amount: number; count: number }>();
@@ -344,7 +345,6 @@ class TrendService {
       count: data.count,
     }));
   }
-
 }
 
 export default new TrendService();

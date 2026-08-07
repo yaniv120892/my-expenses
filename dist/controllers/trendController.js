@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = __importDefault(require("../utils/logger"));
+const errorUtils_1 = require("../utils/errorUtils");
 const trendService_1 = __importDefault(require("../services/trendService"));
 class TrendController {
     async getSpendingTrends(request) {
@@ -23,7 +24,7 @@ class TrendController {
             return trends;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get spending trends, ${error.message}`);
+            logger_1.default.error(`Failed to get spending trends, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -43,7 +44,7 @@ class TrendController {
             return trends;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get category spending trends, ${error.message}`);
+            logger_1.default.error(`Failed to get category spending trends, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }

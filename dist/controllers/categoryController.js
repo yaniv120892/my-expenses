@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryController = void 0;
 const categoryService_1 = __importDefault(require("../services/categoryService"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const errorUtils_1 = require("../utils/errorUtils");
 class CategoryController {
     async list() {
         try {
@@ -15,7 +16,7 @@ class CategoryController {
             return categories;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get all categories, ${error.message}`);
+            logger_1.default.error(`Failed to get all categories, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -27,7 +28,7 @@ class CategoryController {
             return category;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get category by id, ${error.message}`);
+            logger_1.default.error(`Failed to get category by id, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
