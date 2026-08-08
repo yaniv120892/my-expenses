@@ -1,7 +1,7 @@
-import { RequestContext } from '@mastra/core/request-context';
-import { financialAssistant } from './assistant/financialAssistant';
+import { getFinancialAssistant } from './assistant/financialAssistant';
 import { getThreadId, isMemoryEnabled } from './assistant/memory';
 import { USER_ID_CONTEXT_KEY } from './assistant/tools';
+import { importEsm } from './assistant/esm';
 
 export interface ChatMessage {
   sender: string;
@@ -29,21 +29,25 @@ class ChatService {
     userId: string,
     abortSignal?: AbortSignal,
   ): Promise<AsyncIterable<string>> {
+    const [{ RequestContext }, assistant] = await Promise.all([
+      importEsm<typeof import('@mastra/core/request-context')>(
+        '@mastra/core/request-context',
+      ),
+      getFinancialAssistant(),
+    ]);
+
     // Injected server-side so the model cannot choose whose data it reads.
     const requestContext = new RequestContext();
     requestContext.set(USER_ID_CONTEXT_KEY, userId);
 
-    const result = await financialAssistant.stream(
-      this.toModelMessages(messages),
-      {
-        memory: {
-          thread: getThreadId(userId),
-          resource: userId,
-        },
-        requestContext,
-        ...(abortSignal ? { abortSignal } : {}),
+    const result = await assistant.stream(this.toModelMessages(messages), {
+      memory: {
+        thread: getThreadId(userId),
+        resource: userId,
       },
-    );
+      requestContext,
+      ...(abortSignal ? { abortSignal } : {}),
+    });
 
     return result.textStream;
   }

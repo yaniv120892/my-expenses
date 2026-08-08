@@ -1,7 +1,8 @@
-import { Agent } from '@mastra/core/agent';
+import type { Agent } from '@mastra/core/agent';
 import { getAssistantModel } from './model';
 import { getAssistantMemory } from './memory';
-import { assistantTools } from './tools';
+import { buildAssistantTools } from './tools';
+import { importEsm } from './esm';
 
 function buildInstructions(): string {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -46,17 +47,43 @@ give regulated financial, tax, or investment advice.
 `.trim();
 }
 
-const memory = getAssistantMemory();
+let assistant: Promise<Agent> | undefined;
 
-export const financialAssistant = new Agent({
-  id: 'financial-assistant',
-  name: 'Financial Assistant',
-  // Passed as a function so the current date is resolved per request rather
-  // than frozen when the module is first loaded.
-  instructions: buildInstructions,
-  model: getAssistantModel,
-  tools: assistantTools,
-  // Omitted entirely when no direct Postgres connection is configured, so the
-  // assistant still answers (statelessly) instead of failing to construct.
-  ...(memory ? { memory } : {}),
-});
+/**
+ * The shared agent, constructed on first use and reused afterwards.
+ *
+ * Async because Mastra is reached through a dynamic import (see ./esm), which
+ * also means nothing Mastra-related is loaded until someone actually chats —
+ * routes that never touch the assistant pay nothing for it.
+ */
+export function getFinancialAssistant(): Promise<Agent> {
+  // A rejected promise is dropped rather than cached, so one failed build does
+  // not disable chat for the lifetime of the process.
+  assistant ??= build().catch((error) => {
+    assistant = undefined;
+    throw error;
+  });
+
+  return assistant;
+}
+
+async function build(): Promise<Agent> {
+  const [{ Agent }, tools, memory] = await Promise.all([
+    importEsm<typeof import('@mastra/core/agent')>('@mastra/core/agent'),
+    buildAssistantTools(),
+    getAssistantMemory(),
+  ]);
+
+  return new Agent({
+    id: 'financial-assistant',
+    name: 'Financial Assistant',
+    // Passed as a function so the current date is resolved per request rather
+    // than frozen when the agent is first built.
+    instructions: buildInstructions,
+    model: getAssistantModel,
+    tools,
+    // Omitted entirely when no direct Postgres connection is configured, so the
+    // assistant still answers (statelessly) instead of failing to construct.
+    ...(memory ? { memory } : {}),
+  });
+}

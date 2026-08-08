@@ -1,4 +1,3 @@
-import { createTool } from '@mastra/core/tools';
 // Deliberately zod/v4 rather than the bare `zod` import. Zod 3.25 ships both
 // APIs, and the root export is v3 — which routes Mastra through its zod-v3
 // adapter. That adapter's CommonJS build calls `zodToJsonSchema.default(...)`
@@ -14,6 +13,7 @@ import chatAggregationService from '../chatAggregationService';
 import { Transaction } from '../../types/transaction';
 import { AggregationType } from '../../types/chat';
 import { TrendPeriod } from '../../types/trends';
+import { importEsm } from './esm';
 
 export const USER_ID_CONTEXT_KEY = 'userId';
 
@@ -148,179 +148,188 @@ async function fetchTransactions(
   });
 }
 
-export const listCategories = createTool({
-  id: 'listCategories',
-  description:
-    'Lists every category available to the user. Call this before filtering by category so you use a real category name rather than guessing one.',
-  inputSchema: z.object({}),
-  outputSchema: z.object({
-    categories: z.array(z.string()),
-  }),
-  execute: async (_input, context) => {
-    requireUserId(context);
-    const categories = await categoryRepository.getAllCategories();
-    return { categories: categories.map((category) => category.name) };
-  },
-});
+/**
+ * Builds the tool set. Async because `createTool` comes from Mastra's ESM
+ * build, which can only be reached through a dynamic import (see ./esm).
+ */
+export async function buildAssistantTools() {
+  const { createTool } =
+    await importEsm<typeof import('@mastra/core/tools')>('@mastra/core/tools');
 
-export const listTransactions = createTool({
-  id: 'listTransactions',
-  description:
-    'Lists individual transactions matching the given filters. Use this when the user wants to see specific transactions rather than a total.',
-  inputSchema: dateFilterSchema,
-  outputSchema: summaryOutputSchema,
-  execute: async (input, context) =>
-    summarize(requireUserId(context), input, 'list'),
-});
+  const listCategories = createTool({
+    id: 'listCategories',
+    description:
+      'Lists every category available to the user. Call this before filtering by category so you use a real category name rather than guessing one.',
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      categories: z.array(z.string()),
+    }),
+    execute: async (_input, context) => {
+      requireUserId(context);
+      const categories = await categoryRepository.getAllCategories();
+      return { categories: categories.map((category) => category.name) };
+    },
+  });
 
-export const summarizeTransactions = createTool({
-  id: 'summarizeTransactions',
-  description:
-    'Computes a figure over the transactions matching the filters — a total, average, count, category breakdown, monthly breakdown, or highest/lowest. All arithmetic is done server-side; use the returned numbers exactly as given.',
-  inputSchema: dateFilterSchema.extend({
-    aggregation: z
-      .enum([
-        'total',
-        'average',
-        'count',
-        'breakdown_by_category',
-        'breakdown_by_month',
-        'min_max',
-      ])
-      .describe('Which figure to compute'),
-  }),
-  outputSchema: summaryOutputSchema,
-  execute: async (input, context) =>
-    summarize(requireUserId(context), input, input.aggregation),
-});
+  const listTransactions = createTool({
+    id: 'listTransactions',
+    description:
+      'Lists individual transactions matching the given filters. Use this when the user wants to see specific transactions rather than a total.',
+    inputSchema: dateFilterSchema,
+    outputSchema: summaryOutputSchema,
+    execute: async (input, context) =>
+      summarize(requireUserId(context), input, 'list'),
+  });
 
-export const comparePeriods = createTool({
-  id: 'comparePeriods',
-  description:
-    'Compares two date ranges and returns both totals along with the difference and percentage change, all computed server-side. Always use this for comparisons instead of calling summarizeTransactions twice and subtracting the results yourself.',
-  inputSchema: z.object({
-    periodA: periodSchema('January 2026'),
-    periodB: periodSchema('February 2026'),
-    categoryName: z
-      .string()
-      .optional()
-      .describe('Restrict both periods to this category'),
-    transactionType: z
-      .enum(['INCOME', 'EXPENSE'])
-      .optional()
-      .describe('Restrict both periods to income or expenses'),
-  }),
-  outputSchema: summaryOutputSchema,
-  execute: async (input, context) => {
-    const userId = requireUserId(context);
+  const summarizeTransactions = createTool({
+    id: 'summarizeTransactions',
+    description:
+      'Computes a figure over the transactions matching the filters — a total, average, count, category breakdown, monthly breakdown, or highest/lowest. All arithmetic is done server-side; use the returned numbers exactly as given.',
+    inputSchema: dateFilterSchema.extend({
+      aggregation: z
+        .enum([
+          'total',
+          'average',
+          'count',
+          'breakdown_by_category',
+          'breakdown_by_month',
+          'min_max',
+        ])
+        .describe('Which figure to compute'),
+    }),
+    outputSchema: summaryOutputSchema,
+    execute: async (input, context) =>
+      summarize(requireUserId(context), input, input.aggregation),
+  });
 
-    // Resolved once and shared: otherwise each period re-fetches the whole
-    // category list to map the same name.
-    const shared: DateFilterInput = {
-      categoryId: await resolveCategoryId(input.categoryName),
-      transactionType: input.transactionType,
-    };
+  const comparePeriods = createTool({
+    id: 'comparePeriods',
+    description:
+      'Compares two date ranges and returns both totals along with the difference and percentage change, all computed server-side. Always use this for comparisons instead of calling summarizeTransactions twice and subtracting the results yourself.',
+    inputSchema: z.object({
+      periodA: periodSchema('January 2026'),
+      periodB: periodSchema('February 2026'),
+      categoryName: z
+        .string()
+        .optional()
+        .describe('Restrict both periods to this category'),
+      transactionType: z
+        .enum(['INCOME', 'EXPENSE'])
+        .optional()
+        .describe('Restrict both periods to income or expenses'),
+    }),
+    outputSchema: summaryOutputSchema,
+    execute: async (input, context) => {
+      const userId = requireUserId(context);
 
-    const [transactionsA, transactionsB] = await Promise.all([
-      fetchTransactions(userId, {
-        ...shared,
-        startDate: input.periodA.startDate,
-        endDate: input.periodA.endDate,
-      }),
-      fetchTransactions(userId, {
-        ...shared,
-        startDate: input.periodB.startDate,
-        endDate: input.periodB.endDate,
-      }),
-    ]);
+      // Resolved once and shared: otherwise each period re-fetches the whole
+      // category list to map the same name.
+      const shared: DateFilterInput = {
+        categoryId: await resolveCategoryId(input.categoryName),
+        transactionType: input.transactionType,
+      };
 
-    const result = chatAggregationService.computeComparison(
-      { label: input.periodA.label, transactions: transactionsA },
-      { label: input.periodB.label, transactions: transactionsB },
-    );
+      const [transactionsA, transactionsB] = await Promise.all([
+        fetchTransactions(userId, {
+          ...shared,
+          startDate: input.periodA.startDate,
+          endDate: input.periodA.endDate,
+        }),
+        fetchTransactions(userId, {
+          ...shared,
+          startDate: input.periodB.startDate,
+          endDate: input.periodB.endDate,
+        }),
+      ]);
 
-    return {
-      summary: result.summary,
-      transactionCount: result.transactionCount,
-    };
-  },
-});
-
-export const getSpendingTrends = createTool({
-  id: 'getSpendingTrends',
-  description:
-    'Returns how spending has moved over time, either overall or broken down by category, including the percentage change against the previous period.',
-  inputSchema: z.object({
-    period: z
-      .enum(['daily', 'weekly', 'monthly', 'yearly'])
-      .describe('Granularity of the trend points'),
-    startDate: z.string().optional().describe('Start date, YYYY-MM-DD'),
-    endDate: z.string().optional().describe('End date, YYYY-MM-DD'),
-    categoryName: z
-      .string()
-      .optional()
-      .describe('Restrict the trend to a single category'),
-    transactionType: z.enum(['INCOME', 'EXPENSE']).optional(),
-    byCategory: z
-      .boolean()
-      .optional()
-      .describe('Set true to break the trend down per category'),
-  }),
-  outputSchema: z.object({
-    summary: z.string(),
-  }),
-  execute: async (input, context) => {
-    const userId = requireUserId(context);
-    const categoryId = await resolveCategoryId(input.categoryName);
-
-    const request = {
-      period: input.period as TrendPeriod,
-      ...(input.startDate ? { startDate: new Date(input.startDate) } : {}),
-      ...(input.endDate ? { endDate: new Date(input.endDate) } : {}),
-      ...(categoryId ? { categoryId } : {}),
-      ...(input.transactionType
-        ? { transactionType: input.transactionType }
-        : {}),
-    };
-
-    if (input.byCategory) {
-      const trends = await trendService.getCategorySpendingTrends(
-        request,
-        userId,
-      );
-      const lines = trends.map(
-        (trend) =>
-          `  ${trend.categoryName}: ${chatAggregationService.formatCurrency(trend.totalAmount)} (${chatAggregationService.formatPercentChange(trend.percentageChange)} vs previous period, trending ${trend.trend})`,
+      const result = chatAggregationService.computeComparison(
+        { label: input.periodA.label, transactions: transactionsA },
+        { label: input.periodB.label, transactions: transactionsB },
       );
 
       return {
-        summary: lines.length
-          ? `Category trends (${input.period}):\n${lines.join('\n')}`
-          : 'No trend data found for that period.',
+        summary: result.summary,
+        transactionCount: result.transactionCount,
       };
-    }
+    },
+  });
 
-    const trend = await trendService.getSpendingTrends(request, userId);
-    const points = trend.points.map(
-      (point) =>
-        `  ${point.date}: ${chatAggregationService.formatCurrency(point.amount)} (${point.count} transactions)`,
-    );
+  const getSpendingTrends = createTool({
+    id: 'getSpendingTrends',
+    description:
+      'Returns how spending has moved over time, either overall or broken down by category, including the percentage change against the previous period.',
+    inputSchema: z.object({
+      period: z
+        .enum(['daily', 'weekly', 'monthly', 'yearly'])
+        .describe('Granularity of the trend points'),
+      startDate: z.string().optional().describe('Start date, YYYY-MM-DD'),
+      endDate: z.string().optional().describe('End date, YYYY-MM-DD'),
+      categoryName: z
+        .string()
+        .optional()
+        .describe('Restrict the trend to a single category'),
+      transactionType: z.enum(['INCOME', 'EXPENSE']).optional(),
+      byCategory: z
+        .boolean()
+        .optional()
+        .describe('Set true to break the trend down per category'),
+    }),
+    outputSchema: z.object({
+      summary: z.string(),
+    }),
+    execute: async (input, context) => {
+      const userId = requireUserId(context);
+      const categoryId = await resolveCategoryId(input.categoryName);
 
-    return {
-      summary: [
-        `Spending trend (${trend.period}) from ${trend.startDate} to ${trend.endDate}:`,
-        ...points,
-        `\nTotal: ${chatAggregationService.formatCurrency(trend.totalAmount)}`,
-        `Change vs previous period: ${chatAggregationService.formatPercentChange(trend.percentageChange)} (trending ${trend.trend})`,
-      ].join('\n'),
-    };
-  },
-});
+      const request = {
+        period: input.period as TrendPeriod,
+        ...(input.startDate ? { startDate: new Date(input.startDate) } : {}),
+        ...(input.endDate ? { endDate: new Date(input.endDate) } : {}),
+        ...(categoryId ? { categoryId } : {}),
+        ...(input.transactionType
+          ? { transactionType: input.transactionType }
+          : {}),
+      };
 
-export const assistantTools = {
-  listCategories,
-  listTransactions,
-  summarizeTransactions,
-  comparePeriods,
-  getSpendingTrends,
-};
+      if (input.byCategory) {
+        const trends = await trendService.getCategorySpendingTrends(
+          request,
+          userId,
+        );
+        const lines = trends.map(
+          (trend) =>
+            `  ${trend.categoryName}: ${chatAggregationService.formatCurrency(trend.totalAmount)} (${chatAggregationService.formatPercentChange(trend.percentageChange)} vs previous period, trending ${trend.trend})`,
+        );
+
+        return {
+          summary: lines.length
+            ? `Category trends (${input.period}):\n${lines.join('\n')}`
+            : 'No trend data found for that period.',
+        };
+      }
+
+      const trend = await trendService.getSpendingTrends(request, userId);
+      const points = trend.points.map(
+        (point) =>
+          `  ${point.date}: ${chatAggregationService.formatCurrency(point.amount)} (${point.count} transactions)`,
+      );
+
+      return {
+        summary: [
+          `Spending trend (${trend.period}) from ${trend.startDate} to ${trend.endDate}:`,
+          ...points,
+          `\nTotal: ${chatAggregationService.formatCurrency(trend.totalAmount)}`,
+          `Change vs previous period: ${chatAggregationService.formatPercentChange(trend.percentageChange)} (trending ${trend.trend})`,
+        ].join('\n'),
+      };
+    },
+  });
+
+  return {
+    listCategories,
+    listTransactions,
+    summarizeTransactions,
+    comparePeriods,
+    getSpendingTrends,
+  };
+}
