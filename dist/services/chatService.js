@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const request_context_1 = require("@mastra/core/request-context");
 const financialAssistant_1 = require("./assistant/financialAssistant");
 const memory_1 = require("./assistant/memory");
 const tools_1 = require("./assistant/tools");
+const esm_1 = require("./assistant/esm");
 class ChatService {
     /**
      * Runs the assistant and returns a stream of text deltas.
@@ -13,10 +13,14 @@ class ChatService {
      * turn. Figures always come from tool results, never from the model.
      */
     async streamChatResponse(messages, userId, abortSignal) {
+        const [{ RequestContext }, assistant] = await Promise.all([
+            (0, esm_1.importEsm)('@mastra/core/request-context'),
+            (0, financialAssistant_1.getFinancialAssistant)(),
+        ]);
         // Injected server-side so the model cannot choose whose data it reads.
-        const requestContext = new request_context_1.RequestContext();
+        const requestContext = new RequestContext();
         requestContext.set(tools_1.USER_ID_CONTEXT_KEY, userId);
-        const result = await financialAssistant_1.financialAssistant.stream(this.toModelMessages(messages), Object.assign({ memory: {
+        const result = await assistant.stream(this.toModelMessages(messages), Object.assign({ memory: {
                 thread: (0, memory_1.getThreadId)(userId),
                 resource: userId,
             }, requestContext }, (abortSignal ? { abortSignal } : {})));

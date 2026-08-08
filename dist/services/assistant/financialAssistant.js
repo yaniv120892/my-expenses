@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.financialAssistant = void 0;
-const agent_1 = require("@mastra/core/agent");
+exports.getFinancialAssistant = getFinancialAssistant;
 const model_1 = require("./model");
 const memory_1 = require("./memory");
 const tools_1 = require("./tools");
+const esm_1 = require("./esm");
 function buildInstructions() {
     const currentDate = new Date().toISOString().split('T')[0];
     return `
@@ -46,8 +46,31 @@ questions that are not about the user's data, but keep them brief and do not
 give regulated financial, tax, or investment advice.
 `.trim();
 }
-const memory = (0, memory_1.getAssistantMemory)();
-exports.financialAssistant = new agent_1.Agent(Object.assign({ id: 'financial-assistant', name: 'Financial Assistant', 
-    // Passed as a function so the current date is resolved per request rather
-    // than frozen when the module is first loaded.
-    instructions: buildInstructions, model: model_1.getAssistantModel, tools: tools_1.assistantTools }, (memory ? { memory } : {})));
+let assistant;
+/**
+ * The shared agent, constructed on first use and reused afterwards.
+ *
+ * Async because Mastra is reached through a dynamic import (see ./esm), which
+ * also means nothing Mastra-related is loaded until someone actually chats —
+ * routes that never touch the assistant pay nothing for it.
+ */
+function getFinancialAssistant() {
+    // A rejected promise is dropped rather than cached, so one failed build does
+    // not disable chat for the lifetime of the process.
+    assistant !== null && assistant !== void 0 ? assistant : (assistant = build().catch((error) => {
+        assistant = undefined;
+        throw error;
+    }));
+    return assistant;
+}
+async function build() {
+    const [{ Agent }, tools, memory] = await Promise.all([
+        (0, esm_1.importEsm)('@mastra/core/agent'),
+        (0, tools_1.buildAssistantTools)(),
+        (0, memory_1.getAssistantMemory)(),
+    ]);
+    return new Agent(Object.assign({ id: 'financial-assistant', name: 'Financial Assistant', 
+        // Passed as a function so the current date is resolved per request rather
+        // than frozen when the agent is first built.
+        instructions: buildInstructions, model: model_1.getAssistantModel, tools }, (memory ? { memory } : {})));
+}
