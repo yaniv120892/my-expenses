@@ -5,13 +5,16 @@ import { normalizeCategoryName } from './categoryMappingUtils';
 
 dotenv.config();
 
+/** csv-parser yields one object per row, keyed by column header. */
+type CsvRow = Record<string, string>;
+
 const csvFilePath = 'src/scripts/data/CSV_05_12__13_14_09.csv';
 const exportedFilePath = 'src/scripts/data/exported.csv';
 
 async function exportCsv() {
   console.log('Start export data');
 
-  const rows: any[] = [];
+  const rows: CsvRow[] = [];
   await readCSVFile(rows);
 
   const rowsWithDescriptionAndCategory = new Set<string>();
@@ -34,7 +37,7 @@ async function exportCsv() {
 }
 
 /** Step 1: Read CSV file into memory */
-async function readCSVFile(rows: any[]) {
+async function readCSVFile(rows: CsvRow[]) {
   return new Promise<void>((resolve, reject) => {
     fs.createReadStream(csvFilePath)
       .pipe(csv({ separator: ';' }))

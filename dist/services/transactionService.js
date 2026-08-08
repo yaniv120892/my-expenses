@@ -161,7 +161,7 @@ class TransactionService {
         try {
             categorizerResult = await this.categorizeExpense(description);
         }
-        catch (err) {
+        catch (_a) {
             logger_1.default.warn(`Failed to categorize expense: ${description}`);
         }
         if (categorizerResult) {

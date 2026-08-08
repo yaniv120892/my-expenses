@@ -253,7 +253,9 @@ __decorate([
 __decorate([
     IsValidScheduledCombination({
         message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
-    }),
+    })
+    // Marker property: exists only to carry the class-validator decorator above.
+    ,
     __metadata("design:type", Object)
 ], CreateScheduledTransactionRequest.prototype, "dummy", void 0);
 class UpdateScheduledTransactionRequest {
@@ -307,7 +309,9 @@ __decorate([
 __decorate([
     IsValidScheduledCombination({
         message: 'Invalid combination of scheduleType, dayOfWeek, and dayOfMonth',
-    }),
+    })
+    // Marker property: exists only to carry the class-validator decorator above.
+    ,
     __metadata("design:type", Object)
 ], UpdateScheduledTransactionRequest.prototype, "dummy", void 0);
 class LoginRequest {

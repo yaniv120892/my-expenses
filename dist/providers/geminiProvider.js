@@ -8,7 +8,9 @@ const logger_1 = __importDefault(require("../utils/logger"));
 class GeminiProvider {
     async findMatchingTransaction(importedDescription, potentialMatches) {
         try {
-            const prompt = {
+            // Underscored because it is unused until the Gemini call below is wired
+            // up; kept so the drafted prompt is not lost. See the TODO further down.
+            const _prompt = {
                 context: `You are a helpful assistant that matches similar transaction descriptions. Your task is to find the most semantically similar transaction from a list of potential matches.
 
 Rules:

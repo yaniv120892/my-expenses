@@ -26,6 +26,16 @@ import {
   getPresignedUploadUrl,
 } from './transactionAttachmentFileUtils';
 
+/** An attachment as returned to clients, with signed URLs resolved. */
+export interface TransactionFileView {
+  id: string;
+  fileName: string;
+  previewFileUrl: string;
+  downloadableFileUrl: string;
+  fileSize: number;
+  mimeType: string;
+}
+
 class TransactionService {
   private aiService = aiServiceFactory.getAIService();
   private transactionNotifier = TransactionNotifierFactory.getNotifier();
@@ -58,9 +68,7 @@ class TransactionService {
 
     if (!userProvidedCategory && createTransaction.categoryId) {
       const categories = await categoryRepository.getAllCategories();
-      const cat = categories.find(
-        (c) => c.id === createTransaction.categoryId,
-      );
+      const cat = categories.find((c) => c.id === createTransaction.categoryId);
       if (cat) {
         result.suggestedCategory = { id: cat.id, name: cat.name };
       }
@@ -200,7 +208,7 @@ class TransactionService {
   public async getTransactionFiles(
     transactionId: string,
     userId: string,
-  ): Promise<any[]> {
+  ): Promise<TransactionFileView[]> {
     await this.assertTransactionExists(transactionId, userId);
 
     const files =
@@ -303,7 +311,7 @@ class TransactionService {
     } | null = null;
     try {
       categorizerResult = await this.categorizeExpense(description);
-    } catch (err) {
+    } catch {
       logger.warn(`Failed to categorize expense: ${description}`);
     }
 
@@ -323,14 +331,10 @@ class TransactionService {
         logger.debug(
           `Medium confidence (${categorizerResult.confidence.toFixed(2)}), passing hint to LLM: ${categorizerResult.category}`,
         );
-        return this.aiService.suggestCategory(
-          description,
-          categories,
-          {
-            hint: categorizerResult.category,
-            confidence: categorizerResult.confidence,
-          },
-        );
+        return this.aiService.suggestCategory(description, categories, {
+          hint: categorizerResult.category,
+          confidence: categorizerResult.confidence,
+        });
       }
     }
 

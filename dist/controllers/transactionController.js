@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = __importDefault(require("../utils/logger"));
+const errorUtils_1 = require("../utils/errorUtils");
 const transactionService_1 = __importDefault(require("../services/transactionService"));
 class TransactionController {
     async createTransaction(createTransactionRequest, userId) {
@@ -14,7 +15,7 @@ class TransactionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to create transaction, ${JSON.stringify(createTransactionRequest)}, ${error.message}`);
+            logger_1.default.error(`Failed to create transaction, ${JSON.stringify(createTransactionRequest)}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -32,7 +33,7 @@ class TransactionController {
             return transactions;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get transactions, ${error.message}`);
+            logger_1.default.error(`Failed to get transactions, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -44,7 +45,7 @@ class TransactionController {
             return summary;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get transactions summary, ${error.message}`);
+            logger_1.default.error(`Failed to get transactions summary, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -56,7 +57,7 @@ class TransactionController {
             return transactionId;
         }
         catch (error) {
-            logger_1.default.error(`Failed to update transaction ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to update transaction ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -68,7 +69,7 @@ class TransactionController {
             return;
         }
         catch (error) {
-            logger_1.default.error(`Failed to delete transaction ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to delete transaction ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -80,7 +81,7 @@ class TransactionController {
             return transactions;
         }
         catch (error) {
-            logger_1.default.error(`Failed to get pending transactions, ${error.message}`);
+            logger_1.default.error(`Failed to get pending transactions, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -92,7 +93,7 @@ class TransactionController {
             return transactionId;
         }
         catch (error) {
-            logger_1.default.error(`Failed to update transaction status for ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to update transaction status for ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import logger from '../utils/logger';
 import { generateWebhookToken } from '../utils/webhookAuth';
 import {
@@ -151,7 +151,7 @@ export class ExcelExtractionAgentClient {
     }
   }
 
-  private formatError(error: unknown): any {
+  private formatError(error: unknown): unknown {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
       return {
@@ -175,7 +175,9 @@ export class ExcelExtractionAgentClient {
   private handleError(error: unknown, defaultMessage: string): Error {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
-      const responseData = axiosError.response?.data as any;
+      const responseData = axiosError.response?.data as
+        | { message?: string }
+        | undefined;
 
       if (responseData?.message) {
         return new Error(`${defaultMessage}: ${responseData.message}`);

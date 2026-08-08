@@ -20,6 +20,9 @@
     "test:e2e": "ts-node test/e2e/run.ts",
     "test:e2e:serve": "ts-node test/e2e/serve.ts"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "keywords": [],
   "pre-commit": [
     "ts.check",

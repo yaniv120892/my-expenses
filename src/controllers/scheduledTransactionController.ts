@@ -1,10 +1,7 @@
 import logger from '../utils/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 import scheduledTransactionService from '../services/scheduledTransactionService';
-import {
-  CreateScheduledTransaction,
-  UpdateScheduledTransaction,
-  ScheduledTransactionDomain,
-} from '../types/scheduledTransaction';
+import { ScheduledTransactionDomain } from '../types/scheduledTransaction';
 import {
   CreateScheduledTransactionRequest,
   UpdateScheduledTransactionRequest,
@@ -16,10 +13,7 @@ class ScheduledTransactionController {
     userId: string,
   ) {
     try {
-      logger.debug(
-        'Start create scheduled transaction',
-        request,
-      );
+      logger.debug('Start create scheduled transaction', request);
       const result =
         await scheduledTransactionService.createScheduledTransaction({
           ...request,
@@ -27,9 +21,9 @@ class ScheduledTransactionController {
         });
       logger.debug('Done create scheduled transaction', result);
       return result;
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Failed to create scheduled transaction, ${JSON.stringify(request)}, ${error.message}`,
+        `Failed to create scheduled transaction, ${JSON.stringify(request)}, ${getErrorMessage(error)}`,
       );
       throw error;
     }
@@ -41,7 +35,10 @@ class ScheduledTransactionController {
     userId: string,
   ) {
     try {
-      logger.debug('Start update scheduled transaction', { id, reqBody: request });
+      logger.debug('Start update scheduled transaction', {
+        id,
+        reqBody: request,
+      });
       const result =
         await scheduledTransactionService.updateScheduledTransaction(
           id,
@@ -50,9 +47,9 @@ class ScheduledTransactionController {
         );
       logger.debug('Done update scheduled transaction', result);
       return result;
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Failed to update scheduled transaction ${id}, ${error.message}`,
+        `Failed to update scheduled transaction ${id}, ${getErrorMessage(error)}`,
       );
       throw error;
     }
@@ -65,8 +62,10 @@ class ScheduledTransactionController {
         await scheduledTransactionService.listScheduledTransactions(userId);
       logger.debug('Done list scheduled transactions', result);
       return result;
-    } catch (error: any) {
-      logger.error(`Failed to list scheduled transactions, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to list scheduled transactions, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -81,9 +80,9 @@ class ScheduledTransactionController {
         );
       logger.debug('Done delete scheduled transaction', id);
       return result;
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Failed to delete scheduled transaction ${id}, ${error.message}`,
+        `Failed to delete scheduled transaction ${id}, ${getErrorMessage(error)}`,
       );
       throw error;
     }

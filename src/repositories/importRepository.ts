@@ -1,4 +1,5 @@
 import {
+  Prisma,
   Import,
   ImportFileType,
   ImportStatus,
@@ -101,7 +102,7 @@ export class ImportRepository {
     status: ImportStatus,
     error?: string,
   ): Promise<Import> {
-    const data: any = {
+    const data: Prisma.ImportUpdateInput = {
       status,
       ...(status === ImportStatus.COMPLETED && { completedAt: new Date() }),
       ...(error && { error }),

@@ -384,7 +384,7 @@ class ImportController {
         userId,
         descriptionPattern: req.descriptionPattern,
         categoryId: req.categoryId,
-        type: req.type as any,
+        type: req.type,
       });
     } catch (error) {
       logger.error('Failed to create auto-approve rule', {
@@ -402,7 +402,7 @@ class ImportController {
     userId: string,
   ) {
     try {
-      return await autoApproveRuleRepository.update(ruleId, userId, req as any);
+      return await autoApproveRuleRepository.update(ruleId, userId, req);
     } catch (error) {
       logger.error('Failed to update auto-approve rule', {
         ruleId,

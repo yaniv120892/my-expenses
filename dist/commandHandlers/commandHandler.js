@@ -28,6 +28,7 @@ class CommandHandler {
                 return userHandler_1.userHandler.handleHelp(chatId);
             case '/insights':
                 await insightHandler_1.insightsHandler.handleInsights(chatId, this.extractUserIdFromCommand(args));
+                return userHandler_1.userHandler.handleHelp(chatId);
             case '/categories':
                 await categoryHandler_1.categoryHandler.handleList(chatId);
                 return userHandler_1.userHandler.handleHelp(chatId);

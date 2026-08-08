@@ -7,11 +7,8 @@ export async function buildCategoryParentMap(): Promise<Map<string, string>> {
   // First pass: Create a map of category ID to its parent ID
   const categoryToParentMap = new Map<string, string | null>();
   for (const category of allCategories) {
-    if ('parentId' in category && (category as any).parentId !== null) {
-      categoryToParentMap.set(
-        category.id,
-        (category as any).parentId as string,
-      );
+    if (category.parentId !== null && category.parentId !== undefined) {
+      categoryToParentMap.set(category.id, category.parentId);
     }
   }
 
