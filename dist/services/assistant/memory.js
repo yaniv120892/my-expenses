@@ -39,10 +39,7 @@ function getAssistantMemory() {
     return memory;
 }
 async function build(url) {
-    const [{ Memory }, { PostgresStore }] = await Promise.all([
-        (0, esm_1.importEsm)('@mastra/memory'),
-        (0, esm_1.importEsm)('@mastra/pg'),
-    ]);
+    const { Memory, PostgresStore } = await (0, esm_1.loadMastra)();
     return new Memory({
         storage: new PostgresStore({
             id: 'assistant-memory',

@@ -65,7 +65,7 @@ function getFinancialAssistant() {
 }
 async function build() {
     const [{ Agent }, tools, memory] = await Promise.all([
-        (0, esm_1.importEsm)('@mastra/core/agent'),
+        (0, esm_1.loadMastra)(),
         (0, tools_1.buildAssistantTools)(),
         (0, memory_1.getAssistantMemory)(),
     ]);

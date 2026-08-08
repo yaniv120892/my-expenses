@@ -1,7 +1,7 @@
 import { getFinancialAssistant } from './assistant/financialAssistant';
 import { getThreadId, isMemoryEnabled } from './assistant/memory';
 import { USER_ID_CONTEXT_KEY } from './assistant/tools';
-import { importEsm } from './assistant/esm';
+import { loadMastra } from './assistant/esm';
 
 export interface ChatMessage {
   sender: string;
@@ -30,9 +30,7 @@ class ChatService {
     abortSignal?: AbortSignal,
   ): Promise<AsyncIterable<string>> {
     const [{ RequestContext }, assistant] = await Promise.all([
-      importEsm<typeof import('@mastra/core/request-context')>(
-        '@mastra/core/request-context',
-      ),
+      loadMastra(),
       getFinancialAssistant(),
     ]);
 
