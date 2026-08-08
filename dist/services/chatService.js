@@ -25,16 +25,11 @@ class ChatService {
     /**
      * The client posts its full message list, but the thread already holds the
      * earlier turns. Sending everything again would append duplicates on each
-     * request, so only the newest user message is passed through when memory is
+     * request, so only the newest message is passed through when memory is
      * active; without memory the whole conversation is the only context there is.
      */
     toModelMessages(messages) {
-        const history = (0, memory_1.isMemoryEnabled)()
-            ? messages.slice(-1).filter((message) => message.sender === 'user')
-            : messages;
-        // Fall back to the last message if the client's final entry was not a user
-        // turn, so a request never arrives with nothing to answer.
-        const selected = history.length ? history : messages.slice(-1);
+        const selected = (0, memory_1.isMemoryEnabled)() ? messages.slice(-1) : messages;
         return selected.map((message) => message.sender === 'user'
             ? { role: 'user', content: message.text }
             : { role: 'assistant', content: message.text });

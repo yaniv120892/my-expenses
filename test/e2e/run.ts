@@ -2,13 +2,13 @@ import http from 'http';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { Client } from 'pg';
-import { startUpstashShim, seedKey } from './upstashShim';
 import {
-  startMockModelServer,
   getRecording,
   resetRecording,
+  CHUNK_DELAY_MS,
 } from './mockModelServer';
-import { seed, SeedResult, USER_B_MARKERS } from './seed';
+import { USER_B_MARKERS } from './seed';
+import { startStack } from './stack';
 
 const execFileAsync = promisify(execFile);
 
@@ -17,7 +17,6 @@ const SHIM_PORT = Number(
   new URL(process.env.REDIS_URL || 'http://127.0.0.1:51230').port,
 );
 const API_PORT = Number(process.env.PORT || 3001);
-const API = `http://127.0.0.1:${API_PORT}`;
 
 interface Frame {
   at: number;
@@ -61,6 +60,12 @@ function streamChat(
         const frames: Frame[] = [];
         let buffer = '';
         const started = Date.now();
+        const finish = () =>
+          resolve({
+            status: res.statusCode || 0,
+            contentType: String(res.headers['content-type'] || ''),
+            frames,
+          });
 
         res.on('data', (chunk) => {
           buffer += chunk.toString();
@@ -74,11 +79,7 @@ function streamChat(
               frames.push({ ...parsed, at: Date.now() - started });
               if (opts.abortAfterFirstDelta && parsed.type === 'delta') {
                 req.destroy();
-                resolve({
-                  status: res.statusCode || 0,
-                  contentType: String(res.headers['content-type'] || ''),
-                  frames,
-                });
+                finish();
               }
             } catch {
               /* non-JSON frame */
@@ -86,13 +87,7 @@ function streamChat(
           }
         });
 
-        res.on('end', () =>
-          resolve({
-            status: res.statusCode || 0,
-            contentType: String(res.headers['content-type'] || ''),
-            frames,
-          }),
-        );
+        res.on('end', finish);
       },
     );
 
@@ -130,6 +125,11 @@ async function query<T = Record<string, unknown>>(sql: string): Promise<T[]> {
   }
 }
 
+/** Collapses a multi-line value into a one-line snippet for check details. */
+function preview(text: string, max = 160): string {
+  return text.replace(/\n/g, ' | ').slice(0, max);
+}
+
 function textOf(frames: Frame[]): string {
   return frames
     .filter((f) => f.type === 'delta')
@@ -138,26 +138,11 @@ function textOf(frames: Frame[]): string {
 }
 
 async function main(): Promise<void> {
-  const shim = await startUpstashShim(SHIM_PORT);
-  const mock = await startMockModelServer(MOCK_PORT);
-  // Both listeners keep the event loop alive; without closing them the run
-  // finishes its checks and then hangs until something kills it.
-  const shutdown = () => {
-    shim.close();
-    mock.close();
-  };
+  const { seeded, stop: shutdown } = await startStack({
+    mock: MOCK_PORT,
+    shim: SHIM_PORT,
+  });
   console.log(`mock model on ${MOCK_PORT}, upstash shim on ${SHIM_PORT}`);
-
-  const seeded: SeedResult = await seed();
-  // authenticateRequest requires both a valid JWT and a live session key.
-  seedKey(
-    `session:${seeded.userA.id}:${seeded.userA.token}`,
-    JSON.stringify('1'),
-  );
-  seedKey(
-    `session:${seeded.userB.id}:${seeded.userB.token}`,
-    JSON.stringify('1'),
-  );
   console.log('seeded users', seeded.userA.id, seeded.userB.id);
 
   if (!(await waitForApi())) {
@@ -229,10 +214,15 @@ async function main(): Promise<void> {
   const spread = deltas.length
     ? deltas[deltas.length - 1].at - deltas[0].at
     : 0;
+  // Tied to the mock's own pacing rather than a magic number that can drift
+  // from it. Half a gap, because timers fire a millisecond or two early and the
+  // property under test is only "these did not arrive together" — 60ms apart
+  // settles that, and sits far above timer jitter.
+  const minSpread = CHUNK_DELAY_MS / 2;
   check(
     'deltas arrive incrementally, not in one burst',
-    deltas.length > 1 && spread > 50,
-    `${deltas.length} deltas spread over ${spread}ms`,
+    deltas.length > 1 && spread >= minSpread,
+    `${deltas.length} deltas spread over ${spread}ms (need >= ${minSpread}ms)`,
   );
 
   const rec = getRecording();
@@ -260,7 +250,7 @@ async function main(): Promise<void> {
   check(
     'tool result contains the TS-computed difference',
     toolOutput.includes('1,100.00'),
-    toolOutput.replace(/\n/g, ' | ').slice(0, 160),
+    preview(toolOutput),
   );
   check(
     'tool result contains the TS-computed percentage',
@@ -290,7 +280,7 @@ async function main(): Promise<void> {
     bText.includes('7,777') &&
       bText.includes('8,888') &&
       !bText.includes('4,100'),
-    bText.replace(/\n/g, ' | ').slice(0, 160),
+    preview(bText),
   );
 
   // 8. Percentage shares come from the breakdown tool.
@@ -303,7 +293,7 @@ async function main(): Promise<void> {
   check(
     'category breakdown returns shares computed in TS',
     shareRec.toolResults.join('\n').includes('%'),
-    shareRec.toolResults.join(' | ').slice(0, 160),
+    preview(shareRec.toolResults.join('\n')),
   );
   check('share answer reached the user', textOf(share.frames).includes('%'));
 

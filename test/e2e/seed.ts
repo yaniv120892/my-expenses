@@ -20,7 +20,6 @@ export interface SeededUser {
 export interface SeedResult {
   userA: SeededUser;
   userB: SeededUser;
-  groceriesCategoryId: string;
 }
 
 // A direct (non-Accelerate) client: the seed talks to Postgres straight,
@@ -110,7 +109,6 @@ export async function seed(): Promise<SeedResult> {
     return {
       userA: { id: userA.id, email: userA.email, token: mintToken(userA.id) },
       userB: { id: userB.id, email: userB.email, token: mintToken(userB.id) },
-      groceriesCategoryId: groceries.id,
     };
   } finally {
     await prisma.$disconnect();

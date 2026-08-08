@@ -19,8 +19,13 @@ const trendService_1 = __importDefault(require("../trendService"));
 const chatAggregationService_1 = __importDefault(require("../chatAggregationService"));
 exports.USER_ID_CONTEXT_KEY = 'userId';
 /**
- * Transactions are fetched per query rather than paged; this bounds a single
- * tool call so a broad date range cannot pull an unbounded result set.
+ * Caps how many transactions a single tool call aggregates over.
+ *
+ * Note this bounds the rows returned, not the rows read: getTransactions routes
+ * everything without a searchTerm through its smart-search path, which selects
+ * all matching rows and paginates in memory. Making that query bounded means
+ * changing the shared repository, which would alter search ranking for its
+ * other callers — worth doing, but not from here.
  */
 const MAX_TRANSACTIONS = 5000;
 /**
@@ -36,7 +41,7 @@ function requireUserId(context) {
     }
     return userId;
 }
-const dateFilterSchema = {
+const dateFilterSchema = v4_1.z.object({
     startDate: v4_1.z
         .string()
         .optional()
@@ -57,7 +62,17 @@ const dateFilterSchema = {
         .string()
         .optional()
         .describe('Free-text term matched against the transaction description'),
-};
+});
+/** Every tool reports the same shape. */
+const summaryOutputSchema = v4_1.z.object({
+    summary: v4_1.z.string(),
+    transactionCount: v4_1.z.number(),
+});
+const periodSchema = (exampleLabel) => v4_1.z.object({
+    label: v4_1.z.string().describe(`Short human label, e.g. "${exampleLabel}"`),
+    startDate: v4_1.z.string().describe('Inclusive start date, YYYY-MM-DD'),
+    endDate: v4_1.z.string().describe('Inclusive end date, YYYY-MM-DD'),
+});
 /**
  * Resolves a category name to an id, exact match first then partial. Carried
  * over from the previous chatService implementation.
@@ -73,8 +88,20 @@ async function resolveCategoryId(categoryName) {
     const partial = categories.find((c) => c.name.toLowerCase().includes(lowerName));
     return partial === null || partial === void 0 ? void 0 : partial.id;
 }
+/**
+ * Shared body for the tools that fetch, aggregate, and report. They differ only
+ * in which aggregation they ask for.
+ */
+async function summarize(userId, filters, aggregation) {
+    const transactions = await fetchTransactions(userId, filters);
+    const { summary, transactionCount } = chatAggregationService_1.default.aggregate(transactions, aggregation);
+    return { summary, transactionCount };
+}
 async function fetchTransactions(userId, filters) {
-    const categoryId = await resolveCategoryId(filters.categoryName);
+    var _a;
+    // Callers that fetch more than once for the same category resolve it up front
+    // and pass the id, so the category list is not fetched again per period.
+    const categoryId = (_a = filters.categoryId) !== null && _a !== void 0 ? _a : (await resolveCategoryId(filters.categoryName));
     return transactionRepository_1.default.getTransactions(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ userId, page: 1, perPage: MAX_TRANSACTIONS }, (filters.startDate ? { startDate: new Date(filters.startDate) } : {})), (filters.endDate ? { endDate: new Date(filters.endDate) } : {})), (filters.transactionType
         ? { transactionType: filters.transactionType }
         : {})), (filters.searchTerm ? { searchTerm: filters.searchTerm } : {})), (categoryId ? { categoryId } : {})));
@@ -95,25 +122,15 @@ exports.listCategories = (0, tools_1.createTool)({
 exports.listTransactions = (0, tools_1.createTool)({
     id: 'listTransactions',
     description: 'Lists individual transactions matching the given filters. Use this when the user wants to see specific transactions rather than a total.',
-    inputSchema: v4_1.z.object(dateFilterSchema),
-    outputSchema: v4_1.z.object({
-        summary: v4_1.z.string(),
-        transactionCount: v4_1.z.number(),
-    }),
-    execute: async (input, context) => {
-        const userId = requireUserId(context);
-        const transactions = await fetchTransactions(userId, input);
-        const result = chatAggregationService_1.default.aggregate(transactions, 'list');
-        return {
-            summary: result.summary,
-            transactionCount: result.transactionCount,
-        };
-    },
+    inputSchema: dateFilterSchema,
+    outputSchema: summaryOutputSchema,
+    execute: async (input, context) => summarize(requireUserId(context), input, 'list'),
 });
 exports.summarizeTransactions = (0, tools_1.createTool)({
     id: 'summarizeTransactions',
     description: 'Computes a figure over the transactions matching the filters — a total, average, count, category breakdown, monthly breakdown, or highest/lowest. All arithmetic is done server-side; use the returned numbers exactly as given.',
-    inputSchema: v4_1.z.object(Object.assign(Object.assign({}, dateFilterSchema), { aggregation: v4_1.z
+    inputSchema: dateFilterSchema.extend({
+        aggregation: v4_1.z
             .enum([
             'total',
             'average',
@@ -122,35 +139,17 @@ exports.summarizeTransactions = (0, tools_1.createTool)({
             'breakdown_by_month',
             'min_max',
         ])
-            .describe('Which figure to compute') })),
-    outputSchema: v4_1.z.object({
-        summary: v4_1.z.string(),
-        transactionCount: v4_1.z.number(),
+            .describe('Which figure to compute'),
     }),
-    execute: async (input, context) => {
-        const userId = requireUserId(context);
-        const transactions = await fetchTransactions(userId, input);
-        const result = chatAggregationService_1.default.aggregate(transactions, input.aggregation);
-        return {
-            summary: result.summary,
-            transactionCount: result.transactionCount,
-        };
-    },
+    outputSchema: summaryOutputSchema,
+    execute: async (input, context) => summarize(requireUserId(context), input, input.aggregation),
 });
 exports.comparePeriods = (0, tools_1.createTool)({
     id: 'comparePeriods',
     description: 'Compares two date ranges and returns both totals along with the difference and percentage change, all computed server-side. Always use this for comparisons instead of calling summarizeTransactions twice and subtracting the results yourself.',
     inputSchema: v4_1.z.object({
-        periodA: v4_1.z.object({
-            label: v4_1.z.string().describe('Short human label, e.g. "January 2026"'),
-            startDate: v4_1.z.string().describe('Inclusive start date, YYYY-MM-DD'),
-            endDate: v4_1.z.string().describe('Inclusive end date, YYYY-MM-DD'),
-        }),
-        periodB: v4_1.z.object({
-            label: v4_1.z.string().describe('Short human label, e.g. "February 2026"'),
-            startDate: v4_1.z.string().describe('Inclusive start date, YYYY-MM-DD'),
-            endDate: v4_1.z.string().describe('Inclusive end date, YYYY-MM-DD'),
-        }),
+        periodA: periodSchema('January 2026'),
+        periodB: periodSchema('February 2026'),
         categoryName: v4_1.z
             .string()
             .optional()
@@ -160,14 +159,13 @@ exports.comparePeriods = (0, tools_1.createTool)({
             .optional()
             .describe('Restrict both periods to income or expenses'),
     }),
-    outputSchema: v4_1.z.object({
-        summary: v4_1.z.string(),
-        transactionCount: v4_1.z.number(),
-    }),
+    outputSchema: summaryOutputSchema,
     execute: async (input, context) => {
         const userId = requireUserId(context);
+        // Resolved once and shared: otherwise each period re-fetches the whole
+        // category list to map the same name.
         const shared = {
-            categoryName: input.categoryName,
+            categoryId: await resolveCategoryId(input.categoryName),
             transactionType: input.transactionType,
         };
         const [transactionsA, transactionsB] = await Promise.all([
@@ -211,7 +209,7 @@ exports.getSpendingTrends = (0, tools_1.createTool)({
             : {}));
         if (input.byCategory) {
             const trends = await trendService_1.default.getCategorySpendingTrends(request, userId);
-            const lines = trends.map((trend) => `  ${trend.categoryName}: ₪${trend.totalAmount.toFixed(2)} (${trend.percentageChange >= 0 ? '+' : ''}${trend.percentageChange}% vs previous period, trending ${trend.trend})`);
+            const lines = trends.map((trend) => `  ${trend.categoryName}: ${chatAggregationService_1.default.formatCurrency(trend.totalAmount)} (${chatAggregationService_1.default.formatPercentChange(trend.percentageChange)} vs previous period, trending ${trend.trend})`);
             return {
                 summary: lines.length
                     ? `Category trends (${input.period}):\n${lines.join('\n')}`
@@ -219,13 +217,13 @@ exports.getSpendingTrends = (0, tools_1.createTool)({
             };
         }
         const trend = await trendService_1.default.getSpendingTrends(request, userId);
-        const points = trend.points.map((point) => `  ${point.date}: ₪${point.amount.toFixed(2)} (${point.count} transactions)`);
+        const points = trend.points.map((point) => `  ${point.date}: ${chatAggregationService_1.default.formatCurrency(point.amount)} (${point.count} transactions)`);
         return {
             summary: [
                 `Spending trend (${trend.period}) from ${trend.startDate} to ${trend.endDate}:`,
                 ...points,
-                `\nTotal: ₪${trend.totalAmount.toFixed(2)}`,
-                `Change vs previous period: ${trend.percentageChange >= 0 ? '+' : ''}${trend.percentageChange}% (trending ${trend.trend})`,
+                `\nTotal: ${chatAggregationService_1.default.formatCurrency(trend.totalAmount)}`,
+                `Change vs previous period: ${chatAggregationService_1.default.formatPercentChange(trend.percentageChange)} (trending ${trend.trend})`,
             ].join('\n'),
         };
     },

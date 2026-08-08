@@ -43,7 +43,7 @@ class ChatAggregationService {
     } else {
       const percentChange = this.round((difference / totalA) * 100);
       lines.push(
-        `Percentage change: ${percentChange >= 0 ? '+' : ''}${percentChange}%`,
+        `Percentage change: ${this.formatPercentChange(percentChange)}`,
       );
       data.percentChange = percentChange;
     }
@@ -106,7 +106,7 @@ class ChatAggregationService {
     }
 
     const total = transactions.reduce((sum, t) => sum + t.value, 0);
-    const average = Math.round((total / transactions.length) * 100) / 100;
+    const average = this.round(total / transactions.length);
 
     return {
       summary: `Average transaction value: ${this.formatCurrency(average)} (across ${transactions.length} transactions, total: ${this.formatCurrency(total)})`,
@@ -142,16 +142,13 @@ class ChatAggregationService {
 
     // Shares are computed here so "what percentage went to rent?" is answered
     // from a tool result rather than by dividing two numbers in the model.
+    const data: Record<string, number | string> = {};
     const lines = sorted.map(([name, amount]) => {
       const share = total === 0 ? 0 : this.round((amount / total) * 100);
+      data[name] = amount;
+      data[`${name} %`] = share;
       return `  ${name}: ${this.formatCurrency(amount)} (${share}%)`;
     });
-
-    const data: Record<string, number | string> = {};
-    for (const [name, amount] of sorted) {
-      data[name] = amount;
-      data[`${name} %`] = total === 0 ? 0 : this.round((amount / total) * 100);
-    }
 
     return {
       summary: `Spending by category:\n${lines.join('\n')}\n\nTotal: ${this.formatCurrency(total)}`,
@@ -253,6 +250,11 @@ class ChatAggregationService {
     return this.round(transactions.reduce((sum, t) => sum + t.value, 0));
   }
 
+  /** Formats a signed percentage the way computeComparison reports one. */
+  public formatPercentChange(value: number): string {
+    return `${value >= 0 ? '+' : ''}${value}%`;
+  }
+
   private round(value: number): number {
     return Math.round(value * 100) / 100;
   }
@@ -261,7 +263,12 @@ class ChatAggregationService {
     return `${count} ${noun}${count === 1 ? '' : 's'}`;
   }
 
-  private formatCurrency(amount: number): string {
+  /**
+   * Public so every assistant tool renders money identically. The agent is told
+   * to quote tool output verbatim, so two formats reaching it in one
+   * conversation would surface as inconsistent amounts to the user.
+   */
+  public formatCurrency(amount: number): string {
     return `₪${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 

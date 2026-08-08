@@ -8,6 +8,14 @@ export interface ChatMessage {
   text: string;
 }
 
+/**
+ * The minimal message shape this service produces. Named to be obviously local
+ * rather than the library's own message type, which is far wider.
+ */
+type OutgoingMessage =
+  | { role: 'user'; content: string }
+  | { role: 'assistant'; content: string };
+
 class ChatService {
   /**
    * Runs the assistant and returns a stream of text deltas.
@@ -43,17 +51,11 @@ class ChatService {
   /**
    * The client posts its full message list, but the thread already holds the
    * earlier turns. Sending everything again would append duplicates on each
-   * request, so only the newest user message is passed through when memory is
+   * request, so only the newest message is passed through when memory is
    * active; without memory the whole conversation is the only context there is.
    */
-  private toModelMessages(messages: ChatMessage[]): ModelMessage[] {
-    const history = isMemoryEnabled()
-      ? messages.slice(-1).filter((message) => message.sender === 'user')
-      : messages;
-
-    // Fall back to the last message if the client's final entry was not a user
-    // turn, so a request never arrives with nothing to answer.
-    const selected = history.length ? history : messages.slice(-1);
+  private toModelMessages(messages: ChatMessage[]): OutgoingMessage[] {
+    const selected = isMemoryEnabled() ? messages.slice(-1) : messages;
 
     return selected.map((message) =>
       message.sender === 'user'
@@ -62,9 +64,5 @@ class ChatService {
     );
   }
 }
-
-type ModelMessage =
-  | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string };
 
 export default new ChatService();
