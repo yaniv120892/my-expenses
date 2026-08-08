@@ -2,7 +2,6 @@ import prisma from '../prisma/client';
 import { TransactionStatus, TransactionType } from '@prisma/client';
 import { MonthSummary, RecentTransaction } from '../types/dashboard';
 import { buildCategoryParentMap } from '../utils/categoryHierarchy';
-import categoryRepository from './categoryRepository';
 
 class DashboardRepository {
   public async getMonthSummary(
@@ -62,8 +61,6 @@ class DashboardRepository {
 
     // Build parent map and aggregate at parent level
     const parentMap = await buildCategoryParentMap();
-    const topLevelCategories = await categoryRepository.getTopLevelCategories();
-    const topLevelIds = new Set(topLevelCategories.map((c) => c.id));
 
     const parentAggregation = new Map<string, number>();
     for (const group of groups) {

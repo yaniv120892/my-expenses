@@ -39,6 +39,7 @@ class CommandHandler {
           chatId,
           this.extractUserIdFromCommand(args),
         );
+        return userHandler.handleHelp(chatId);
       case '/categories':
         await categoryHandler.handleList(chatId);
         return userHandler.handleHelp(chatId);

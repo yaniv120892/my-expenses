@@ -1,3 +1,4 @@
+import { ScheduledTransaction } from '@prisma/client';
 import prisma from '../prisma/client';
 import {
   CreateScheduledTransaction,
@@ -102,7 +103,7 @@ class ScheduledTransactionRepository {
   }
 
   private mapScheduledTransactionDbToDomain(
-    db: any,
+    db: ScheduledTransaction,
   ): ScheduledTransactionDomain {
     return {
       id: db.id,

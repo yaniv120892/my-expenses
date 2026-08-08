@@ -19,7 +19,7 @@ function getCacheKeyForTopLevelCategories() {
 export class CategoryRepository {
   public async getAllCategories(): Promise<Category[]> {
     const cacheKey = getCacheKeyForAllCategories();
-    const cached = await getValue(cacheKey);
+    const cached = await getValue<Category[]>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -33,7 +33,7 @@ export class CategoryRepository {
 
   public async getCategoryById(id: string | null): Promise<Category | null> {
     const cacheKey = getCacheKeyForCategoryById(id);
-    const cached = await getValue(cacheKey);
+    const cached = await getValue<Category>(cacheKey);
     if (cached) {
       return cached;
     }
@@ -46,7 +46,7 @@ export class CategoryRepository {
 
   public async getTopLevelCategories(): Promise<Category[]> {
     const cacheKey = getCacheKeyForTopLevelCategories();
-    const cached = await getValue(cacheKey);
+    const cached = await getValue<Category[]>(cacheKey);
     if (cached) {
       return cached;
     }

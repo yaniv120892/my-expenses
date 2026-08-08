@@ -112,8 +112,12 @@ function parseTransactionDate(transactionDate) {
     return (0, date_fns_1.parse)(transactionDate, 'MM/dd/yy', new Date());
 }
 async function createTransaction(row, parsedDate, categoryId, userId) {
-    const type = row.Value > 0 ? 'INCOME' : 'EXPENSE';
-    const value = Math.abs(row.Value);
+    // CSV values arrive as strings; the comparison and Math.abs below previously
+    // relied on implicit coercion. Number() makes that explicit with identical
+    // results, including for empty and non-numeric cells (both give NaN/0).
+    const numericValue = Number(row.Value);
+    const type = numericValue > 0 ? 'INCOME' : 'EXPENSE';
+    const value = Math.abs(numericValue);
     await client_1.default.transaction.create({
         data: {
             description: row.Notes || '',

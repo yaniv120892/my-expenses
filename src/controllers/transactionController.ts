@@ -1,4 +1,5 @@
 import logger from '../utils/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 import {
   CreateTransactionRequest,
   GetTransactionsRequest,
@@ -27,9 +28,9 @@ class TransactionController {
         result.id,
       );
       return result;
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Failed to create transaction, ${JSON.stringify(createTransactionRequest)}, ${error.message}`,
+        `Failed to create transaction, ${JSON.stringify(createTransactionRequest)}, ${getErrorMessage(error)}`,
       );
       throw error;
     }
@@ -62,8 +63,8 @@ class TransactionController {
         transactions,
       );
       return transactions;
-    } catch (error: any) {
-      logger.error(`Failed to get transactions, ${error.message}`);
+    } catch (error) {
+      logger.error(`Failed to get transactions, ${getErrorMessage(error)}`);
       throw error;
     }
   }
@@ -84,8 +85,10 @@ class TransactionController {
         summary,
       );
       return summary;
-    } catch (error: any) {
-      logger.error(`Failed to get transactions summary, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to get transactions summary, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -104,8 +107,10 @@ class TransactionController {
       );
       logger.debug('Done update transaction', id, transactionId);
       return transactionId;
-    } catch (error: any) {
-      logger.error(`Failed to update transaction ${id}, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to update transaction ${id}, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -116,8 +121,10 @@ class TransactionController {
       await transactionService.deleteTransaction(id, userId);
       logger.debug('Done delete transaction', id);
       return;
-    } catch (error: any) {
-      logger.error(`Failed to delete transaction ${id}, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to delete transaction ${id}, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -129,8 +136,10 @@ class TransactionController {
         await transactionService.getPendingTransactions(userId);
       logger.debug('Done get pending transactions', transactions);
       return transactions;
-    } catch (error: any) {
-      logger.error(`Failed to get pending transactions, ${error.message}`);
+    } catch (error) {
+      logger.error(
+        `Failed to get pending transactions, ${getErrorMessage(error)}`,
+      );
       throw error;
     }
   }
@@ -149,9 +158,9 @@ class TransactionController {
       );
       logger.debug('Done update transaction status', { id, status });
       return transactionId;
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
-        `Failed to update transaction status for ${id}, ${error.message}`,
+        `Failed to update transaction status for ${id}, ${getErrorMessage(error)}`,
       );
       throw error;
     }

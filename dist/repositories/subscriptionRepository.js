@@ -108,7 +108,12 @@ class SubscriptionRepository {
             else
                 detectedCount++;
         }
-        return { activeCount, totalMonthlyEstimate, totalAnnualEstimate, detectedCount };
+        return {
+            activeCount,
+            totalMonthlyEstimate,
+            totalAnnualEstimate,
+            detectedCount,
+        };
     }
     async getActiveForAllUsers() {
         const subscriptions = await client_1.default.detectedSubscription.findMany({

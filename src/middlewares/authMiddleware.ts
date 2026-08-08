@@ -4,6 +4,9 @@ import logger from '../utils/logger';
 import authService from '../services/authService';
 
 declare global {
+  // Module syntax cannot express this: augmenting Express's Request type
+  // requires declaration merging into its global namespace.
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       userId?: string;

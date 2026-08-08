@@ -11,7 +11,7 @@ async function buildCategoryParentMap() {
     // First pass: Create a map of category ID to its parent ID
     const categoryToParentMap = new Map();
     for (const category of allCategories) {
-        if ('parentId' in category && category.parentId !== null) {
+        if (category.parentId !== null && category.parentId !== undefined) {
             categoryToParentMap.set(category.id, category.parentId);
         }
     }

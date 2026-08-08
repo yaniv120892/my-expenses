@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { TransactionStatus, TransactionType } from './transaction';
 
 export enum ImportFileType {
@@ -43,7 +44,7 @@ export interface ImportedTransaction {
   type: TransactionType;
   status: TransactionStatus;
   matchingTransactionId?: string;
-  rawData: any;
+  rawData: Prisma.InputJsonValue;
   userId: string;
 }
 

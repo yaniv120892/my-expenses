@@ -1,4 +1,8 @@
-import { SubscriptionStatus, SubscriptionFrequency } from '@prisma/client';
+import {
+  SubscriptionStatus,
+  SubscriptionFrequency,
+  DetectedSubscription,
+} from '@prisma/client';
 import prisma from '../prisma/client';
 import {
   DetectedSubscriptionDomain,
@@ -151,7 +155,12 @@ class SubscriptionRepository {
       else detectedCount++;
     }
 
-    return { activeCount, totalMonthlyEstimate, totalAnnualEstimate, detectedCount };
+    return {
+      activeCount,
+      totalMonthlyEstimate,
+      totalAnnualEstimate,
+      detectedCount,
+    };
   }
 
   public async getActiveForAllUsers(): Promise<DetectedSubscriptionDomain[]> {
@@ -164,7 +173,7 @@ class SubscriptionRepository {
     return subscriptions.map(this.mapToDomain);
   }
 
-  private mapToDomain(db: any): DetectedSubscriptionDomain {
+  private mapToDomain(db: DetectedSubscription): DetectedSubscriptionDomain {
     return {
       id: db.id,
       userId: db.userId,

@@ -32,10 +32,7 @@ export class UserHandler {
   }
 
   async handleUserState(chatId: string, text: string) {
-    const { message, nextStep } = await transactionManager.handleUserState(
-      chatId,
-      text,
-    );
+    const { message } = await transactionManager.handleUserState(chatId, text);
     return telegramService.sendMessage(chatId, message);
   }
 }
