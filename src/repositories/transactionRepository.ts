@@ -1,4 +1,10 @@
-import { TransactionType, TransactionStatus } from '@prisma/client';
+import {
+  TransactionType,
+  TransactionStatus,
+  Transaction as PrismaTransaction,
+  TransactionFile as PrismaTransactionFile,
+  Category as PrismaCategory,
+} from '@prisma/client';
 import prisma from '../prisma/client';
 import {
   TransactionFilters,
@@ -12,6 +18,15 @@ import {
 } from 'repositories/types';
 import { endOfDay, startOfDay } from 'date-fns';
 import Fuse from 'fuse.js';
+
+/**
+ * A transaction row as mapToDomain consumes it: the Prisma model plus its
+ * joined category, and files only when the caller included them.
+ */
+type TransactionRow = PrismaTransaction & {
+  category: PrismaCategory;
+  files?: PrismaTransactionFile[];
+};
 
 class TransactionRepository {
   public async getTransactionsSummary(
@@ -120,7 +135,7 @@ class TransactionRepository {
     return transaction ? this.mapToDomain(transaction) : null;
   }
 
-  private mapToDomain(transaction: any): Transaction {
+  private mapToDomain(transaction: TransactionRow): Transaction {
     return {
       id: transaction.id,
       description: transaction.description,
@@ -133,7 +148,7 @@ class TransactionRepository {
         name: transaction.category.name,
       },
       files:
-        transaction.files?.map((file: any) => ({
+        transaction.files?.map((file) => ({
           id: file.id,
           transactionId: file.transactionId,
           fileName: file.fileName,
@@ -173,10 +188,10 @@ class TransactionRepository {
   }
 
   private getNormalizedDateRange(startDate?: Date, endDate?: Date) {
-    let normalizedStartDate = startDate
+    const normalizedStartDate = startDate
       ? startOfDay(new Date(startDate))
       : undefined;
-    let normalizedEndDate = endDate ? endOfDay(new Date(endDate)) : undefined;
+    const normalizedEndDate = endDate ? endOfDay(new Date(endDate)) : undefined;
     return { startDate: normalizedStartDate, endDate: normalizedEndDate };
   }
 

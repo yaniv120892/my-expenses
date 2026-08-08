@@ -59,7 +59,12 @@ class DashboardService {
       currentMonthSummary.totalExpense,
     );
 
-    return { monthComparison, topCategories, recentTransactions, subscriptions: subscriptionSnapshot };
+    return {
+      monthComparison,
+      topCategories,
+      recentTransactions,
+      subscriptions: subscriptionSnapshot,
+    };
   }
 
   public async getInsights(
@@ -69,7 +74,9 @@ class DashboardService {
     const cacheKey = `dashboard-insights:${userId}:${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     try {
-      const cached = await getValue(cacheKey);
+      const cached = await getValue<DashboardInsightsResponse | string>(
+        cacheKey,
+      );
       if (cached) {
         return typeof cached === 'string' ? JSON.parse(cached) : cached;
       }
@@ -159,9 +166,7 @@ class DashboardService {
     previous: { categoryId: string; categoryName: string; amount: number }[],
     totalExpense: number,
   ): TopCategory[] {
-    const previousMap = new Map(
-      previous.map((c) => [c.categoryId, c.amount]),
-    );
+    const previousMap = new Map(previous.map((c) => [c.categoryId, c.amount]));
 
     return current.map((cat) => {
       const previousMonthAmount = previousMap.get(cat.categoryId) ?? 0;
@@ -185,7 +190,11 @@ class DashboardService {
 
   private async generateAiInsights(
     currentMonth: MonthSummary,
-    topCategories: { categoryId: string; categoryName: string; amount: number }[],
+    topCategories: {
+      categoryId: string;
+      categoryName: string;
+      amount: number;
+    }[],
     previousMonth: MonthSummary,
   ): Promise<DashboardInsightsResponse | null> {
     try {
@@ -204,7 +213,10 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
       const response = await this.aiService.analyzeExpenses(prompt);
 
       // Try to parse the JSON response
-      const cleaned = response.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+      const cleaned = response
+        .replace(/```json?\n?/g, '')
+        .replace(/```/g, '')
+        .trim();
       const parsed = JSON.parse(cleaned) as DashboardInsightsResponse;
       return parsed;
     } catch (error) {

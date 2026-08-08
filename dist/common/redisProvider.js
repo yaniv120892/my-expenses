@@ -13,6 +13,10 @@ const redisClient = new redis_1.Redis({
 async function setValue(key, value, ttlSeconds) {
     await redisClient.set(key, value, { ex: ttlSeconds });
 }
+/**
+ * Generic so callers can name the shape they cached, instead of every call site
+ * widening to `any`. Defaults to `unknown` when no type is supplied.
+ */
 async function getValue(key) {
     const value = await redisClient.get(key);
     if (value === null) {

@@ -6,6 +6,7 @@ import {
   ImportedTransactionStatus,
 } from '@prisma/client';
 import logger from '../utils/logger';
+import { getErrorMessage } from '../utils/errorUtils';
 import { importRepository } from '../repositories/importRepository';
 import { importedTransactionRepository } from '../repositories/importedTransactionRepository';
 import { autoApproveRuleRepository } from '../repositories/autoApproveRuleRepository';
@@ -108,9 +109,7 @@ class ImportService {
         await importRepository.updateStatus(
           importRecord.id,
           ImportStatus.FAILED,
-          error instanceof Error
-            ? error.message
-            : 'Failed to submit extraction request',
+          getErrorMessage(error, 'Failed to submit extraction request'),
         );
 
         throw error;
@@ -300,7 +299,8 @@ class ImportService {
           ).then((results) => results.filter((t) => t !== null));
 
     const pendingTransactions = transactions.filter(
-      (t) => t.status === ImportedTransactionStatus.PENDING && t.userId === userId,
+      (t) =>
+        t.status === ImportedTransactionStatus.PENDING && t.userId === userId,
     );
 
     const result: BatchResult = {
@@ -314,13 +314,18 @@ class ImportService {
       try {
         if (transaction.matchingTransactionId) {
           // Merge with existing transaction
-          const matchingTx = (transaction as any).matchingTransaction;
+          // The query that loaded these rows includes the matched transaction,
+          // which the row's declared type does not describe.
+          const matchingTx = (
+            transaction as { matchingTransaction?: { categoryId?: string } }
+          ).matchingTransaction;
           await this.mergeImportedTransaction(transaction.id, userId, {
             description: transaction.description,
             value: transaction.value,
             date: transaction.date,
             type: transaction.type,
-            categoryId: matchingTx?.categoryId || transaction.matchingTransactionId,
+            categoryId:
+              matchingTx?.categoryId || transaction.matchingTransactionId,
           });
         } else {
           // Create new transaction
@@ -337,7 +342,7 @@ class ImportService {
         result.failed++;
         result.errors.push({
           id: transaction.id,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: getErrorMessage(error),
         });
       }
     }
@@ -353,11 +358,10 @@ class ImportService {
     let ids: string[];
 
     if (transactionIds === 'all') {
-      const pending =
-        await importedTransactionRepository.findPendingByImportId(
-          importId,
-          userId,
-        );
+      const pending = await importedTransactionRepository.findPendingByImportId(
+        importId,
+        userId,
+      );
       ids = pending.map((t) => t.id);
     } else {
       ids = transactionIds;
@@ -426,7 +430,7 @@ class ImportService {
         result.failed++;
         result.errors.push({
           id: transaction.id,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: getErrorMessage(error),
         });
       }
     }
@@ -436,7 +440,11 @@ class ImportService {
 
   public async rematchImport(importId: string, userId: string): Promise<void> {
     const importRecord = await importRepository.findById(importId);
-    if (!importRecord || importRecord.userId !== userId || importRecord.deleted) {
+    if (
+      !importRecord ||
+      importRecord.userId !== userId ||
+      importRecord.deleted
+    ) {
       throw new Error('Import not found');
     }
 
@@ -445,7 +453,10 @@ class ImportService {
     }
 
     const allTransactions =
-      await importedTransactionRepository.findByUserIdAndImportId(userId, importId);
+      await importedTransactionRepository.findByUserIdAndImportId(
+        userId,
+        importId,
+      );
 
     const pendingTransactions = allTransactions.filter(
       (t) => t.status === ImportedTransactionStatus.PENDING,
@@ -506,7 +517,7 @@ class ImportService {
       await importRepository.updateStatus(
         importId,
         ImportStatus.FAILED,
-        error instanceof Error ? error.message : 'Re-match failed',
+        getErrorMessage(error, 'Re-match failed'),
       );
       throw error;
     }

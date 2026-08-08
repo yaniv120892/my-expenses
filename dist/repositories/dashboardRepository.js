@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = __importDefault(require("../prisma/client"));
 const client_2 = require("@prisma/client");
 const categoryHierarchy_1 = require("../utils/categoryHierarchy");
-const categoryRepository_1 = __importDefault(require("./categoryRepository"));
 class DashboardRepository {
     async getMonthSummary(userId, year, month) {
         var _a, _b, _c, _d;
@@ -50,8 +49,6 @@ class DashboardRepository {
         });
         // Build parent map and aggregate at parent level
         const parentMap = await (0, categoryHierarchy_1.buildCategoryParentMap)();
-        const topLevelCategories = await categoryRepository_1.default.getTopLevelCategories();
-        const topLevelIds = new Set(topLevelCategories.map((c) => c.id));
         const parentAggregation = new Map();
         for (const group of groups) {
             if (!group.categoryId)

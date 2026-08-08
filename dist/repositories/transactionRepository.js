@@ -127,10 +127,10 @@ class TransactionRepository {
         });
     }
     getNormalizedDateRange(startDate, endDate) {
-        let normalizedStartDate = startDate
+        const normalizedStartDate = startDate
             ? (0, date_fns_1.startOfDay)(new Date(startDate))
             : undefined;
-        let normalizedEndDate = endDate ? (0, date_fns_1.endOfDay)(new Date(endDate)) : undefined;
+        const normalizedEndDate = endDate ? (0, date_fns_1.endOfDay)(new Date(endDate)) : undefined;
         return { startDate: normalizedStartDate, endDate: normalizedEndDate };
     }
     async findPotentialMatches(userId, date, value, tolerance = 2, dayRange = 2) {

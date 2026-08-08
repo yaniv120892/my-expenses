@@ -1,5 +1,6 @@
 import transactionRepository from '../repositories/transactionRepository';
 import aiServiceFactory from './ai/aiServiceFactory';
+import { Transaction } from '../types/transaction';
 
 class SummaryService {
   private aiService = aiServiceFactory.getAIService();
@@ -31,12 +32,12 @@ class SummaryService {
     });
   }
 
-  private buildSummary(transactions: any[]) {
+  private buildSummary(transactions: Transaction[]) {
     const total = transactions.reduce((sum, t) => sum + t.value, 0);
     return `Today's expenses: ${total.toFixed(2)} NIS (${transactions.length} transactions)`;
   }
 
-  private async getFunnyAiSummary(transactions: any[]) {
+  private async getFunnyAiSummary(transactions: Transaction[]) {
     const descriptions = transactions
       .map((t) => `${t.description} (${t.category?.name})`)
       .join(', ');
