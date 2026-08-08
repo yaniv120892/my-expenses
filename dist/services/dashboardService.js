@@ -29,7 +29,12 @@ class DashboardService {
         ]);
         const monthComparison = this.buildMonthComparison(currentMonthSummary, previousMonthSummary);
         const topCategories = this.mergeTopCategories(topCategoriesCurrent, topCategoriesPrevious, currentMonthSummary.totalExpense);
-        return { monthComparison, topCategories, recentTransactions, subscriptions: subscriptionSnapshot };
+        return {
+            monthComparison,
+            topCategories,
+            recentTransactions,
+            subscriptions: subscriptionSnapshot,
+        };
     }
     async getInsights(userId) {
         const now = new Date();
@@ -120,7 +125,10 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
 {"unusualSpending": ["insight 1", "insight 2"], "summary": "A brief overall summary"}`;
             const response = await this.aiService.analyzeExpenses(prompt);
             // Try to parse the JSON response
-            const cleaned = response.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
+            const cleaned = response
+                .replace(/```json?\n?/g, '')
+                .replace(/```/g, '')
+                .trim();
             const parsed = JSON.parse(cleaned);
             return parsed;
         }

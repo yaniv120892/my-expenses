@@ -1,5 +1,13 @@
 import winston from 'winston';
 import Transport from 'winston-transport';
+import { Request, Response, NextFunction } from 'express';
+
+/** Shape winston hands to a transport's log(). */
+interface LogInfo {
+  message: string;
+  level: string;
+  [key: string]: unknown;
+}
 
 const logtailToken = process.env.LOGTAIL_TOKEN || '';
 const logtailHost = process.env.LOGTAIL_HOST || '';
@@ -8,7 +16,7 @@ const logtailEndpoint = `https://${logtailHost}`;
 async function logToLogtail(
   message: string,
   level: string = 'info',
-  meta: any = {},
+  meta: Record<string, unknown> = {},
 ) {
   if (!logtailToken || !logtailHost) {
     return;
@@ -41,7 +49,7 @@ const logFormat = winston.format.printf(
 );
 
 class LogtailHttpTransport extends Transport {
-  log(info: any, callback: () => void) {
+  log(info: LogInfo, callback: () => void) {
     setImmediate(() => {
       logToLogtail(info.message, info.level, info);
       callback();
@@ -58,7 +66,11 @@ const logger = winston.createLogger({
   ],
 });
 
-export const requestLogger = (req: any, res: any, next: any) => {
+export const requestLogger = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) => {
   logger.info(`${req.method} ${req.originalUrl}`);
   next();
 };

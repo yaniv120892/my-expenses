@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = __importDefault(require("../utils/logger"));
+const errorUtils_1 = require("../utils/errorUtils");
 const subscriptionDetectionService_1 = __importDefault(require("../services/subscriptionDetectionService"));
 class SubscriptionController {
     async list(userId, status) {
@@ -11,11 +12,13 @@ class SubscriptionController {
             logger_1.default.debug('Start list subscriptions', { userId, status });
             const validStatus = this.parseStatus(status);
             const result = await subscriptionDetectionService_1.default.getSubscriptions(userId, validStatus);
-            logger_1.default.debug('Done list subscriptions', { count: result.subscriptions.length });
+            logger_1.default.debug('Done list subscriptions', {
+                count: result.subscriptions.length,
+            });
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to list subscriptions, ${error.message}`);
+            logger_1.default.error(`Failed to list subscriptions, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -27,7 +30,7 @@ class SubscriptionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to confirm subscription ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to confirm subscription ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -39,7 +42,7 @@ class SubscriptionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to dismiss subscription ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to dismiss subscription ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }
@@ -51,7 +54,7 @@ class SubscriptionController {
             return result;
         }
         catch (error) {
-            logger_1.default.error(`Failed to convert subscription ${id}, ${error.message}`);
+            logger_1.default.error(`Failed to convert subscription ${id}, ${(0, errorUtils_1.getErrorMessage)(error)}`);
             throw error;
         }
     }

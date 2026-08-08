@@ -1,4 +1,4 @@
-import express, { Request } from 'express';
+import express from 'express';
 import { handleRequest } from '../utils/handleRequest';
 import categoryController from '../controllers/categoryController';
 

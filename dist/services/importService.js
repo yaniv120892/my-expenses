@@ -17,6 +17,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.importService = void 0;
 const client_1 = require("@prisma/client");
 const logger_1 = __importDefault(require("../utils/logger"));
+const errorUtils_1 = require("../utils/errorUtils");
 const importRepository_1 = require("../repositories/importRepository");
 const importedTransactionRepository_1 = require("../repositories/importedTransactionRepository");
 const autoApproveRuleRepository_1 = require("../repositories/autoApproveRuleRepository");
@@ -74,9 +75,7 @@ class ImportService {
                     importId: importRecord.id,
                     error,
                 });
-                await importRepository_1.importRepository.updateStatus(importRecord.id, client_1.ImportStatus.FAILED, error instanceof Error
-                    ? error.message
-                    : 'Failed to submit extraction request');
+                await importRepository_1.importRepository.updateStatus(importRecord.id, client_1.ImportStatus.FAILED, (0, errorUtils_1.getErrorMessage)(error, 'Failed to submit extraction request'));
                 throw error;
             }
         }
@@ -178,6 +177,8 @@ class ImportService {
             try {
                 if (transaction.matchingTransactionId) {
                     // Merge with existing transaction
+                    // The query that loaded these rows includes the matched transaction,
+                    // which the row's declared type does not describe.
                     const matchingTx = transaction.matchingTransaction;
                     await this.mergeImportedTransaction(transaction.id, userId, {
                         description: transaction.description,
@@ -203,7 +204,7 @@ class ImportService {
                 result.failed++;
                 result.errors.push({
                     id: transaction.id,
-                    error: error instanceof Error ? error.message : 'Unknown error',
+                    error: (0, errorUtils_1.getErrorMessage)(error),
                 });
             }
         }
@@ -269,7 +270,7 @@ class ImportService {
                 result.failed++;
                 result.errors.push({
                     id: transaction.id,
-                    error: error instanceof Error ? error.message : 'Unknown error',
+                    error: (0, errorUtils_1.getErrorMessage)(error),
                 });
             }
         }
@@ -277,7 +278,9 @@ class ImportService {
     }
     async rematchImport(importId, userId) {
         const importRecord = await importRepository_1.importRepository.findById(importId);
-        if (!importRecord || importRecord.userId !== userId || importRecord.deleted) {
+        if (!importRecord ||
+            importRecord.userId !== userId ||
+            importRecord.deleted) {
             throw new Error('Import not found');
         }
         if (importRecord.status !== client_1.ImportStatus.COMPLETED) {
@@ -323,7 +326,7 @@ class ImportService {
             });
         }
         catch (error) {
-            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.FAILED, error instanceof Error ? error.message : 'Re-match failed');
+            await importRepository_1.importRepository.updateStatus(importId, client_1.ImportStatus.FAILED, (0, errorUtils_1.getErrorMessage)(error, 'Re-match failed'));
             throw error;
         }
     }

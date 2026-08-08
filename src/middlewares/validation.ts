@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { validate } from 'class-validator';
-import { plainToInstance } from 'class-transformer';
+import { ClassConstructor, plainToInstance } from 'class-transformer';
 import logger from '../utils/logger';
 
-export const validateRequest = (type: any, isQuery: boolean = false) => {
+export const validateRequest = (
+  type: ClassConstructor<object>,
+  isQuery: boolean = false,
+) => {
   return async (
     req: Request,
     res: Response,
@@ -26,7 +29,7 @@ export const validateRequest = (type: any, isQuery: boolean = false) => {
     }
 
     if (isQuery) {
-      req.query = requestObj as Record<string, any>;
+      req.query = requestObj as Request['query'];
     } else {
       req.body = requestObj;
     }

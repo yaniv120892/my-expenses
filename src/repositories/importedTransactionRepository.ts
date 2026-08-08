@@ -1,4 +1,5 @@
 import {
+  Prisma,
   ImportedTransaction,
   TransactionType,
   ImportedTransactionStatus,
@@ -14,7 +15,7 @@ export class ImportedTransactionRepository {
       date: Date;
       type: TransactionType;
       matchingTransactionId: string | null;
-      rawData: any;
+      rawData: Prisma.InputJsonValue;
       userId: string;
     }[],
   ): Promise<number> {
@@ -136,7 +137,7 @@ export class ImportedTransactionRepository {
       value: number;
       date: Date;
       type: TransactionType;
-      rawData: any;
+      rawData: Prisma.InputJsonValue;
       matchingTransactionId: string | null;
       userId: string;
     }[],

@@ -60,7 +60,7 @@ const logger = winston_1.default.createLogger({
         new LogtailHttpTransport(), // Log to Logtail via HTTP
     ],
 });
-const requestLogger = (req, res, next) => {
+const requestLogger = (req, _res, next) => {
     logger.info(`${req.method} ${req.originalUrl}`);
     next();
 };
