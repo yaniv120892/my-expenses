@@ -1,4 +1,6 @@
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { Client } from 'pg';
@@ -135,6 +137,48 @@ function textOf(frames: Frame[]): string {
     .filter((f) => f.type === 'delta')
     .map((f) => f.value || '')
     .join('');
+}
+
+/**
+ * Mastra's CommonJS build `require`s ESM-only packages, so a static
+ * `require('@mastra/…')` anywhere in the compiled output kills the process at
+ * startup on any runtime without `require(esm)` — which is what Vercel's is.
+ * Every route 500s, not just the assistant. Mastra must be reached through the
+ * dynamic import in src/services/assistant/esm.ts instead.
+ *
+ * Reads the committed dist rather than the running server, so run `npm run
+ * build` first for this to mean anything. To check the real thing end to end,
+ * start the compiled server the way production loads it:
+ *
+ *   node --no-experimental-require-module dist/index.js
+ */
+function checkCompiledOutputAvoidsRequireEsm(): void {
+  const distDir = path.join(__dirname, '..', '..', 'dist');
+
+  if (!fs.existsSync(distDir)) {
+    check('compiled output avoids require() of Mastra', false, 'dist missing');
+    return;
+  }
+
+  const offenders: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) {
+        if (/require\(["']@mastra\//.test(fs.readFileSync(full, 'utf8'))) {
+          offenders.push(path.relative(distDir, full));
+        }
+      }
+    }
+  };
+  walk(distDir);
+
+  check(
+    'compiled output avoids require() of Mastra',
+    offenders.length === 0,
+    offenders.length ? offenders.join(', ') : 'no static requires',
+  );
 }
 
 async function main(): Promise<void> {
@@ -329,6 +373,8 @@ async function main(): Promise<void> {
     afterAbort?.status === 401,
     afterAbort ? `status ${afterAbort.status}` : 'API unreachable — it crashed',
   );
+
+  checkCompiledOutputAvoidsRequireEsm();
 
   const failed = results.filter((r) => !r.ok);
   console.log(
