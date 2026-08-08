@@ -51,6 +51,27 @@ node --no-experimental-require-module dist/index.js
 If the server boots, the import path is safe. `run.ts` also greps `dist` for
 static `require('@mastra/…')` as a cheap standing guard.
 
+### …and packaged the way production does
+
+Booting locally is not enough, because the lambda contains only what Vercel's
+file tracer decides to include, and the tracer follows static `import`/`require`
+— which is precisely what the dynamic import above removes. The first version
+of this fix booted perfectly and then failed every chat request with
+`ERR_MODULE_NOT_FOUND`, because Mastra had never been packaged at all.
+
+`run.ts` therefore runs the real tracer (`@vercel/nft`, the same library Vercel
+uses) over `dist/index.js` and asserts Mastra survives. Nothing else catches
+this: type-check, lint, build, and a local run all pass while the deployed
+bundle is missing the dependency.
+
+To check by hand:
+
+```bash
+npx @vercel/nft print dist/index.js | grep -c 'node_modules/@mastra'
+```
+
+Zero means chat is broken in production.
+
 `prisma dev` rather than the `docker-compose.yaml` Postgres: `src/prisma/client.ts`
 imports `PrismaClient` from `@prisma/client/edge`, which speaks the Accelerate
 protocol and cannot open a plain `postgresql://` URL. `prisma dev` provides both

@@ -14,7 +14,7 @@ class ChatService {
      */
     async streamChatResponse(messages, userId, abortSignal) {
         const [{ RequestContext }, assistant] = await Promise.all([
-            (0, esm_1.importEsm)('@mastra/core/request-context'),
+            (0, esm_1.loadMastra)(),
             (0, financialAssistant_1.getFinancialAssistant)(),
         ]);
         // Injected server-side so the model cannot choose whose data it reads.

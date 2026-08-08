@@ -179,6 +179,61 @@ function checkCompiledOutputAvoidsRequireEsm(): void {
     offenders.length === 0,
     offenders.length ? offenders.join(', ') : 'no static requires',
   );
+
+  check(
+    'the ESM entry was copied into dist',
+    fs.existsSync(path.join(distDir, 'services', 'assistant', 'mastra.mjs')),
+    'dist/services/assistant/mastra.mjs',
+  );
+}
+
+/**
+ * Vercel builds the lambda by statically tracing require/import from the
+ * entrypoint. The dynamic import that keeps Mastra out of `require` also hides
+ * it from that trace, so Mastra was deployed missing entirely and the first
+ * chat request failed with ERR_MODULE_NOT_FOUND — while the server itself
+ * looked perfectly healthy.
+ *
+ * Neither type-check, lint, build, nor a local run catches that: it is purely a
+ * property of what gets packaged. So this runs the real tracer, the same
+ * library Vercel uses, and asserts Mastra survives the trace.
+ */
+async function checkMastraSurvivesFileTracing(): Promise<void> {
+  const root = path.join(__dirname, '..', '..');
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { nodeFileTrace } = require('@vercel/nft') as {
+    nodeFileTrace: (
+      files: string[],
+      options: { base: string },
+    ) => Promise<{ fileList: Set<string> }>;
+  };
+
+  const { fileList } = await nodeFileTrace([path.join(root, 'dist/index.js')], {
+    base: root,
+  });
+
+  const traced = [...fileList];
+  const mastra = traced.filter((f) => f.includes('node_modules/@mastra/'));
+  // The ESM-only packages whose require() broke production in the first place.
+  const esmOnly = traced.filter(
+    (f) =>
+      f.includes('node_modules/tokenx/') || f.includes('node_modules/p-map/'),
+  );
+
+  check(
+    'Vercel file tracing reaches Mastra',
+    mastra.length > 0,
+    mastra.length
+      ? `${mastra.length} @mastra files would ship`
+      : 'no @mastra files in the lambda — chat would fail with ERR_MODULE_NOT_FOUND',
+  );
+
+  check(
+    'file tracing reaches the ESM-only dependencies too',
+    esmOnly.length > 0,
+    esmOnly.length ? `${esmOnly.length} files` : 'tokenx/p-map missing',
+  );
 }
 
 async function main(): Promise<void> {
@@ -375,6 +430,7 @@ async function main(): Promise<void> {
   );
 
   checkCompiledOutputAvoidsRequireEsm();
+  await checkMastraSurvivesFileTracing();
 
   const failed = results.filter((r) => !r.ok);
   console.log(
