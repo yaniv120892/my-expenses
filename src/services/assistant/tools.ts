@@ -13,7 +13,7 @@ import chatAggregationService from '../chatAggregationService';
 import { Transaction } from '../../types/transaction';
 import { AggregationType } from '../../types/chat';
 import { TrendPeriod } from '../../types/trends';
-import { importEsm } from './esm';
+import { loadMastra } from './esm';
 
 export const USER_ID_CONTEXT_KEY = 'userId';
 
@@ -153,8 +153,7 @@ async function fetchTransactions(
  * build, which can only be reached through a dynamic import (see ./esm).
  */
 export async function buildAssistantTools() {
-  const { createTool } =
-    await importEsm<typeof import('@mastra/core/tools')>('@mastra/core/tools');
+  const { createTool } = await loadMastra();
 
   const listCategories = createTool({
     id: 'listCategories',

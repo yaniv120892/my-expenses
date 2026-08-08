@@ -2,7 +2,7 @@ import type { Agent } from '@mastra/core/agent';
 import { getAssistantModel } from './model';
 import { getAssistantMemory } from './memory';
 import { buildAssistantTools } from './tools';
-import { importEsm } from './esm';
+import { loadMastra } from './esm';
 
 function buildInstructions(): string {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -69,7 +69,7 @@ export function getFinancialAssistant(): Promise<Agent> {
 
 async function build(): Promise<Agent> {
   const [{ Agent }, tools, memory] = await Promise.all([
-    importEsm<typeof import('@mastra/core/agent')>('@mastra/core/agent'),
+    loadMastra(),
     buildAssistantTools(),
     getAssistantMemory(),
   ]);

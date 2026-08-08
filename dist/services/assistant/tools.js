@@ -112,7 +112,7 @@ async function fetchTransactions(userId, filters) {
  * build, which can only be reached through a dynamic import (see ./esm).
  */
 async function buildAssistantTools() {
-    const { createTool } = await (0, esm_1.importEsm)('@mastra/core/tools');
+    const { createTool } = await (0, esm_1.loadMastra)();
     const listCategories = createTool({
         id: 'listCategories',
         description: 'Lists every category available to the user. Call this before filtering by category so you use a real category name rather than guessing one.',
