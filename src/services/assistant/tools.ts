@@ -1,5 +1,12 @@
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
+// Deliberately zod/v4 rather than the bare `zod` import. Zod 3.25 ships both
+// APIs, and the root export is v3 — which routes Mastra through its zod-v3
+// adapter. That adapter's CommonJS build calls `zodToJsonSchema.default(...)`
+// after an interop wrapper that leaves `default` as the module namespace, so
+// every tool conversion throws "zod_to_json_schema.default is not a function"
+// and no chat request can succeed. The v4 adapter uses zod's own
+// `toJSONSchema` and has no such dependency.
+import { z } from 'zod/v4';
 import transactionRepository from '../../repositories/transactionRepository';
 import categoryRepository from '../../repositories/categoryRepository';
 import trendService from '../trendService';

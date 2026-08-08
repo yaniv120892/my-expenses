@@ -22,17 +22,25 @@ function modelId(fallback: ModelRouterId): ModelRouterId {
 export function getAssistantModel(): MastraModelConfig {
   const provider = process.env.AI_PROVIDER?.toLowerCase();
 
+  // Optional OpenAI-compatible base URL, for a self-hosted or proxied endpoint.
+  // The end-to-end tests point this at a local mock so the agent loop can run
+  // without a real API key.
+  const url = process.env.ASSISTANT_MODEL_URL;
+  const baseUrl = url ? { url } : {};
+
   switch (provider) {
     case 'gemini':
       return {
         id: modelId(DEFAULT_GEMINI_MODEL),
         apiKey: process.env.GEMINI_API_KEY,
+        ...baseUrl,
       };
     case 'chatgpt':
     default:
       return {
         id: modelId(DEFAULT_OPENAI_MODEL),
         apiKey: process.env.OPENAI_API_KEY,
+        ...baseUrl,
       };
   }
 }

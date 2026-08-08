@@ -45,6 +45,15 @@ app.use(express_1.default.json());
 app.use(logger_1.requestLogger);
 app.use('/', index_1.default);
 const setWebhook = async () => {
+    // Skip entirely when no bot is configured. Registering a webhook with the
+    // placeholder token reaches out to api.telegram.org, and when that host is
+    // unreachable the underlying socket emits an 'error' the try/catch below
+    // never sees — an unhandled event that takes the whole process down at
+    // startup. Nothing to register without a real token anyway.
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+        logger_1.default.warn('TELEGRAM_BOT_TOKEN is not set, skipping webhook registration');
+        return;
+    }
     const webhookUrl = process.env.WEBHOOK_URL || 'http://localhost:3001/webhook';
     logger_1.default.info(`Setting Telegram webhook to: ${webhookUrl}`);
     try {

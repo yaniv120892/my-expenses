@@ -36,8 +36,17 @@ class ChatController {
             res.flushHeaders();
             // Stop the agent when the client disconnects, so closing the chat dialog
             // does not leave a model run and its tool calls going.
+            //
+            // The 'error' listeners are not optional. A client that vanishes abruptly
+            // (connection reset rather than a clean close) makes the request emit
+            // 'error', and an unhandled 'error' event on an EventEmitter is thrown —
+            // which would take the whole process down. Streaming responses are exactly
+            // where that happens, since long-lived connections get dropped mid-flight.
             const controller = new AbortController();
-            req.on('close', () => controller.abort());
+            const stop = () => controller.abort();
+            req.on('close', stop);
+            req.on('error', stop);
+            res.on('error', stop);
             try {
                 const textStream = await chatService_1.default.streamChatResponse(messages, userId, controller.signal);
                 try {
@@ -68,11 +77,21 @@ class ChatController {
                 });
             }
             finally {
-                res.end();
+                if (!res.writableEnded) {
+                    res.end();
+                }
             }
         };
     }
+    /**
+     * Writes one SSE frame, skipping the write once the client has gone. Writing
+     * to a closed response throws, and here that would surface inside the stream
+     * loop after the reader has already disconnected.
+     */
     send(res, payload) {
+        if (res.writableEnded || res.destroyed) {
+            return;
+        }
         res.write(`data: ${JSON.stringify(payload)}\n\n`);
     }
 }
