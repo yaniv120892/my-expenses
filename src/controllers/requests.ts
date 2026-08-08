@@ -165,12 +165,19 @@ export class WebhookMessage {
   @IsString()
   text: string;
 
+  // Every other nested/coerced field here names its type explicitly. These two
+  // were the only ones leaning on emitDecoratorMetadata to infer it, which is a
+  // tsc feature — Vercel now compiles these sources itself, so the inference is
+  // no longer guaranteed. Without a type, class-transformer leaves the nested
+  // value a plain object and @ValidateNested() silently passes anything.
   @ValidateNested()
+  @Type(() => WebhookChat)
   chat: WebhookChat;
 }
 
 export class WebhookRequest {
   @ValidateNested()
+  @Type(() => WebhookMessage)
   message: WebhookMessage;
 }
 
