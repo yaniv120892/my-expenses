@@ -31,6 +31,26 @@ ASSISTANT_MODEL_URL=http://127.0.0.1:51231/v1 npx ts-node src/index.ts
 npx ts-node test/e2e/run.ts
 ```
 
+## Running the way production does
+
+Vercel's Node runtime does not support `require(esm)`. Mastra's CommonJS build
+`require`s ESM-only packages, so importing it statically takes down the whole
+process at startup with `ERR_REQUIRE_ESM` — every route 500s, not just the
+assistant. `src/services/assistant/esm.ts` avoids this by loading Mastra's ESM
+build through a dynamic import.
+
+Step 3 above runs from source, which does not exercise that. To reproduce the
+production loader, build first and start the compiled server with the flag that
+turns `require(esm)` off:
+
+```bash
+npm run build
+node --no-experimental-require-module dist/index.js
+```
+
+If the server boots, the import path is safe. `run.ts` also greps `dist` for
+static `require('@mastra/…')` as a cheap standing guard.
+
 `prisma dev` rather than the `docker-compose.yaml` Postgres: `src/prisma/client.ts`
 imports `PrismaClient` from `@prisma/client/edge`, which speaks the Accelerate
 protocol and cannot open a plain `postgresql://` URL. `prisma dev` provides both
