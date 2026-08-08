@@ -22,28 +22,25 @@ export interface McpRecording {
   toolCalls: RecordedToolCall[];
   toolResults: string[];
   toolsOffered: string[];
-  /** Role sequence of each request, for diagnosing agent-loop ordering. */
-  requestRoles: string[][];
 }
 
-const recording: McpRecording = {
+const emptyRecording = (): McpRecording => ({
   requestCount: 0,
   toolCalls: [],
   toolResults: [],
   toolsOffered: [],
-  requestRoles: [],
-};
+});
+
+// Replaced wholesale rather than cleared field by field, so a new field cannot
+// be forgotten here and leak between checks.
+let recording = emptyRecording();
 
 export function getRecording(): McpRecording {
   return JSON.parse(JSON.stringify(recording));
 }
 
 export function resetRecording(): void {
-  recording.requestCount = 0;
-  recording.toolCalls = [];
-  recording.toolResults = [];
-  recording.toolsOffered = [];
-  recording.requestRoles = [];
+  recording = emptyRecording();
 }
 
 interface ChatMessage {
@@ -83,6 +80,14 @@ function chunk(delta: unknown, finish: string | null): unknown {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Gap between streamed chunks. Exported so the incremental-delivery check can
+ * assert against the mock's actual pacing instead of a magic number that can
+ * drift from it. Comfortably above timer jitter, since deltas may be coalesced
+ * downstream and the check then sees only a couple of them.
+ */
+export const CHUNK_DELAY_MS = 120;
+
+/**
  * Tool-call ids must be unique across the whole conversation, not just within
  * a turn. Memory replays previous turns into each request, so a repeated id
  * collides with the earlier call and its stale result is reused instead of the
@@ -107,7 +112,6 @@ async function respond(
   // believe a tool had already run and skip straight to answering.
   const last = messages[messages.length - 1];
   const isAfterToolCall = last?.role === 'tool';
-  recording.requestRoles.push(messages.map((m) => m.role));
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
   const question = textOf(lastUser?.content).toLowerCase();
 
@@ -163,7 +167,7 @@ async function respond(
   const parts = ['Here is what I found:\n', ...toolOutput.split('\n')];
   for (const part of parts) {
     sse(res, chunk({ content: `${part}\n` }, null));
-    await sleep(60);
+    await sleep(CHUNK_DELAY_MS);
   }
 
   sse(res, chunk({}, 'stop'));
@@ -223,18 +227,6 @@ function pickTool(question: string): RecordedToolCall {
 
 export function startMockModelServer(port: number): Promise<http.Server> {
   const server = http.createServer((req, res) => {
-    if (req.url?.startsWith('/__calls')) {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(getRecording()));
-      return;
-    }
-
-    if (req.url?.startsWith('/__reset')) {
-      resetRecording();
-      res.writeHead(200).end('{}');
-      return;
-    }
-
     let raw = '';
     req.on('data', (c) => (raw += c));
     req.on('end', async () => {

@@ -9,7 +9,11 @@ function modelId(fallback) {
 }
 /**
  * Resolves the assistant model from the same AI_PROVIDER switch used by
- * aiServiceFactory, so provider selection stays configured in one place.
+ * aiServiceFactory, so both read one env var.
+ *
+ * Note there are two switches, not one: aiServiceFactory returns AIProvider
+ * service instances with their own hardcoded model names, while this returns a
+ * Mastra model config. Changing provider or model version means editing both.
  *
  * The API key is passed explicitly rather than relying on the provider's
  * default env var — this keeps the existing GEMINI_API_KEY name working

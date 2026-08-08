@@ -16,28 +16,29 @@ const logger_1 = __importDefault(require("../../utils/logger"));
  */
 const connectionString = process.env.MASTRA_DB_URL || process.env.DIRECT_URL || '';
 const MASTRA_SCHEMA = 'mastra';
-let memory;
 /**
- * Returns the shared Memory instance, or undefined when no direct connection is
+ * The shared Memory instance, or undefined when no direct connection is
  * configured. The assistant stays usable without memory rather than failing to
  * start, so a missing DIRECT_URL degrades to stateless chat.
+ *
+ * Built once at module load — the Postgres pool underneath is lazy, so this
+ * does not open a connection at startup.
  */
+const memory = connectionString
+    ? new memory_1.Memory({
+        storage: new pg_1.PostgresStore({
+            id: 'assistant-memory',
+            connectionString,
+            // Keeps Mastra's self-managed tables out of `public` so they never
+            // collide with the Prisma schema or show up as migration drift.
+            schemaName: MASTRA_SCHEMA,
+        }),
+    })
+    : undefined;
+if (!connectionString) {
+    logger_1.default.warn('Assistant memory disabled: set MASTRA_DB_URL or DIRECT_URL to persist conversation threads');
+}
 function getAssistantMemory() {
-    if (!connectionString) {
-        logger_1.default.warn('Assistant memory disabled: set MASTRA_DB_URL or DIRECT_URL to persist conversation threads');
-        return undefined;
-    }
-    if (!memory) {
-        memory = new memory_1.Memory({
-            storage: new pg_1.PostgresStore({
-                id: 'assistant-memory',
-                connectionString,
-                // Keeps Mastra's self-managed tables out of `public` so they never
-                // collide with the Prisma schema or show up as migration drift.
-                schemaName: MASTRA_SCHEMA,
-            }),
-        });
-    }
     return memory;
 }
 /** Whether conversation history is persisted server-side. */

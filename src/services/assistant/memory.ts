@@ -12,23 +12,16 @@ const connectionString =
 
 const MASTRA_SCHEMA = 'mastra';
 
-let memory: Memory | undefined;
-
 /**
- * Returns the shared Memory instance, or undefined when no direct connection is
+ * The shared Memory instance, or undefined when no direct connection is
  * configured. The assistant stays usable without memory rather than failing to
  * start, so a missing DIRECT_URL degrades to stateless chat.
+ *
+ * Built once at module load — the Postgres pool underneath is lazy, so this
+ * does not open a connection at startup.
  */
-export function getAssistantMemory(): Memory | undefined {
-  if (!connectionString) {
-    logger.warn(
-      'Assistant memory disabled: set MASTRA_DB_URL or DIRECT_URL to persist conversation threads',
-    );
-    return undefined;
-  }
-
-  if (!memory) {
-    memory = new Memory({
+const memory = connectionString
+  ? new Memory({
       storage: new PostgresStore({
         id: 'assistant-memory',
         connectionString,
@@ -36,9 +29,16 @@ export function getAssistantMemory(): Memory | undefined {
         // collide with the Prisma schema or show up as migration drift.
         schemaName: MASTRA_SCHEMA,
       }),
-    });
-  }
+    })
+  : undefined;
 
+if (!connectionString) {
+  logger.warn(
+    'Assistant memory disabled: set MASTRA_DB_URL or DIRECT_URL to persist conversation threads',
+  );
+}
+
+export function getAssistantMemory(): Memory | undefined {
   return memory;
 }
 
