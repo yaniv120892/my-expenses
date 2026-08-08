@@ -1,6 +1,6 @@
 import type { Memory } from '@mastra/memory';
 import logger from '../../utils/logger';
-import { importEsm } from './esm';
+import { loadMastra } from './esm';
 
 /**
  * Mastra manages its own tables, so it needs a direct Postgres connection.
@@ -42,10 +42,7 @@ export function getAssistantMemory(): Promise<Memory | undefined> {
 }
 
 async function build(url: string): Promise<Memory> {
-  const [{ Memory }, { PostgresStore }] = await Promise.all([
-    importEsm<typeof import('@mastra/memory')>('@mastra/memory'),
-    importEsm<typeof import('@mastra/pg')>('@mastra/pg'),
-  ]);
+  const { Memory, PostgresStore } = await loadMastra();
 
   return new Memory({
     storage: new PostgresStore({
