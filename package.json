@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "build": "rm -rf dist && npx prisma generate && tsc",
+    "build": "rm -rf dist && npx prisma generate && tsc && npm run copy:esm",
     "start": "npx prisma migrate deploy && node dist/index.js",
     "dev": "npx prisma migrate deploy && ts-node src/index.ts",
     "watch": "npx prisma migrate deploy && nodemon --exec ts-node src/index.ts",
@@ -17,7 +17,8 @@
     "ts.check": "tsc --project tsconfig.json",
     "postinstall": "prisma generate",
     "test:e2e": "ts-node test/e2e/run.ts",
-    "test:e2e:serve": "ts-node test/e2e/serve.ts"
+    "test:e2e:serve": "ts-node test/e2e/serve.ts",
+    "copy:esm": "cp src/services/assistant/mastra.mjs dist/services/assistant/mastra.mjs"
   },
   "engines": {
     "node": "22.x"
@@ -52,7 +53,8 @@
     "prisma": "^6.9.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",
-    "typescript-eslint": "^8.7.0"
+    "typescript-eslint": "^8.7.0",
+    "@vercel/nft": "^0.29.4"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.817.0",
