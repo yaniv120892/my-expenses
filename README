@@ -1,15 +1,18 @@
-📌 My Expenses API
-🚀 A powerful API for managing incomes and expenses, built with TypeScript & Express.js.
-It uses PostgreSQL with Prisma ORM, AI-driven categorization (FastText & Gemini/ChatGPT fallback), and supports Telegram command handlers & transaction search.
+# ⚠️ This repository is deprecated
 
-🛠️ Features
-✅ Manage Expenses & Incomes - Create, update, delete transactions.
-✅ AI-Powered Expense Categorization - Uses expenses-categorizer for category predictions.
-✅ Gemini/ChatGPT Fallback - If the AI model fails, falls back to Gemini or ChatGPT for categorization.
-✅ PostgreSQL + Prisma - Uses PostgreSQL as the database, managed via Prisma ORM.
-✅ Telegram Bot Support - Allows adding expenses via Telegram command handlers.
-✅ AI-Driven Insights - Provides spending analytics & financial insights.
-✅ Search Transactions - Easily find transactions by description, category, or date.
-✅ Scheduled Transactions - Create, update, list, and process recurring transactions with flexible scheduling (daily, weekly, monthly, or custom intervals).
-✅ Transaction Notifications - Sends a notification for every created transaction (currently supports only Telegram, controlled by an environment variable).
-✅ Weekly Transaction Backup - Automatically creates a weekly backup of all transactions as a CSV file, supporting both Google Drive and AWS S3 as storage providers (based on environment variable).
+The backend that lived here has been consolidated into the Next.js
+application in **[my-expenses-website](https://github.com/yaniv120892/my-expenses-website)**,
+which now serves both the frontend and the API from a single codebase.
+
+What moved:
+
+- All API routes are now Next.js route handlers under `src/app/api/`
+- Business logic lives in `src/server/` (services, repositories, integrations)
+- The Prisma schema and all migrations moved to `prisma/` — database
+  migrations MUST be run from my-expenses-website from now on
+- Vercel cron jobs (scheduled transactions, daily summary, backups,
+  subscription detection/audit) are declared in that repo's `vercel.json`
+- The Telegram bot webhook, AI chat assistant, and excel-extraction
+  webhook all live there as well
+
+Do not deploy from this repository. It is kept only for git history.
